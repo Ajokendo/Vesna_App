@@ -145,6 +145,11 @@ const STAFF: StaffDef[] = [
 
 async function main() {
   const demo = process.argv.includes('--demo');
+  // --if-empty: при публикации не трогаем уже существующий салон (и его записи)
+  if (process.argv.includes('--if-empty')) {
+    const existing = await db.query.salons.findFirst({ where: eq(s.salons.slug, 'vesna') });
+    if (existing) { console.log('Салон «Весна» уже в базе — наполнение пропущено.'); return; }
+  }
 
   await db.delete(s.salons).where(eq(s.salons.slug, 'vesna'));
   const [salon] = await db.insert(s.salons).values({

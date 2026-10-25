@@ -10,7 +10,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx --env-file=.env src/db/seed.ts"
+    "db:seed": "tsx --env-file=.env src/db/seed.ts",
+    "vercel-build": "tsx src/db/migrate.ts && tsx src/db/seed.ts --if-empty --demo && next build --turbopack"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
