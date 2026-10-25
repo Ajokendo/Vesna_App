@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Салон — онлайн-запись и CRM
 
-## Getting Started
+Универсальное приложение для салонов красоты: онлайн-запись клиентов, журнал администратора, мастера и их графики.
+Всё, что относится к салону (название, логотип, услуги, цены, мастера, графики), хранится в базе, а не в коде.
+Первый салон — **«Весна»**, Бишкек.
 
-First, run the development server:
+## Что уже работает (этап 1)
+
+- **Онлайн-запись** (`/vesna/book`): для себя или ребёнка → зал → длина волос → услуга и доп. опции → мастер → неделя и время → контакты.
+  - цена по длине волос, «от–до» (тотал блонд), детская цена по возрасту ребёнка;
+  - «снятие нашей работы бесплатно при повторном маникюре» — сервер сам проверяет историю визитов;
+  - сложное окрашивание и тотал блонд — только у мастеров, которым это разрешено;
+  - свободное время считается по графику конкретного мастера (дни недели или «6 через 1»), с шагом 5 минут:
+    окно открывается сразу после предыдущей записи, поэтому короткие услуги идут подряд;
+  - запись на 30 дней вперёд, не позже чем за час; две записи на одно время невозможны (блокировка в транзакции).
+- **Журнал администратора** (`/vesna/admin`, вход по PIN): день по колонкам мастеров, вкладки «Парикмахеры / Ногтевой сервис / Брови и шугаринг», запись по телефону и «без записи».
+- **Главная салона** (`/vesna`): логотип, мастера с фото, адрес, WhatsApp. Ставится на телефон как приложение (PWA).
+
+## Технологии
+
+- Next.js 15 (App Router, TypeScript) — веб-приложение для клиентов и сотрудников.
+- PostgreSQL + Drizzle ORM.
+- Vitest — тесты расчёта свободного времени и цен (`src/lib/engine.test.ts`).
+
+## Запуск
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env          # укажите DATABASE_URL и ADMIN_PIN
+npm install
+npm run db:migrate            # создать таблицы
+npm run db:seed -- --demo     # данные «Весны» (+ демо-записи на завтра)
+npm run dev                   # http://localhost:3000/vesna
+npm test                      # тесты
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Структура
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Путь | Что там |
+| --- | --- |
+| `src/db/schema.ts` | Схема данных: салон, сотрудники и роли, графики, категории/услуги/цены, клиенты и семьи, записи |
+| `src/db/seed.ts` | Прайс, мастера и графики «Весны» |
+| `src/lib/schedule.ts` | Рабочие часы мастера на день (по дням недели или циклом, с исключениями) |
+| `src/lib/slots.ts` | Свободные окна для записи |
+| `src/lib/pricing.ts` | Цена и длительность записи |
+| `src/server/salon.ts` | Каталог, свободное время, создание записи, журнал |
+| `src/app/[salon]/…` | Экраны клиента и журнал администратора |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Дальше (этап 2)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Вход клиентов и сотрудников по коду в WhatsApp · кабинет клиента с баллами и QR · уведомления (push / WhatsApp) с подтверждением визита ·
+онлайн-оплата (ELQR, карты, Apple/Google Pay) · кабинет владельца: комиссии 50/50, расходы, прибыль · сборка для App Store и Google Play.

@@ -1,0 +1,10 @@
+{
+  "name": "Салон красоты «Весна»",
+  "short_name": "Весна",
+  "start_url": "/vesna",
+  "display": "standalone",
+  "background_color": "#F6F6F1",
+  "theme_color": "#4E6B45",
+  "lang": "ru",
+  "icons": [{ "src": "/logo.jpg", "sizes": "480x480", "type": "image/jpeg", "purpose": "any" }]
+}
