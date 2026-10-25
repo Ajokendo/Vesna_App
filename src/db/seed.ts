@@ -2,7 +2,7 @@
 // Источники: фото прайса и файлы салона, переписка и голосовое владельца от 25.10.2026.
 // Запуск: npm run db:seed   (с флагом --demo добавляет демо-записи на ближайшие дни)
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, schema as s } from './index';
 import type { ByLength } from './schema';
 import { addDays, utcToZoned, zonedToUtc } from '../lib/time';
@@ -130,7 +130,7 @@ const STAFF: StaffDef[] = [
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [2, 3, 5, 6], start: H(9, 30), end: H(19) } },
   { name: 'Диана', title: 'Мужские и женские стрижки, окрашивание в один тон, укладки', photo: '/masters/diana.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 5, 6], start: H(9, 30), end: H(20) } },
-  { name: 'Керемет', title: 'Универсал: стрижки, укладки, окрашивание', roles: ['MASTER'],
+  { name: 'Керемет', title: 'Универсал: стрижки, укладки, окрашивание', photo: '/masters/keremet.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [1, 2, 3, 4], start: H(9), end: H(15) } },
   { name: 'Жаннат', title: 'Мужские стрижки', photo: '/masters/zhannat.jpg', roles: ['MASTER'],
     cats: ['mcut', 'beard', 'mcolor', 'kids'], schedule: { kind: 'WEEKLY', weekdays: [0, 3, 4, 5, 6], start: H(9, 30), end: H(20) } },
@@ -141,14 +141,41 @@ const STAFF: StaffDef[] = [
     cats: ['mani', 'pedi'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-26', start: H(9, 30), end: H(20) } },
   { name: 'Залина', title: 'Шугаринг, брови, ламинирование ресниц и бровей', photo: '/masters/zalina.jpg', roles: ['MASTER'],
     cats: ['brows', 'depil', 'mwax'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-26', start: H(9, 30), end: H(20) } },
+  // Администратор — отдельная штатная единица, клиентов не обслуживает. График уточняется у салона.
+  { name: 'Рэйна', title: 'Администратор', roles: ['ADMIN'],
+    cats: [], schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 3, 4, 5, 6], start: H(9, 30), end: H(20) } },
 ];
+
+async function insertStaff(salonId: string, m: StaffDef, i: number, catIds: Map<string, string>) {
+  const [row] = await db.insert(s.staff).values({
+    salonId, name: m.name, title: m.title, photoUrl: m.photo ?? null, roles: m.roles,
+    commission: m.roles.includes('OWNER') ? 0 : null, sortOrder: i,
+  }).returning();
+  const sc = m.schedule;
+  await db.insert(s.schedules).values(sc.kind === 'WEEKLY'
+    ? { staffId: row.id, kind: 'WEEKLY', weekdays: sc.weekdays, startMinute: sc.start, endMinute: sc.end }
+    : { staffId: row.id, kind: 'CYCLE', cycleWork: sc.work, cycleOff: sc.off, cycleStart: sc.from, startMinute: sc.start, endMinute: sc.end });
+  for (const key of m.cats) await db.insert(s.staffCategories).values({ staffId: row.id, categoryId: catIds.get(key)! });
+  return row.id;
+}
 
 async function main() {
   const demo = process.argv.includes('--demo');
   // --if-empty: при публикации не трогаем уже существующий салон (и его записи)
   if (process.argv.includes('--if-empty')) {
     const existing = await db.query.salons.findFirst({ where: eq(s.salons.slug, 'vesna') });
-    if (existing) { console.log('Салон «Весна» уже в базе — наполнение пропущено.'); return; }
+    if (existing) {
+      // Данные и записи не трогаем: только добавляем новых сотрудников и подтягиваем новые фото
+      const cats = await db.query.serviceCategories.findMany({ where: eq(s.serviceCategories.salonId, existing.id) });
+      const catIds = new Map<string, string>();
+      for (const c of CATEGORIES) { const row = cats.find((x) => x.name === c.name && x.hall === c.hall); if (row) catIds.set(c.key, row.id); }
+      for (const [i, m] of STAFF.entries()) {
+        const found = await db.query.staff.findFirst({ where: and(eq(s.staff.salonId, existing.id), eq(s.staff.name, m.name)) });
+        if (!found) { await insertStaff(existing.id, m, i, catIds); console.log(`Добавлен сотрудник: ${m.name}`); }
+        else if (m.photo && !found.photoUrl) await db.update(s.staff).set({ photoUrl: m.photo }).where(eq(s.staff.id, found.id));
+      }
+      console.log('Салон «Весна» уже в базе — обновлены сотрудники и фото.'); return;
+    }
   }
 
   await db.delete(s.salons).where(eq(s.salons.slug, 'vesna'));
@@ -180,18 +207,7 @@ async function main() {
   }
 
   const staffIds = new Map<string, string>();
-  for (const [i, m] of STAFF.entries()) {
-    const [row] = await db.insert(s.staff).values({
-      salonId: salon.id, name: m.name, title: m.title, photoUrl: m.photo ?? null, roles: m.roles,
-      commission: m.roles.includes('OWNER') ? 0 : null, sortOrder: i,
-    }).returning();
-    staffIds.set(m.name, row.id);
-    const sc = m.schedule;
-    await db.insert(s.schedules).values(sc.kind === 'WEEKLY'
-      ? { staffId: row.id, kind: 'WEEKLY', weekdays: sc.weekdays, startMinute: sc.start, endMinute: sc.end }
-      : { staffId: row.id, kind: 'CYCLE', cycleWork: sc.work, cycleOff: sc.off, cycleStart: sc.from, startMinute: sc.start, endMinute: sc.end });
-    for (const key of m.cats) await db.insert(s.staffCategories).values({ staffId: row.id, categoryId: catIds.get(key)! });
-  }
+  for (const [i, m] of STAFF.entries()) staffIds.set(m.name, await insertStaff(salon.id, m, i, catIds));
 
   for (const c of CATEGORIES) for (const v of c.services) for (const who of v.only ?? []) {
     await db.insert(s.serviceRestrictions).values({ serviceId: serviceIds.get(`${c.key}:${v.name}`)!, staffId: staffIds.get(who)! });
