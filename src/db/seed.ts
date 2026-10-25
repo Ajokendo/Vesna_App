@@ -139,7 +139,7 @@ const STAFF: StaffDef[] = [
     cats: ['mani', 'ext', 'pedi'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-27', start: H(9, 30), end: H(20) } },
   { name: 'Азиза', title: 'Маникюр и педикюр с покрытием, гигиенический', photo: '/masters/aziza.jpg', roles: ['MASTER'],
     cats: ['mani', 'pedi'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-26', start: H(9, 30), end: H(20) } },
-  { name: 'Залина', title: 'Шугаринг, брови, ламинирование ресниц и бровей', roles: ['MASTER'],
+  { name: 'Залина', title: 'Шугаринг, брови, ламинирование ресниц и бровей', photo: '/masters/zalina.jpg', roles: ['MASTER'],
     cats: ['brows', 'depil', 'mwax'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-26', start: H(9, 30), end: H(20) } },
 ];
 
