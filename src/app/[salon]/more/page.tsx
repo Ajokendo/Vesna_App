@@ -4,6 +4,7 @@ import { getSalon } from '@/server/salon';
 import { getMe } from '@/server/me';
 import ClientNav from '@/app/ClientNav';
 import Forget from './Forget';
+import InstallCard from '@/app/InstallCard';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Ещё' };
@@ -32,12 +33,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
           </div>
         </section>
 
-        <section className="card stack small" style={{ gap: 6, lineHeight: 1.5 }}>
-          <strong style={{ fontSize: 15 }}>Приложение на телефоне</strong>
-          <span><b>Android:</b> в Chrome меню ⋮ → «Добавить на главный экран».</span>
-          <span><b>iPhone:</b> в Safari кнопка «Поделиться» → «На экран Домой».</span>
-          <span className="muted">Так придут напоминания о записи, а приложение будет открываться одним касанием.</span>
-        </section>
+        <InstallCard bonus={me?.client.welcomeBonusAt ? 0 : salon.welcomeBonus} />
 
         {me && <Forget slug={slug} name={me.client.name} />}
 

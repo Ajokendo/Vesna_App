@@ -24,6 +24,7 @@ export default async function BookPage({ params, searchParams }: {
       horizonDays={salon.bookingHorizonDays}
       initialHall={hall === 'WOMEN' ? 'WOMEN' : 'MEN'}
       catalog={catalog}
+      welcomeBonus={salon.welcomeBonus}
     />
   );
 }

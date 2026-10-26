@@ -9,9 +9,10 @@ import EndTimeEditor from '@/app/EndTimeEditor';
 import { lateState, type LateState } from '@/lib/late';
 import Link from 'next/link';
 import { RescheduleButton } from './Reschedule';
+import ConnectClient from './ConnectClient';
 
 export type ApptItem = {
-  id: string; start: number; end: number; date?: string; clientId?: string; client: string; service: string; addons: string[];
+  id: string; start: number; end: number; date?: string; clientId?: string; visitToken?: string; client: string; service: string; addons: string[];
   price: number; priceMax: number | null; source: string; paid: boolean;
   pause: { after: number; min: number } | null;
   phone: string | null; balance: number; payer: string;
@@ -32,7 +33,7 @@ const METHODS = [
 const METHOD_NAME: Record<string, string> = { CASH: 'наличными', CARD: 'картой', QR: 'по QR', POINTS: 'баллами' };
 
 /** Запись в колонке мастера. Окрашивание с выдержкой рисуется двумя частями: в выдержку мастер свободен */
-export type LateRules = { today?: string; nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
+export type LateRules = { welcomeBonus?: number; minRedeem?: number; today?: string; nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
 
 export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent, rules }: {
   a: ApptItem; top: number; px: number; slug: string; earnPercent: number; masterPercent: number; rules: LateRules;
@@ -116,7 +117,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
   let calc: ReturnType<typeof calcPayment> | null = null;
   let calcError: string | null = null;
   if (price !== '') {
-    try { calc = calcPayment({ price: priceN, points: pointsN, balance: a.balance, earnPercent, masterPercent }); }
+    try { calc = calcPayment({ price: priceN, points: pointsN, balance: a.balance, earnPercent, masterPercent, minRedeem: rules.minRedeem }); }
     catch (e) { calcError = (e as Error).message; }
   }
 
@@ -148,6 +149,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
           <div className="small muted">{a.service}{a.addons.length ? ` + ${a.addons.join(', ').toLowerCase()}` : ''}</div>
           {a.phone && <div className="small muted">{a.phone}</div>}
         </div>
+        <ConnectClient slug={slug} id={a.id} token={a.visitToken ?? ''} bonus={rules.welcomeBonus ?? 0} />
         {!a.payment && <VisitStatus a={a} slug={slug} rules={rules} late={late} onDone={onClose} />}
         <EndTime a={a} slug={slug} />
 
@@ -178,7 +180,9 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
                 <span className="small" style={{ fontWeight: 700 }}>Баллы{a.payer !== a.client ? ` (счёт: ${a.payer})` : ''}</span>
                 <span className="small muted">на счёте: <strong style={{ color: 'var(--ink)' }}>{a.balance}</strong></span>
               </div>
-              {a.balance > 0 ? (
+              {a.balance > 0 && rules.minRedeem && a.balance < rules.minRedeem ? (
+                <span className="small muted">Списывать баллы можно с {rules.minRedeem} — пока копятся (ещё {rules.minRedeem - a.balance}).</span>
+              ) : a.balance > 0 ? (
                 <div className="row">
                   <input aria-label="Сколько баллов списать" inputMode="numeric" value={points}
                     onChange={(e) => setPoints(e.target.value.replace(/\D/g, ''))}

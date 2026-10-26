@@ -1,0 +1,1 @@
+ALTER TABLE "salons" ADD COLUMN "min_redeem" integer DEFAULT 500 NOT NULL;

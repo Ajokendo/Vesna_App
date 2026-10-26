@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import PushOptIn from '@/app/PushOptIn';
 import ClientNav from '@/app/ClientNav';
+import InstallCard from '@/app/InstallCard';
+import { refreshManifest } from '@/app/AppBonus';
 import { useEffect, useMemo, useState } from 'react';
 import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
@@ -10,6 +12,7 @@ import { ageOn, formatPrice, formatSom, quote, resolveService } from '@/lib/pric
 import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekdayShort } from '@/lib/time';
 
 type Props = {
+  welcomeBonus?: number;
   slug: string; salonName: string; address: string; today: string; horizonDays: number;
   initialHall: 'MEN' | 'WOMEN'; catalog: Catalog;
 };
@@ -23,7 +26,7 @@ const LENGTHS: { id: HairLength; name: string; cm: string }[] = [
 
 const TITLES = ['', 'Выберите услугу', 'Выберите мастера', 'Дата и время', 'Подтверждение'];
 
-export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog }: Props) {
+export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0 }: Props) {
   const [step, setStep] = useState(1);
   const [hall, setHall] = useState<'MEN' | 'WOMEN'>(initialHall);
   const [forChild, setForChild] = useState(false);
@@ -116,6 +119,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
     const data = await res.json();
     setSending(false);
     if (!res.ok) { setError(data.error ?? 'Не получилось записаться'); return; }
+    refreshManifest();
     setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId), id: data.id, token: data.visitToken });
   }
 
@@ -135,6 +139,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
             <div className="row"><span className="grow muted">К оплате в салоне</span><strong>{formatPrice(done.total, done.totalMax)}</strong></div>
             <div className="row"><span className="grow muted">Адрес</span><strong>{address}</strong></div>
           </div>
+          <InstallCard bonus={welcomeBonus} />
           <PushOptIn slug={slug} appointmentId={done.id} token={done.token} />
           <Link href={`/${slug}/my`} className="btn block">Мои записи</Link>
         </div>

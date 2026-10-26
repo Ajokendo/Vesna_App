@@ -2,9 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { myPoints } from '@/server/me';
+import { clientQrUrl, qrSvg, siteOrigin } from '@/server/qr';
 import { dayMonthShort } from '@/lib/time';
 import ClientNav from '@/app/ClientNav';
 import NotYou from '../NotYou';
+import InstallCard from '@/app/InstallCard';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Мои баллы' };
@@ -17,6 +19,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
   const salon = await getSalon(slug);
   if (!salon) notFound();
   const data = await myPoints(slug);
+  const qr = data ? await qrSvg(clientQrUrl(await siteOrigin(), slug, data.id)) : null;
   return (
     <main className="app">
       <div className="page" style={{ gap: 16 }}>
@@ -27,10 +30,26 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
               <div className="small muted">{data.name}, на вашем счёте</div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 44, fontWeight: 700, color: 'var(--accent-dark)', lineHeight: 1.1 }}>{data.balance}</div>
               <div className="small muted">баллов · 1 балл = 1 сом</div>
+              {data.minRedeem > 0 && data.balance < data.minRedeem ? (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ height: 10, borderRadius: 99, background: '#e3e8de', overflow: 'hidden' }} aria-hidden>
+                    <div style={{ width: `${Math.round((data.balance / data.minRedeem) * 100)}%`, height: '100%', background: 'linear-gradient(90deg,var(--accent),var(--gold))' }} />
+                  </div>
+                  <div className="small" style={{ marginTop: 6 }}><b>{data.balance} из {data.minRedeem}</b> — с {data.minRedeem} баллов ими можно оплачивать услуги</div>
+                </div>
+              ) : data.minRedeem > 0 ? <div className="small" style={{ marginTop: 8, color: 'var(--accent-dark)', fontWeight: 800 }}>Баллами уже можно оплачивать — скажите администратору</div> : null}
             </section>
+            {!data.welcomeGot && <InstallCard bonus={data.welcomeBonus} />}
+            {qr && (
+              <details className="card" style={{ textAlign: 'center' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 800, listStyle: 'none' }}>Мой QR-код ▾</summary>
+                <div style={{ width: 'min(240px, 70vw)', margin: '12px auto 6px' }} dangerouslySetInnerHTML={{ __html: qr }} />
+                <span className="small muted">Покажите администратору — он сразу увидит вас и ваши баллы, даже если вы пришли без записи.</span>
+              </details>
+            )}
             <section className="stack small" style={{ gap: 6, lineHeight: 1.5 }}>
               <span>• После каждого визита начисляем <strong>{data.percent}%</strong> от суммы, оплаченной деньгами.</span>
-              <span>• Баллами можно оплатить всю услугу или её часть — скажите администратору при оплате.</span>
+              <span>• {data.minRedeem > 0 ? `Когда на счёте ${data.minRedeem} баллов и больше, ими` : 'Баллами'} можно оплатить всю услугу или её часть — скажите администратору при оплате.</span>
               <span>• Баллы за детей копятся на вашем счёте.</span>
             </section>
             <section className="stack" style={{ gap: 4 }}>

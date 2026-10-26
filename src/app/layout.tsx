@@ -4,7 +4,6 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Салон красоты «Весна» — онлайн-запись',
   description: 'Запись к мастерам салона «Весна», Бишкек',
-  manifest: '/manifest.webmanifest',
   icons: { icon: '/icon-192.png?v=2', apple: '/icon-192.png?v=2' },
 };
 
@@ -14,6 +13,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru">
       <head>
+        {/* use-credentials: манифест получает cookie, чтобы установленное приложение узнало клиента */}
+        <link rel="manifest" href="/api/manifest?s=vesna" crossOrigin="use-credentials" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
+import AppBonus from './AppBonus';
 
 const ITEMS = [
   { path: '', label: 'Главная', icon: 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10' },
@@ -43,6 +45,7 @@ export default function ClientNav({ slug, inline }: { slug: string; inline?: boo
       </div>
     </nav>
   );
-  if (inline) return nav;
-  return (<><div aria-hidden style={{ height: 'calc(72px + env(safe-area-inset-bottom))' }} />{nav}</>);
+  const bonus = <Suspense><AppBonus slug={slug} /></Suspense>;
+  if (inline) return <>{bonus}{nav}</>;
+  return (<>{bonus}<div aria-hidden style={{ height: 'calc(72px + env(safe-area-inset-bottom))' }} />{nav}</>);
 }

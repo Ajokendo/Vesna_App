@@ -23,6 +23,8 @@ export const SalonSettings = z.object({
   bookingHorizonDays: z.number().int().min(1).max(120),
   minLeadMinutes: z.number().int().min(0).max(24 * 60),
   pointsPercent: z.number().int().min(0).max(50),
+  welcomeBonus: z.number().int().min(0).max(5000),
+  minRedeem: z.number().int().min(0).max(100000),
   defaultCommission: z.number().int().min(0).max(100),
   lateCallMinutes: z.number().int().min(1).max(60),
   noShowMinutes: z.number().int().min(5).max(120),

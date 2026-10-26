@@ -79,7 +79,8 @@ export async function myPoints(slug: string) {
     .where(and(eq(s.pointsLedger.clientId, me.client.id), eq(s.pointsLedger.salonId, me.salon.id)))
     .orderBy(desc(s.pointsLedger.createdAt)).limit(100);
   return {
-    name: me.client.name, balance: me.client.points, percent: me.salon.pointsPercent,
+    id: me.client.id, name: me.client.name, balance: me.client.points, percent: me.salon.pointsPercent,
+    minRedeem: me.salon.minRedeem, welcomeBonus: me.salon.welcomeBonus, welcomeGot: !!me.client.welcomeBonusAt,
     history: ledger.map((l) => ({ ...l, date: utcToZoned(l.createdAt, me.salon.timezone).date })),
   };
 }
@@ -90,4 +91,38 @@ export async function claimByVisit(slug: string, appointmentId: string, token: s
   const a = await db.query.appointments.findFirst({ where: eq(s.appointments.id, appointmentId), with: { salon: true } });
   if (!a || a.salon.slug !== slug) throw new Error('Запись не найдена');
   await rememberClient(slug, a.clientId);
+}
+
+/** Подписанный «ключ» клиента — тот же, что в cookie. Нужен iPhone: у приложения на экране «Домой» свои cookie */
+export async function meToken(clientId: string) {
+  return `${clientId}.${await signId(`me:${clientId}`)}`;
+}
+
+/** Установленное приложение открылось с ключом клиента в адресе — запоминаем его уже внутри приложения */
+export async function claimByToken(slug: string, token: string) {
+  const [id, sig] = token.split('.');
+  if (!id || !sig || !(await checkId(`me:${id}`, sig))) throw new Error('Ссылка недействительна');
+  const salon = await getSalon(slug);
+  const c = salon && await db.query.clients.findFirst({ where: and(eq(s.clients.id, id), eq(s.clients.salonId, salon.id)) });
+  if (!c) throw new Error('Клиент не найден');
+  await rememberClient(slug, c.id);
+}
+
+/**
+ * Подарок за установку приложения: один раз на клиента, когда приложение впервые открыто
+ * с экрана телефона (как установленное), а телефон уже знает клиента.
+ */
+export async function grantWelcomeBonus(slug: string) {
+  const me = await getMe(slug);
+  if (!me) return { granted: 0, reason: 'unknown' as const };
+  const bonus = me.salon.welcomeBonus;
+  if (bonus <= 0) return { granted: 0, reason: 'off' as const };
+  return db.transaction(async (tx) => {
+    const [c] = await tx.select().from(s.clients).where(eq(s.clients.id, me.client.id)).for('update');
+    if (!c || c.welcomeBonusAt) return { granted: 0, reason: 'already' as const };
+    const balance = c.points + bonus;
+    await tx.update(s.clients).set({ points: balance, welcomeBonusAt: new Date() }).where(eq(s.clients.id, c.id));
+    await tx.insert(s.pointsLedger).values({ salonId: me.salon.id, clientId: c.id, kind: 'ADJUST', delta: bonus, balanceAfter: balance, note: 'Подарок за установку приложения' });
+    return { granted: bonus, balance, reason: 'ok' as const };
+  });
 }

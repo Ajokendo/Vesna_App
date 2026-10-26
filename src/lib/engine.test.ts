@@ -178,3 +178,15 @@ describe('оплата баллами и доля мастера', () => {
     expect(() => calcPayment({ ...base, price: 300, points: 400, balance: 500 })).toThrow();
   });
 });
+
+describe('порог списания баллов', () => {
+  it('нельзя списать, пока на счёте меньше порога', () => {
+    expect(() => calcPayment({ price: 1000, points: 100, balance: 340, earnPercent: 5, masterPercent: 50, minRedeem: 500 })).toThrow(/не меньше 500/);
+  });
+  it('без списания порог не мешает, баллы начисляются', () => {
+    expect(calcPayment({ price: 1000, points: 0, balance: 340, earnPercent: 5, masterPercent: 50, minRedeem: 500 }).balanceAfter).toBe(390);
+  });
+  it('с порогом и выше — можно списать часть', () => {
+    expect(calcPayment({ price: 1000, points: 300, balance: 520, earnPercent: 5, masterPercent: 50, minRedeem: 500 }).cash).toBe(700);
+  });
+});

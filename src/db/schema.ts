@@ -51,6 +51,10 @@ export const salons = pgTable('salons', {
   noShowMinutes: integer('no_show_minutes').notNull().default(15),
   /** Сколько процентов от оплаченных деньгами возвращается клиенту баллами (1 балл = 1 сом) */
   pointsPercent: integer('points_percent').notNull().default(5),
+  /** Подарочные баллы за первую установку приложения на телефон (0 — не дарить) */
+  welcomeBonus: integer('welcome_bonus').notNull().default(100),
+  /** Баллы можно тратить, когда на счёте набралось не меньше стольких (0 — сразу) */
+  minRedeem: integer('min_redeem').notNull().default(500),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -175,6 +179,8 @@ export const clients = pgTable('clients', {
   gender: genderEnum('gender'),
   /** Клиент отписался от поздравлений и акций (сообщения о его записях приходят всегда) */
   promoOptOut: boolean('promo_opt_out').notNull().default(false),
+  /** Когда начислен подарок за установку приложения (один раз на клиента) */
+  welcomeBonusAt: timestamp('welcome_bonus_at', { withTimezone: true }),
   /** Для детей и родственников: чей это член семьи */
   guardianId: text('guardian_id'),
   /** Заметка администратора о клиенте (аллергия, любимый мастер, особенности) — клиент её не видит */

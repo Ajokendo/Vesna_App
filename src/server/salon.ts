@@ -223,6 +223,8 @@ export async function getJournal(salonSlug: string, date: DateStr) {
   // не пришли / отменены — не занимают время, показываются отдельным списком
   const dropped = allAppts.filter((a) => a.status === 'NO_SHOW' || a.status === 'CANCELLED');
   const appts = allAppts.filter((a) => a.status !== 'NO_SHOW' && a.status !== 'CANCELLED');
+  // ссылка на страницу записи клиента — для QR «подключить клиента к приложению»
+  const visitTokens = new Map(await Promise.all(appts.map(async (a) => [a.id, await signId(a.id)] as const)));
   const noShowCounts = new Map<string, number>();
   const visitorIds = [...new Set(appts.map((a) => a.clientId))];
   if (visitorIds.length) {
@@ -273,7 +275,7 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           const conflict = !!ex && (!day || minuteOf(a.startsAt) < day.start || minuteOf(a.endsAt) > day.end);
           return {
           id: a.id, start: utcToZoned(a.startsAt, salon.timezone).minute, end: utcToZoned(a.endsAt, salon.timezone).minute,
-          date, clientId: a.clientId,
+          date, clientId: a.clientId, visitToken: visitTokens.get(a.id) ?? '',
           client: a.client.name, service: a.service.name, category: a.service.category.name,
           addons: a.addons.map((x) => x.addon.name), price: a.price, priceMax: a.priceMax,
           status: a.status, source: a.source, paid: a.paid,
@@ -327,7 +329,7 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
     const master = await tx.query.staff.findFirst({ where: eq(s.staff.id, appt.staffId) });
     const masterPercent = master?.roles.includes('OWNER') ? 0 : (master?.commission ?? salon.defaultCommission);
 
-    const p = calcPayment({ price: input.price, points: input.points, balance: payer.points, earnPercent: salon.pointsPercent, masterPercent });
+    const p = calcPayment({ price: input.price, points: input.points, balance: payer.points, earnPercent: salon.pointsPercent, masterPercent, minRedeem: salon.minRedeem });
     if (p.cash === 0 && input.method !== 'POINTS') input.method = 'POINTS';
     if (p.cash > 0 && input.method === 'POINTS') throw new Error('Выберите, как оплачен остаток');
 

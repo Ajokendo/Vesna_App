@@ -5,7 +5,7 @@ import { Msg, inputSt, useSave } from './ui';
 
 type Salon = {
   name: string; tagline: string | null; city: string | null; address: string | null; phone: string | null; whatsapp: string | null; instagram: string | null;
-  bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
+  bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
 };
 
 const TEXT: { key: keyof Salon; label: string }[] = [
@@ -16,6 +16,8 @@ const NUM: { key: keyof Salon; label: string; hint: string }[] = [
   { key: 'bookingHorizonDays', label: 'Запись вперёд, дней', hint: 'на сколько дней вперёд клиенты видят свободное время' },
   { key: 'minLeadMinutes', label: 'Не позже чем за, минут', hint: 'минимум до начала визита для онлайн-записи' },
   { key: 'pointsPercent', label: 'Баллы, % от оплаты деньгами', hint: '0 — баллы не начисляются' },
+  { key: 'minRedeem', label: 'Тратить баллы можно от, баллов', hint: 'пока на счёте меньше — копятся; 0 — сразу' },
+  { key: 'welcomeBonus', label: 'Подарок за установку приложения, баллов', hint: 'один раз каждому клиенту; 0 — без подарка' },
   { key: 'defaultCommission', label: 'Доля мастера, %', hint: 'для мастеров без своей доли' },
   { key: 'lateCallMinutes', label: 'Опоздание: позвонить через, мин', hint: 'запись в журнале становится оранжевой' },
   { key: 'noShowMinutes', label: '«Не пришёл» через, мин', hint: 'запись красная, можно отдать время другому' },

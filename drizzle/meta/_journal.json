@@ -64,6 +64,20 @@
       "when": 1793024436558,
       "tag": "0008_client_note",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793026539542,
+      "tag": "0009_welcome_bonus",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793026686097,
+      "tag": "0010_min_redeem",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { dayMonth, dayMonthShort, hhmm, utcToZoned, weekdayFull } from '@/lib/ti
 import { formatPrice, formatSom } from '@/lib/pricing';
 import ClientNav from '@/app/ClientNav';
 import NotYou from '../NotYou';
+import InstallCard from '@/app/InstallCard';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Мои записи' };
@@ -21,6 +22,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
     <main className="app">
       <div className="page" style={{ gap: 16 }}>
         <h1 style={{ fontSize: 24 }}>Мои записи</h1>
+        <InstallCard bonus={salon.welcomeBonus} compact />
         {!data ? <NotYou slug={slug} whatsapp={salon.whatsapp} /> : (
           <>
             <section className="stack" style={{ gap: 10 }}>

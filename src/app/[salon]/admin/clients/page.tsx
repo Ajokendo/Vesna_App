@@ -4,6 +4,7 @@ import { getSalon } from '@/server/salon';
 import { searchClients } from '@/server/clients';
 import { dayMonthShort } from '@/lib/time';
 import ClientSearch from './ClientSearch';
+import QrScanner from './QrScanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export default async function Clients({ params, searchParams }: { params: Promis
     <main className="safe" style={{ padding: '24px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <h1 style={{ fontSize: 26 }}>Клиенты</h1>
       <ClientSearch q={q} />
+      <QrScanner slug={slug} />
       <span className="small muted">{q ? `Найдено: ${rows.length}${rows.length === 40 ? '+' : ''}` : 'Недавние клиенты — начните вводить номер или имя'}</span>
       <div className="stack" style={{ gap: 8 }}>
         {rows.map((c) => (

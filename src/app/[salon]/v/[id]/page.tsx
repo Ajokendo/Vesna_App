@@ -8,6 +8,7 @@ import PushOptIn from '@/app/PushOptIn';
 import ConfirmButton from './ConfirmButton';
 import LateButtons from './LateButtons';
 import ClaimMe from './ClaimMe';
+import InstallCard from '@/app/InstallCard';
 import ClientNav from '@/app/ClientNav';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
         </section>
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
+        <InstallCard bonus={a.client.welcomeBonusAt ? 0 : a.salon.welcomeBonus} />
         {!cancelled && !a.paid && <PushOptIn slug={slug} appointmentId={a.id} token={t} compact />}
         {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Написать в салон в WhatsApp</a>}
       </div>
