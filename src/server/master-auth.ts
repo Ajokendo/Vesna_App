@@ -19,7 +19,7 @@ export function hashPin(pin: string): string {
   return `${salt}:${scryptSync(pin, salt, 32).toString('hex')}`;
 }
 
-function checkPin(pin: string, stored: string): boolean {
+export function matchPin(pin: string, stored: string): boolean {
   const [salt, hash] = stored.split(':');
   if (!salt || !hash) return false;
   const a = scryptSync(pin, salt, 32);
@@ -42,7 +42,7 @@ export async function signInMaster(salonId: string, staffId: string, pin: string
     const left = Math.ceil((m.pinLockedUntil.getTime() - Date.now()) / 60000);
     return { ok: false, error: `Слишком много попыток. Попробуйте через ${left} мин.` };
   }
-  if (!checkPin(pin.trim(), m.pinHash)) {
+  if (!matchPin(pin.trim(), m.pinHash)) {
     const fails = m.pinFailed + 1;
     await db.update(s.staff).set(fails >= MAX_FAILS
       ? { pinFailed: 0, pinLockedUntil: new Date(Date.now() + LOCK_MIN * 60000) }

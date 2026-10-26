@@ -22,7 +22,7 @@ export default async function BookPage({ params, searchParams }: {
       address={`${salon.city}, ${salon.address}`}
       today={today}
       horizonDays={salon.bookingHorizonDays}
-      initialHall={hall === 'WOMEN' ? 'WOMEN' : 'MEN'}
+      initialHall={hall === 'WOMEN' || hall === 'MEN' ? hall : catalog.categories.some((c) => c.hall === 'MEN') ? 'MEN' : 'WOMEN'}
       catalog={catalog}
       welcomeBonus={salon.welcomeBonus}
     />

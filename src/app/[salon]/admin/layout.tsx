@@ -2,13 +2,14 @@ import BottomBar from '@/app/BottomBar';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import AdminNav from './AdminNav';
-import { isAdmin, signInWithPin } from '@/server/admin-auth';
+import AdminLogin, { AdminSetup } from './AdminLogin';
+import { completeSetup, isAdmin, needsSetup, signInWithPin } from '@/server/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ salon: string }> }) {
   const { salon } = await params;
-  if (await isAdmin()) {
+  if (await isAdmin(salon)) {
     return (
       <>
         {children}
@@ -19,20 +20,26 @@ export default async function AdminLayout({ children, params }: { children: Reac
     );
   }
 
-  async function login(formData: FormData) {
+  async function login(_prev: string | null, formData: FormData): Promise<string | null> {
     'use server';
-    const ok = await signInWithPin(String(formData.get('pin') ?? ''));
-    redirect(`/${salon}/admin${ok ? '' : '?wrong=1'}`);
+    const res = await signInWithPin(salon, String(formData.get('pin') ?? ''));
+    if (!res.ok) return res.error;
+    redirect(`/${salon}/admin`);
   }
 
+  async function setup(_prev: string | null, formData: FormData): Promise<string | null> {
+    'use server';
+    const pin = String(formData.get('pin') ?? '').trim();
+    if (pin !== String(formData.get('pin2') ?? '').trim()) return 'PIN-коды не совпадают';
+    const res = await completeSetup(salon, String(formData.get('code') ?? ''), pin);
+    if (!res.ok) return res.error;
+    redirect(`/${salon}/admin/settings`);
+  }
+
+  const firstTime = await needsSetup(salon);
   return (
     <main className="app">
-      <form action={login} className="page" style={{ justifyContent: 'center', maxWidth: 360, margin: '0 auto', width: '100%' }}>
-        <h1 style={{ fontSize: 24 }}>Вход для сотрудников</h1>
-        <label className="field">PIN-код<input name="pin" type="password" inputMode="numeric" autoComplete="current-password" required /></label>
-        <button type="submit" className="btn primary block">Войти</button>
-        {!process.env.ADMIN_PIN && <div className="note">PIN не задан: укажите ADMIN_PIN в настройках сервера.</div>}
-      </form>
+      {firstTime ? <AdminSetup action={setup} /> : <AdminLogin action={login} />}
       <BottomBar items={[{ label: 'Главная', icon: 'home', href: `/${salon}` }]} />
     </main>
   );

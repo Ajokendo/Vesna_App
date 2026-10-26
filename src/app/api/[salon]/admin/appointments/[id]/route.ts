@@ -7,7 +7,7 @@ type Ctx = { params: Promise<{ salon: string; id: string }> };
 
 /** Передать запись другому мастеру ({ staffId }) или изменить время окончания ({ endMinute }) */
 export async function PATCH(req: NextRequest, ctx: Ctx) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const parsed = z.union([
     z.object({ staffId: z.string().min(1) }),
     z.object({ endMinute: z.number().int().min(0).max(24 * 60) }),
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 /** Отменить запись */
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const { salon, id } = await ctx.params;
   try {
     await cancelAppointment(salon, id);

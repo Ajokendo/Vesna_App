@@ -15,7 +15,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const { salon } = await ctx.params;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Проверьте данные' }, { status: 400 });

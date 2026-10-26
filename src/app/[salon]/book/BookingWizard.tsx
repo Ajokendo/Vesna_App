@@ -48,6 +48,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
 
   const childAge = forChild && child.birthDate ? ageOn(child.birthDate, today) : null;
 
+  const bothHalls = catalog.categories.some((c) => c.hall === 'MEN') && catalog.categories.some((c) => c.hall === 'WOMEN');
   const categories = useMemo(() => catalog.categories.filter((c) => c.hall === hall && (forChild ? c.forKids : !c.forKids)), [catalog, hall, forChild]);
 
   const items = useMemo(() => categories.map((c) => ({
@@ -184,12 +185,14 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
               )}
             </div>
 
-            <div className="tabs" role="group" aria-label="Зал">
-              <button type="button" aria-pressed={hall === 'MEN'} onClick={() => { setHall('MEN'); resetFrom('service'); }}>Мужской зал</button>
-              <button type="button" aria-pressed={hall === 'WOMEN'} onClick={() => { setHall('WOMEN'); resetFrom('service'); }}>Женский зал</button>
-            </div>
+            {bothHalls && (
+              <div className="tabs" role="group" aria-label="Зал">
+                <button type="button" aria-pressed={hall === 'MEN'} onClick={() => { setHall('MEN'); resetFrom('service'); }}>Мужской зал</button>
+                <button type="button" aria-pressed={hall === 'WOMEN'} onClick={() => { setHall('WOMEN'); resetFrom('service'); }}>Женский зал</button>
+              </div>
+            )}
 
-            {hall === 'WOMEN' && !forChild && (
+            {!forChild && catalog.categories.some((c) => c.hall === hall && c.byLength) && (
               <div className="stack">
                 <strong>Длина волос</strong>
                 <div className="grid4">
@@ -250,7 +253,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
               </section>
               );
             })}
-            {category && /Окраш/.test(category.name) && hall === 'WOMEN' && <div className="note">Цена за работу. Краска оплачивается отдельно, по расходу.</div>}
+            {category && /краск/i.test(category.note ?? '') && <div className="note">Цена за работу. Краска оплачивается отдельно, по расходу.</div>}
           </>
         )}
 

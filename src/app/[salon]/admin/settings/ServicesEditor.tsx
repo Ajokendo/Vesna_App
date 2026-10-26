@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ManageData } from '@/server/manage';
 import { Msg, inputSt, num, useSave } from './ui';
+import { GROUPS, categoryGroup } from '@/lib/groups';
 
 type Cat = ManageData['categories'][number];
 type Svc = Cat['services'][number];
@@ -52,7 +53,7 @@ function CategoryCard({ slug, c }: { slug: string; c: Cat }) {
 }
 
 function CategoryForm({ slug, c, onDone }: { slug: string; c?: Cat; onDone: () => void }) {
-  const [v, setV] = useState({ name: c?.name ?? '', hall: c?.hall ?? 'WOMEN', note: c?.note ?? '', byLength: c?.byLength ?? false, forKids: c?.forKids ?? false, active: c?.active ?? true });
+  const [v, setV] = useState({ journalGroup: c?.journalGroup ?? '', name: c?.name ?? '', hall: c?.hall ?? 'WOMEN', note: c?.note ?? '', byLength: c?.byLength ?? false, forKids: c?.forKids ?? false, active: c?.active ?? true });
   const { busy, msg, save } = useSave(slug);
   return (
     <div className="stack" style={{ gap: 10, background: 'var(--ground)', borderRadius: 12, padding: 12 }}>
@@ -64,6 +65,12 @@ function CategoryForm({ slug, c, onDone }: { slug: string; c?: Cat; onDone: () =
           </select>
         </label>
       </div>
+      <label className="field">Вкладка журнала
+        <select value={v.journalGroup} onChange={(e) => setV({ ...v, journalGroup: e.target.value })} style={inputSt}>
+          <option value="">Автоматически — {GROUPS.find((g) => g.id === categoryGroup(v.name))?.name}</option>
+          {GROUPS.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+        </select>
+      </label>
       <label className="field">Пояснение для клиентов (необязательно)<input value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} style={inputSt} placeholder="например: краска оплачивается отдельно" /></label>
       <div className="row" style={{ flexWrap: 'wrap', gap: 16 }}>
         <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={v.byLength} disabled={!!c} onChange={(e) => setV({ ...v, byLength: e.target.checked })} /> Цена зависит от длины волос{c ? ' (меняется только при создании)' : ''}</label>
@@ -71,7 +78,7 @@ function CategoryForm({ slug, c, onDone }: { slug: string; c?: Cat; onDone: () =
         <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={!v.active} onChange={(e) => setV({ ...v, active: !e.target.checked })} /> Скрыть от клиентов</label>
       </div>
       <div className="row">
-        <button type="button" className="btn primary" style={{ minHeight: 40 }} disabled={busy} onClick={async () => { if (await save('category', { ...v, id: c?.id, note: v.note || null })) onDone(); }}>{busy ? '…' : 'Сохранить раздел'}</button>
+        <button type="button" className="btn primary" style={{ minHeight: 40 }} disabled={busy} onClick={async () => { if (await save('category', { ...v, id: c?.id, note: v.note || null, journalGroup: v.journalGroup || null })) onDone(); }}>{busy ? '…' : 'Сохранить раздел'}</button>
         <button type="button" className="btn" style={{ minHeight: 40 }} onClick={onDone}>Отмена</button>
         <Msg msg={msg} />
       </div>

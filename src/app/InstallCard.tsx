@@ -24,7 +24,7 @@ export default function InstallCard({ bonus, compact }: { bonus: number; compact
 
   if (!show) return null;
   if (done) {
-    return <div className="card small" style={{ borderColor: 'var(--gold)' }}>Готово! Откройте «Весну» с экрана телефона{bonus ? ` — там вас ждут ${bonus} баллов` : ''}.</div>;
+    return <div className="card small" style={{ borderColor: 'var(--gold)' }}>Готово! Откройте приложение салона с экрана телефона{bonus ? ` — там вас ждут ${bonus} баллов` : ''}.</div>;
   }
   return (
     <section className="card stack" style={{ gap: 8, borderColor: 'var(--gold)', background: 'linear-gradient(160deg,#fff,#f7f1e3)' }}>

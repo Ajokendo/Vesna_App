@@ -62,7 +62,7 @@ export default function PushOptIn({ slug, appointmentId, token, compact }: { slu
   if (state === 'ios-install') return (
     <div style={box} className="small">
       <strong>Хотите напоминания о записи?</strong>
-      <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>На iPhone: нажмите «Поделиться» внизу Safari → «На экран Домой», откройте «Весну» с экрана и нажмите «Получать напоминания».</div>
+      <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>На iPhone: нажмите «Поделиться» внизу Safari → «На экран Домой», откройте приложение салона с экрана и нажмите «Получать напоминания».</div>
     </div>
   );
   if (state === 'unsupported') return null;

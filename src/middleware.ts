@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Демо-доступ: после этого момента все страницы и API закрываются.
-// Переопределяется переменной DEMO_UNTIL (ISO-дата); DEMO_UNTIL=off — без ограничения.
-const DEFAULT_UNTIL = '2026-10-27T22:00:00+06:00';
+// Общий выключатель всего сайта: DEMO_UNTIL (ISO-дата) в настройках сервера. По умолчанию выключен —
+// демо-срок у каждого салона свой (salons.demo_until).
+const DEFAULT_UNTIL = 'off';
 
 const page = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Демо-период завершён</title>

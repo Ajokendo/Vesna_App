@@ -29,7 +29,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
           {tel && <a className="row" style={{ ...row, borderTop: '1px solid var(--line)' }} href={`tel:+${tel}`}><strong>Позвонить</strong><span className="muted">{salon.phone}</span></a>}
           {salon.instagram && <a className="row" style={{ ...row, borderTop: '1px solid var(--line)' }} href={`https://instagram.com/${salon.instagram.replace(/^@/, '')}`} target="_blank" rel="noreferrer"><strong>Instagram</strong><span className="muted">@{salon.instagram.replace(/^@/, '')}</span></a>}
           <div className="row" style={{ ...row, borderTop: '1px solid var(--line)', minHeight: 'auto', padding: '12px 16px', alignItems: 'flex-start', gap: 12 }}>
-            <strong>Адрес</strong><span className="muted" style={{ textAlign: 'right' }}>{[salon.city, salon.address].filter(Boolean).join(', ')}<br />с 09:00 до 20:00</span>
+            <strong>Адрес</strong><span className="muted" style={{ textAlign: 'right' }}>{[salon.city, salon.address].filter(Boolean).join(', ')}{salon.hoursText ? <><br />{salon.hoursText}</> : null}</span>
           </div>
         </section>
 

@@ -42,8 +42,11 @@ export default async function Journal({ params, searchParams }: {
   if (!salon) notFound();
   const now = utcToZoned(new Date(), salon.timezone);
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : now.date;
-  const group = GROUPS.find((g) => g.id === sp.group)?.id ?? 'hair';
+
   const [{ columns, dropped }, catalog] = await Promise.all([getJournal(slug, date), getCatalog(salon.id)]);
+  // вкладки — только те разделы, где есть мастера (у салона без ногтевого сервиса не будет «Ногтей»)
+  const groups = GROUPS.filter((g) => columns.some((c) => c.group === g.id));
+  const group = groups.find((g) => g.id === sp.group)?.id ?? groups[0]?.id ?? 'hair';
   const cols = columns.filter((c) => c.group === group);
 
   const START = Math.min(9 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.start));
@@ -58,14 +61,16 @@ export default async function Journal({ params, searchParams }: {
 
       <DayStrip salon={salon} date={date} today={now.date} href={(d) => link(d)} note={`записей: ${total} · под датой — число записей в этот день`} />
 
+      {groups.length > 1 && (
       <div className="tabs" style={{ width: '100%', maxWidth: 640 }}>
-        {GROUPS.map((g) => (
+        {groups.map((g) => (
           <Link key={g.id} href={link(date, g.id)} aria-current={g.id === group ? 'page' : undefined}
             style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4px 6px', fontSize: 14, lineHeight: 1.2, borderRadius: 12, fontWeight: 800, textDecoration: 'none', color: g.id === group ? 'var(--ink)' : 'var(--muted)', background: g.id === group ? '#fff' : 'transparent' }}>
             {g.name}
           </Link>
         ))}
       </div>
+      )}
 
       <ReminderTicker />
       <NewAppointment key={group} slug={slug} date={date} catalog={catalog} group={group} />
@@ -75,6 +80,13 @@ export default async function Journal({ params, searchParams }: {
         id: i.id, start: i.start, end: i.end, client: i.client, phone: i.phone, service: i.service, master: c.name, alternatives: i.alternatives,
       })))} />
 
+      {!columns.length && (
+        <div className="card stack" style={{ gap: 8, borderColor: 'var(--gold)' }}>
+          <strong>Добавьте мастеров</strong>
+          <span className="small muted" style={{ lineHeight: 1.5 }}>Журнал появится, когда в салоне будут мастера с графиком. Это делается в «Настройках»: логотип и цвет — во вкладке «Салон», цены — «Услуги», мастера, фото и графики — «Мастера».</span>
+          <Link href={`/${slug}/admin/settings?tab=staff`} className="btn primary" style={{ alignSelf: 'flex-start' }}>Добавить мастеров</Link>
+        </div>
+      )}
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <div style={{ minWidth: 220 * cols.length + 64, display: 'grid', gridTemplateColumns: `64px repeat(${cols.length}, minmax(220px, 1fr))` }}>
           {/* колонка времени «заморожена» слева: при прокрутке вбок остаётся на месте */}

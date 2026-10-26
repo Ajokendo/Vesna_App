@@ -12,8 +12,11 @@ import { resolveService, quote } from '@/lib/pricing';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { categoryGroup } from '@/lib/groups';
 
+/** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
 export async function getSalon(slug: string) {
-  return db.query.salons.findFirst({ where: eq(s.salons.slug, slug) });
+  const salon = await db.query.salons.findFirst({ where: eq(s.salons.slug, slug) });
+  if (salon?.demoUntil && salon.demoUntil.getTime() < Date.now()) return undefined;
+  return salon;
 }
 
 /** Каталог для клиента: категории с услугами и доп. опциями, мастера с графиками */
@@ -34,7 +37,7 @@ export async function getCatalog(salonId: string) {
   });
   return {
     categories: categories.map((c) => ({
-      id: c.id, hall: c.hall, name: c.name, note: c.note, byLength: c.byLength, forKids: c.forKids,
+      id: c.id, hall: c.hall, name: c.name, note: c.note, byLength: c.byLength, forKids: c.forKids, journalGroup: c.journalGroup,
       staffIds: c.staff.map((x) => x.staffId),
       services: c.services.map((v) => ({
         id: v.id, name: v.name, price: v.price, priceMax: v.priceMax, durationMin: v.durationMin, durationLabel: v.durationLabel,
@@ -257,9 +260,8 @@ export async function getJournal(salonSlug: string, date: DateStr) {
     columns: masters.map((m) => {
       const ex = m.exceptions.find((e) => String(e.date) === date);
       const day = days.get(m.id) ?? null;
-      const cats = m.categories.map((c) => c.category.name);
-      const groups = cats.map(categoryGroup);
-      const group = groups.includes('hair') ? 'hair' : groups.includes('nails') ? 'nails' : 'brows';
+      const groups = m.categories.map((c) => categoryGroup(c.category));
+      const group = (['hair', 'nails', 'brows', 'face'] as const).find((g) => groups.includes(g)) ?? 'brows';
       return {
         id: m.id, name: m.name, photoUrl: m.photoUrl, group,
         masterPercent: m.roles.includes('OWNER') ? 0 : (m.commission ?? salon.defaultCommission),

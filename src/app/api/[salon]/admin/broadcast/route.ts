@@ -14,7 +14,7 @@ const Kind = z.enum(['SERVICE', 'PROMO']);
 
 /** Сколько клиентов получат рассылку */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const q = req.nextUrl.searchParams;
   const a = AudienceSchema.safeParse({ type: q.get('type'), date: q.get('date') ?? undefined, staffId: q.get('staffId') ?? undefined });
   const k = Kind.safeParse(q.get('kind'));
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ salon: stri
 }
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const parsed = z.object({
     title: z.string().trim().min(2).max(60), body: z.string().trim().min(2).max(300), kind: Kind, audience: AudienceSchema,
   }).safeParse(await req.json().catch(() => null));

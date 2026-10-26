@@ -63,7 +63,7 @@ export default function NewAppointment({ slug, date, catalog, group }: { slug: s
       <label className="field">Услуга
         <select style={selectStyle} value={serviceId} onChange={(e) => { setServiceId(e.target.value); setStaffId(''); }}>
           <option value="">Выберите услугу</option>
-          {catalog.categories.filter((c) => !group || categoryGroup(c.name) === group).map((c) => (
+          {catalog.categories.filter((c) => !group || categoryGroup(c) === group).map((c) => (
             <optgroup key={c.id} label={`${c.hall === 'MEN' ? 'Муж.' : 'Жен.'} · ${c.name}`}>
               {c.services.map((v) => {
                 const r = resolveService(v, c.byLength ? length : null);

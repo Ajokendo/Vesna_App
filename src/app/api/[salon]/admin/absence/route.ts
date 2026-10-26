@@ -11,7 +11,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Проверьте даты и время' }, { status: 400 });
   try {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: str
 }
 
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const staffId = req.nextUrl.searchParams.get('staffId') ?? '';
   const date = req.nextUrl.searchParams.get('date') ?? '';
   if (!staffId || !D.safeParse(date).success) return NextResponse.json({ error: 'Не указан мастер или дата' }, { status: 400 });

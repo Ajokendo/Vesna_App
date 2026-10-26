@@ -11,16 +11,18 @@ export async function GET(req: NextRequest) {
   const me = await getMe(slug).catch(() => null);
   const start = me ? `/${slug}?me=${encodeURIComponent(await meToken(me.client.id))}` : `/${slug}`;
   const manifest = {
-    name: salon ? `Салон красоты «${salon.name}»` : 'Салон красоты',
+    name: salon ? `${salon.tagline ?? 'Салон'} «${salon.name}»` : 'Салон красоты',
     short_name: salon?.name ?? 'Салон',
     id: `/${slug}`,
     start_url: start,
     scope: '/',
     display: 'standalone',
     background_color: '#F6F6F1',
-    theme_color: '#4E6B45',
+    theme_color: salon?.accentColor ?? '#4E6B45',
     lang: 'ru',
-    icons: [
+    icons: salon?.logoData ? [
+      { src: `${salon.logoUrl ?? `/api/${slug}/logo`}`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+    ] : [
       { src: '/icon-192.png?v=2', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icon-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],

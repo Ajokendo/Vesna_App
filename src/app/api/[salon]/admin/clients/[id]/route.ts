@@ -4,7 +4,7 @@ import { ClientEdit, updateClient } from '@/server/clients';
 
 /** Изменить имя, телефон, дату рождения или заметку клиента */
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ salon: string; id: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const parsed = ClientEdit.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     const f = String(parsed.error.issues[0]?.path.at(-1) ?? '');

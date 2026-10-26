@@ -11,7 +11,7 @@ const Body = z.discriminatedUnion('kind', [
 ]);
 
 const LABEL: Record<string, string> = {
-  name: 'Название', tagline: 'Описание', city: 'Город', address: 'Адрес', phone: 'Телефон', whatsapp: 'WhatsApp', instagram: 'Instagram',
+  name: 'Название', accentColor: 'Цвет', hoursText: 'Часы работы', menHallNote: 'Мужской зал', womenHallNote: 'Женский зал', logo: 'Логотип', tagline: 'Описание', city: 'Город', address: 'Адрес', phone: 'Телефон', whatsapp: 'WhatsApp', instagram: 'Instagram',
   bookingHorizonDays: 'На сколько дней вперёд запись', minLeadMinutes: 'Минимум до записи', pointsPercent: 'Процент баллов',
   defaultCommission: 'Доля мастера', lateCallMinutes: 'Звонить через', noShowMinutes: '«Не пришёл» через',
   price: 'Цена', priceMax: 'Цена «до»', durationMin: 'Длительность (от 5 до 600 мин)', dur: 'Минут', durationLabel: 'Как писать время',
@@ -21,7 +21,7 @@ const LABEL: Record<string, string> = {
 
 /** Сохранить настройки салона, услугу или раздел */
 export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+  if (!(await isAdmin((await ctx.params).salon))) return NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     const i = parsed.error.issues[0];

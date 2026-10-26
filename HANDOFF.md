@@ -30,3 +30,17 @@ WhatsApp-уведомления · кабинет хозяйки (выручка
 
 ## Локальная разработка
 PostgreSQL 16 на порту 5433, `.env`: DATABASE_URL, ADMIN_PIN. `npm i`, `npm run db:migrate`, `npm run db:seed -- --demo`, `npm run dev`, `npm test`.
+
+## Несколько салонов (с 26.10.2026)
+
+- Каждый салон живёт по своему адресу: `/<slug>` (клиенты), `/<slug>/admin`, `/<slug>/master`.
+- Свой PIN администратора (`salons.admin_pin_hash`, cookie `adm_<slug>`), своя тема (`accent_color`), логотип (`logo_data` → `/api/<slug>/logo`),
+  тексты главной (`hours_text`, `men_hall_note`, `women_hall_note`), манифест `/api/manifest?s=<slug>`, вкладки журнала (`service_categories.journal_group`).
+- Демо-срок — `demoUntil` в `src/db/salons.config.ts` (применяется при каждом деплое, `src/db/provision.ts`). Продлить = поменять дату и задеплоить.
+- Старый общий `ADMIN_PIN` работает только для салона без своего PIN (Весна): при первом входе он сохраняется как PIN салона.
+
+### Как добавить салон
+1. `npx tsx src/db/setup-code.ts` → код для владельца и `setupCodeHash`.
+2. В `src/db/salons.config.ts` добавить `{ slug, demoUntil, create: { name, city, address, whatsapp, accentColor, hoursText, setupCodeHash, template: 'vesna' } }`.
+3. Закоммитить и запушить → при деплое салон создастся с прайсом из образца.
+4. Владелец открывает `/<slug>/admin`, вводит код настройки и придумывает PIN, затем в «Настройках»: логотип, цвет, цены, мастера с фото и графиками, PIN мастерам.

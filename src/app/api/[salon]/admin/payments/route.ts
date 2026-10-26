@@ -10,12 +10,12 @@ const Pay = z.object({
   method: z.enum(['CASH', 'CARD', 'QR', 'POINTS']),
 });
 
-async function guard() {
-  return (await isAdmin()) ? null : NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
+async function guard(ctx: { params: Promise<{ salon: string }> }) {
+  return (await isAdmin((await ctx.params).salon)) ? null : NextResponse.json({ error: 'Нужен вход для сотрудников' }, { status: 401 });
 }
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  const denied = await guard(); if (denied) return denied;
+  const denied = await guard(ctx); if (denied) return denied;
   const parsed = Pay.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Проверьте данные оплаты' }, { status: 400 });
   try {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: str
 }
 
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
-  const denied = await guard(); if (denied) return denied;
+  const denied = await guard(ctx); if (denied) return denied;
   const id = req.nextUrl.searchParams.get('appointmentId');
   if (!id) return NextResponse.json({ error: 'Не указана запись' }, { status: 400 });
   try {

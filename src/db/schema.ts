@@ -55,6 +55,20 @@ export const salons = pgTable('salons', {
   welcomeBonus: integer('welcome_bonus').notNull().default(100),
   /** Баллы можно тратить, когда на счёте набралось не меньше стольких (0 — сразу) */
   minRedeem: integer('min_redeem').notNull().default(500),
+  /** Логотип, загруженный в настройках (квадрат PNG, data:…) — отдаётся по /api/<салон>/logo */
+  logoData: text('logo_data'),
+  /** Тексты главной страницы */
+  hoursText: text('hours_text'),
+  menHallNote: text('men_hall_note'),
+  womenHallNote: text('women_hall_note'),
+  /** PIN администратора салона (хеш). Пусто — старый общий PIN из настроек сервера (только для первого салона) */
+  adminPinHash: text('admin_pin_hash'),
+  /** Код первичной настройки (хеш): с ним владелец нового салона задаёт PIN администратора */
+  setupCodeHash: text('setup_code_hash'),
+  adminPinFailed: integer('admin_pin_failed').notNull().default(0),
+  adminPinLockedUntil: timestamp('admin_pin_locked_until', { withTimezone: true }),
+  /** Демо-доступ: после этого момента приложение салона закрыто (пусто — без ограничения) */
+  demoUntil: timestamp('demo_until', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -116,6 +130,8 @@ export const serviceCategories = pgTable('service_categories', {
   byLength: boolean('by_length').notNull().default(false),
   /** Детская категория: вариант выбирается по возрасту ребёнка */
   forKids: boolean('for_kids').notNull().default(false),
+  /** Вкладка журнала: hair — волосы, nails — ногти, brows — брови и шугаринг, face — косметология (пусто — по названию) */
+  journalGroup: text('journal_group'),
   sortOrder: integer('sort_order').notNull().default(0),
   active: boolean('active').notNull().default(true),
 }, (t) => [index('category_salon_idx').on(t.salonId)]);

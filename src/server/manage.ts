@@ -28,12 +28,22 @@ export const SalonSettings = z.object({
   defaultCommission: z.number().int().min(0).max(100),
   lateCallMinutes: z.number().int().min(1).max(60),
   noShowMinutes: z.number().int().min(5).max(120),
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  hoursText: z.string().trim().max(120).nullable(),
+  menHallNote: z.string().trim().max(80).nullable(),
+  womenHallNote: z.string().trim().max(80).nullable(),
+  /** undefined — не менять; null — убрать; строка — новый логотип (квадрат PNG, уменьшен на телефоне) */
+  logo: z.string().startsWith('data:image/').max(700_000).nullable().optional(),
 });
 
 export async function updateSalonSettings(slug: string, data: z.infer<typeof SalonSettings>) {
   const salon = await salonOf(slug);
   if (data.noShowMinutes <= data.lateCallMinutes) throw new Error('«Не пришёл» должно быть позже, чем «позвонить»');
-  await db.update(s.salons).set(data).where(eq(s.salons.id, salon.id));
+  const { logo, ...rest } = data;
+  const logoPatch = logo === undefined ? {}
+    : logo ? { logoData: logo, logoUrl: `/api/${slug}/logo?v=${Date.now().toString(36)}` }
+      : { logoData: null, logoUrl: null };
+  await db.update(s.salons).set({ ...rest, ...logoPatch }).where(eq(s.salons.id, salon.id));
 }
 
 // ——— услуги ———
@@ -95,6 +105,7 @@ export const CategoryInput = z.object({
   byLength: z.boolean(),
   forKids: z.boolean(),
   active: z.boolean(),
+  journalGroup: z.enum(['hair', 'nails', 'brows', 'face']).nullable().optional(),
 });
 
 export async function saveCategory(slug: string, input: z.infer<typeof CategoryInput>) {
@@ -103,13 +114,13 @@ export async function saveCategory(slug: string, input: z.infer<typeof CategoryI
     const cat = await db.query.serviceCategories.findFirst({ where: and(eq(s.serviceCategories.id, input.id), eq(s.serviceCategories.salonId, salon.id)) });
     if (!cat) throw new Error('Раздел не найден');
     // «по длине волос» меняется только у нового раздела — иначе сломаются цены существующих услуг
-    await db.update(s.serviceCategories).set({ name: input.name, hall: input.hall, note: input.note || null, forKids: input.forKids, active: input.active })
+    await db.update(s.serviceCategories).set({ name: input.name, hall: input.hall, note: input.note || null, forKids: input.forKids, active: input.active, journalGroup: input.journalGroup ?? null })
       .where(eq(s.serviceCategories.id, cat.id));
     return { id: cat.id };
   }
   const all = await db.query.serviceCategories.findMany({ where: eq(s.serviceCategories.salonId, salon.id) });
   const [row] = await db.insert(s.serviceCategories).values({
-    salonId: salon.id, name: input.name, hall: input.hall, note: input.note || null, byLength: input.byLength, forKids: input.forKids,
+    salonId: salon.id, name: input.name, hall: input.hall, note: input.note || null, byLength: input.byLength, forKids: input.forKids, journalGroup: input.journalGroup ?? null,
     active: input.active, sortOrder: Math.max(-1, ...all.map((c) => c.sortOrder)) + 1,
   }).returning();
   return { id: row.id };
@@ -202,9 +213,10 @@ export async function getManageData(slug: string) {
     where: eq(s.staff.salonId, salon.id), orderBy: asc(s.staff.sortOrder), with: { schedule: true, categories: true },
   });
   return {
-    salon,
+    // логотип (большая картинка) в браузер не передаём — он доступен по ссылке logoUrl
+    salon: { ...salon, logoData: null, adminPinHash: null },
     categories: categories.map((c) => ({
-      id: c.id, name: c.name, hall: c.hall, note: c.note, byLength: c.byLength, forKids: c.forKids, active: c.active,
+      id: c.id, name: c.name, hall: c.hall, note: c.note, byLength: c.byLength, forKids: c.forKids, active: c.active, journalGroup: c.journalGroup,
       services: c.services.map((v) => ({
         id: v.id, name: v.name, price: v.price, priceMax: v.priceMax, durationMin: v.durationMin, durationLabel: v.durationLabel,
         pauseAfterMin: v.pauseAfterMin, pauseMin: v.pauseMin, byLength: v.byLength, ageMin: v.ageMin, ageMax: v.ageMax, active: v.active,

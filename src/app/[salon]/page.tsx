@@ -9,7 +9,8 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
   const { salon: slug } = await params;
   const salon = await getSalon(slug);
   if (!salon) notFound();
-  const { staff } = await getCatalog(salon.id);
+  const { staff, categories } = await getCatalog(salon.id);
+  const halls = (['MEN', 'WOMEN'] as const).filter((h) => categories.some((c) => c.hall === h));
 
   return (
     // Экран фиксированной высоты: страница не «ездит» пальцем; если на маленьком телефоне что-то не влезает,
@@ -20,7 +21,9 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           {salon.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={salon.logoUrl} alt={`Логотип салона «${salon.name}»`} width={52} height={52} style={{ borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--ground)' }} />
-          ) : null}
+          ) : (
+            <span aria-hidden style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 700 }}>{salon.name[0]}</span>
+          )}
           <div className="grow">
             <h1 style={{ fontSize: 22 }}>{salon.name}</h1>
             <div className="muted small">{salon.tagline} · {salon.city}</div>
@@ -31,17 +34,19 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           <h2 style={{ fontSize: 22 }}>Запишитесь онлайн</h2>
           <p className="muted" style={{ margin: 0 }}>Выберите услугу, мастера и удобное время — без звонков.</p>
           <div className="grid2">
-            <Link href={`/${slug}/book?hall=MEN`} className="card" style={{ background: '#e4ebdd', textDecoration: 'none', color: 'inherit', minHeight: 'clamp(92px, 16dvh, 170px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-              <strong style={{ fontSize: 17 }}>Мужской зал</strong>
-              <span className="small muted">Стрижки, борода, детские</span>
-            </Link>
-            <Link href={`/${slug}/book?hall=WOMEN`} className="card" style={{ background: 'var(--cream)', textDecoration: 'none', color: 'inherit', minHeight: 'clamp(92px, 16dvh, 170px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-              <strong style={{ fontSize: 17 }}>Женский зал</strong>
-              <span className="small muted">Волосы, ногти, брови, шугаринг</span>
-            </Link>
+            {halls.map((h) => (
+              <Link key={h} href={`/${slug}/book?hall=${h}`} className="card" style={{
+                background: h === 'MEN' ? 'var(--accent-soft)' : 'var(--cream)', textDecoration: 'none', color: 'inherit', minHeight: 'clamp(92px, 16dvh, 170px)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gridColumn: halls.length === 1 ? '1 / -1' : undefined,
+              }}>
+                <strong style={{ fontSize: 17 }}>{halls.length === 1 ? 'Выбрать услугу' : h === 'MEN' ? 'Мужской зал' : 'Женский зал'}</strong>
+                <span className="small muted">{(h === 'MEN' ? salon.menHallNote : salon.womenHallNote) ?? categories.filter((c) => c.hall === h).slice(0, 3).map((c) => c.name.toLowerCase()).join(', ')}</span>
+              </Link>
+            ))}
           </div>
         </section>
 
+        {staff.length > 0 && (
         <section className="stack">
           <h2 style={{ fontSize: 18 }}>Наши мастера</h2>
           <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
@@ -57,11 +62,12 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             ))}
           </div>
         </section>
+        )}
 
         <section className="card row" style={{ borderColor: 'var(--gold)', gap: 12, padding: '12px 14px', flexWrap: 'wrap' }}>
           <div className="stack small" style={{ gap: 2, flex: '1 1 180px' }}>
             <strong style={{ fontSize: 15 }}>{salon.city}, {salon.address}</strong>
-            <span className="muted">С 09:00 до 20:00, у каждого мастера свой график</span>
+            {salon.hoursText && <span className="muted">{salon.hoursText}</span>}
           </div>
           {salon.whatsapp ? (
             <a className="btn" style={{ minHeight: 42, padding: '0 14px', fontSize: 14 }} href={`https://wa.me/${salon.whatsapp.replace(/\D/g, '')}`}>WhatsApp</a>
