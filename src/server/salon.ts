@@ -2,7 +2,7 @@ import 'server-only';
 import { and, asc, eq, gte, inArray, lt, ne } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import type { HairLength } from '@/db/schema';
-import { workingHours, scheduleLabel } from '@/lib/schedule';
+import { workingHours, workDaysLabel } from '@/lib/schedule';
 import { availableStarts, busyParts, fits } from '@/lib/slots';
 import { calcPayment } from '@/lib/payment';
 import { resolveService, quote } from '@/lib/pricing';
@@ -40,7 +40,7 @@ export async function getCatalog(salonId: string) {
     })),
     staff: staff.filter((m) => m.roles.includes('MASTER')).map((m) => ({
       id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, isOwner: m.roles.includes('OWNER'),
-      scheduleLabel: scheduleLabel(m.schedule ?? null),
+      scheduleLabel: workDaysLabel(m.schedule ?? null),
       categoryIds: m.categories.map((c) => c.categoryId),
     })),
   };
@@ -218,7 +218,7 @@ export async function getJournal(salonSlug: string, date: DateStr) {
       return {
         id: m.id, name: m.name, photoUrl: m.photoUrl, group,
         masterPercent: m.roles.includes('OWNER') ? 0 : (m.commission ?? salon.defaultCommission),
-        scheduleLabel: scheduleLabel(m.schedule ?? null),
+        scheduleLabel: workDaysLabel(m.schedule ?? null),
         day: workingHours(m.schedule ?? null, m.exceptions.map((e) => ({ ...e, date: String(e.date) })), date),
         items: appts.filter((a) => a.staffId === m.id).map((a) => ({
           id: a.id, start: utcToZoned(a.startsAt, salon.timezone).minute, end: utcToZoned(a.endsAt, salon.timezone).minute,

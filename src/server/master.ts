@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, asc, eq, gte, lt, ne } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
-import { workingHours, scheduleLabel } from '@/lib/schedule';
+import { workingHours, workDaysLabel } from '@/lib/schedule';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 
 type Salon = typeof s.salons.$inferSelect;
@@ -58,7 +58,7 @@ export async function getMasterDay(salon: Salon, m: Staff, date: DateStr) {
   return {
     date,
     hours: workingHours(full?.schedule ?? null, exceptions, date),
-    scheduleLabel: scheduleLabel(full?.schedule ?? null),
+    scheduleLabel: workDaysLabel(full?.schedule ?? null),
     percent,
     items,
     totals: {

@@ -90,7 +90,7 @@ export default async function Journal({ params, searchParams }: {
             }}>
               {!c.day && (
                 <div style={{ position: 'absolute', inset: 8, borderRadius: 14, background: 'repeating-linear-gradient(135deg,#eceee8 0 10px,#f6f8f5 10px 20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16, fontWeight: 700, color: 'var(--muted)' }}>
-                  Выходной по графику<br />{c.scheduleLabel}
+                  <div><div style={{ fontSize: 16, marginBottom: 6 }}>Выходной</div><div style={{ fontWeight: 600, fontSize: 13 }}>{c.scheduleLabel}</div></div>
                 </div>
               )}
               {c.day && c.day.start > START && <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: (c.day.start - START) * PX, background: '#f3f4f0' }} />}

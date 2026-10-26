@@ -73,3 +73,11 @@ export function scheduleLabel(s: ScheduleLike | null | undefined): string {
   else label = days.map((d) => names[d]).join(', ');
   return `${label.charAt(0).toUpperCase()}${label.slice(1)} · ${hours}`;
 }
+
+/** Подпись графика без двусмысленности: «Рабочие дни: ср, чт, сб, вс · 09:30–19:00» или «Работает 6 через 1 · 09:30–20:00» */
+export function workDaysLabel(s: ScheduleLike | null | undefined): string {
+  if (!s) return 'График уточняется';
+  const label = scheduleLabel(s);
+  if (s.kind === 'CYCLE') return `Работает ${label}`;
+  return `Рабочие дни: ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+}
