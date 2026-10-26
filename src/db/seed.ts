@@ -2,7 +2,7 @@
 // Источники: фото прайса и файлы салона, переписка и голосовое владельца от 25.10.2026.
 // Запуск: npm run db:seed   (с флагом --demo добавляет демо-записи на ближайшие дни)
 
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db, schema as s } from './index';
 import type { ByLength } from './schema';
 import { addDays, utcToZoned, zonedToUtc } from '../lib/time';
@@ -169,27 +169,9 @@ async function main() {
   if (process.argv.includes('--if-empty')) {
     const existing = await db.query.salons.findFirst({ where: eq(s.salons.slug, 'vesna') });
     if (existing) {
-      // Данные и записи не трогаем: только добавляем новых сотрудников и подтягиваем новые фото
-      const cats = await db.query.serviceCategories.findMany({ where: eq(s.serviceCategories.salonId, existing.id) });
-      const catIds = new Map<string, string>();
-      for (const c of CATEGORIES) { const row = cats.find((x) => x.name === c.name && x.hall === c.hall); if (row) catIds.set(c.key, row.id); }
-      for (const [i, m] of STAFF.entries()) {
-        const found = await db.query.staff.findFirst({ where: and(eq(s.staff.salonId, existing.id), eq(s.staff.name, m.name)) });
-        if (!found) { await insertStaff(existing.id, m, i, catIds); console.log(`Добавлен сотрудник: ${m.name}`); }
-        else if ((m.photo && found.photoUrl !== m.photo) || found.title !== m.title) {
-          await db.update(s.staff).set({ photoUrl: m.photo ?? found.photoUrl, title: m.title }).where(eq(s.staff.id, found.id));
-        }
-      }
-      // выдержка краски и длительности окрашивания — из прайса
-      for (const c of CATEGORIES) for (const v of c.services) {
-        const catId = catIds.get(c.key); if (!catId) continue;
-        if (!v.pause && !v.byLength) continue;
-        await db.update(s.services).set({
-          byLength: v.byLength ?? null, durationMin: v.dur ?? null, durationLabel: v.label ?? null,
-          pauseAfterMin: v.pause?.[0] ?? null, pauseMin: v.pause?.[1] ?? null,
-        }).where(and(eq(s.services.categoryId, catId), eq(s.services.name, v.name)));
-      }
-      console.log('Салон «Весна» уже в базе — обновлены сотрудники, фото и выдержка окрашивания.'); return;
+      // Салон уже в базе: услуги, цены, мастера и графики теперь меняются в приложении (журнал → «Настройки»),
+      // поэтому при публикации ничего не перезаписываем.
+      console.log('Салон «Весна» уже в базе — данные не трогаем.'); return;
     }
   }
 

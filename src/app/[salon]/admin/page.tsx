@@ -49,6 +49,7 @@ export default async function Journal({ params, searchParams }: {
         <nav className="row" aria-label="Дата" style={{ flexWrap: 'wrap' }}>
           <Link className="btn" href={`/${slug}/admin/notify`}>Уведомления</Link>
           <Link className="btn" href={`/${slug}/admin/staff`}>Мастера и PIN</Link>
+          <Link className="btn" href={`/${slug}/admin/settings`}>Настройки</Link>
           <Link className="btn" href={link(addDays(date, -1))} aria-label="Предыдущий день">‹</Link>
           <Link className="btn" href={link(now.date)}>Сегодня</Link>
           <Link className="btn" href={link(addDays(date, 1))} aria-label="Следующий день">›</Link>
