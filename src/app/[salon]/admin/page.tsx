@@ -5,6 +5,7 @@ import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull } from '@/lib/time';
 import { formatSom } from '@/lib/pricing';
 import NewAppointment from './NewAppointment';
 import ApptCard from './ApptCard';
+import { AbsenceControl, ConflictList, type Conflict } from './Absence';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,10 @@ export default async function Journal({ params, searchParams }: {
 
       <NewAppointment slug={slug} date={date} catalog={catalog} />
 
+      <ConflictList slug={slug} salonName={salon.name} dateLabel={`${weekdayFull(date)}, ${dayMonth(date)},`} items={columns.flatMap((c) => c.items.filter((i) => i.conflict).map((i): Conflict => ({
+        id: i.id, start: i.start, end: i.end, client: i.client, phone: i.phone, service: i.service, master: c.name, alternatives: i.alternatives,
+      })))} />
+
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <div style={{ minWidth: 220 * cols.length + 64, display: 'grid', gridTemplateColumns: `64px repeat(${cols.length}, minmax(220px, 1fr))` }}>
           <div style={{ borderBottom: '1px solid var(--line)' }} />
@@ -73,7 +78,8 @@ export default async function Journal({ params, searchParams }: {
               </span>
               <span className="stack" style={{ gap: 0 }}>
                 <strong>{c.name}</strong>
-                <span className="small muted">{c.day ? `${hhmm(c.day.start)}–${hhmm(c.day.end)}` : 'Выходной'}</span>
+                <span className="small muted">{c.day ? `${hhmm(c.day.start)}–${hhmm(c.day.end)}` : c.absence?.dayOff ? '' : 'Выходной'}</span>
+                <AbsenceControl slug={slug} staffId={c.id} name={c.name} date={date} absence={c.absence} normal={c.normal} usual={c.usual} />
               </span>
             </div>
           ))}
@@ -90,7 +96,10 @@ export default async function Journal({ params, searchParams }: {
             }}>
               {!c.day && (
                 <div style={{ position: 'absolute', inset: 8, borderRadius: 14, background: 'repeating-linear-gradient(135deg,#eceee8 0 10px,#f6f8f5 10px 20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16, fontWeight: 700, color: 'var(--muted)' }}>
-                  <div><div style={{ fontSize: 16, marginBottom: 6 }}>Выходной</div><div style={{ fontWeight: 600, fontSize: 13 }}>{c.scheduleLabel}</div></div>
+                  <div>
+                    <div style={{ fontSize: 16, marginBottom: 6, color: c.absence?.dayOff ? 'var(--danger)' : undefined }}>{c.absence?.dayOff ? 'Не выйдет' : 'Выходной'}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{c.absence?.dayOff ? (c.absence.note ?? 'Отмечено администратором') : c.scheduleLabel}</div>
+                  </div>
                 </div>
               )}
               {c.day && c.day.start > START && <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: (c.day.start - START) * PX, background: '#f3f4f0' }} />}

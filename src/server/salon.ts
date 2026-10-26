@@ -206,12 +206,27 @@ export async function getJournal(salonSlug: string, date: DateStr) {
   const to = zonedToUtc(addDays(date, 1), 0, salon.timezone);
   const appts = await db.query.appointments.findMany({
     where: and(eq(s.appointments.salonId, salon.id), gte(s.appointments.startsAt, from), lt(s.appointments.startsAt, to), ne(s.appointments.status, 'CANCELLED')),
-    with: { client: { with: { guardian: true } }, service: { with: { category: true } }, addons: { with: { addon: true } } },
+    with: { client: { with: { guardian: true } }, service: { with: { category: { with: { staff: true } }, restrictions: true } }, addons: { with: { addon: true } } },
     orderBy: asc(s.appointments.startsAt),
   });
+  const tz = salon.timezone;
+  const minuteOf = (d: Date) => utcToZoned(d, tz).minute;
+  const pauseOf = (a: (typeof appts)[number]) => (a.pauseStart != null && a.pauseMin ? { after: a.pauseStart, min: a.pauseMin } : null);
+  const days = new Map(masters.map((m) => [m.id, workingHours(m.schedule ?? null, m.exceptions.map((e) => ({ ...e, date: String(e.date) })), date)]));
+  const busyOf = (staffId: string) => appts.filter((a) => a.staffId === staffId).flatMap((a) => busyParts(minuteOf(a.startsAt), minuteOf(a.endsAt), pauseOf(a)));
+  /** Кому можно передать запись: делает услугу, работает в этот день и свободен в это время */
+  const alternativesFor = (a: (typeof appts)[number]) => {
+    const only = a.service.restrictions.map((r) => r.staffId);
+    return masters.filter((m) => m.id !== a.staffId
+      && a.service.category.staff.some((x) => x.staffId === m.id) && (!only.length || only.includes(m.id))
+      && !!days.get(m.id) && fits(days.get(m.id)!, busyOf(m.id), minuteOf(a.startsAt), minuteOf(a.endsAt) - minuteOf(a.startsAt), pauseOf(a)))
+      .map((m) => ({ id: m.id, name: m.name }));
+  };
   return {
     salon,
     columns: masters.map((m) => {
+      const ex = m.exceptions.find((e) => String(e.date) === date);
+      const day = days.get(m.id) ?? null;
       const cats = m.categories.map((c) => c.category.name);
       const group = cats.some((n) => /стриж|окраш|уклад|Борода|Детск|Детям/i.test(n)) ? 'hair'
         : cats.some((n) => /Маник|Педик|Наращ/i.test(n)) ? 'nails' : 'brows';
@@ -219,8 +234,16 @@ export async function getJournal(salonSlug: string, date: DateStr) {
         id: m.id, name: m.name, photoUrl: m.photoUrl, group,
         masterPercent: m.roles.includes('OWNER') ? 0 : (m.commission ?? salon.defaultCommission),
         scheduleLabel: workDaysLabel(m.schedule ?? null),
-        day: workingHours(m.schedule ?? null, m.exceptions.map((e) => ({ ...e, date: String(e.date) })), date),
-        items: appts.filter((a) => a.staffId === m.id).map((a) => ({
+        day,
+        /** Отметка «не выйдет»: весь день или только часть дня */
+        absence: ex ? { dayOff: ex.dayOff, start: ex.startMinute, end: ex.endMinute, note: ex.note } : null,
+        /** Часы по обычному графику в этот день (без отметок); null — по графику выходной */
+        normal: workingHours(m.schedule ?? null, [], date),
+        /** Обычные рабочие часы мастера — подставляются, если он выходит в свой выходной */
+        usual: m.schedule ? { start: m.schedule.startMinute, end: m.schedule.endMinute } : null,
+        items: appts.filter((a) => a.staffId === m.id).map((a) => {
+          const conflict = !!ex && (!day || minuteOf(a.startsAt) < day.start || minuteOf(a.endsAt) > day.end);
+          return {
           id: a.id, start: utcToZoned(a.startsAt, salon.timezone).minute, end: utcToZoned(a.endsAt, salon.timezone).minute,
           client: a.client.name, service: a.service.name, category: a.service.category.name,
           addons: a.addons.map((x) => x.addon.name), price: a.price, priceMax: a.priceMax,
@@ -234,7 +257,11 @@ export async function getJournal(salonSlug: string, date: DateStr) {
             finalPrice: a.finalPrice ?? a.price, pointsUsed: a.pointsUsed, cash: a.cashPaid ?? 0, pointsEarned: a.pointsEarned,
             method: a.paymentMethod, masterShare: a.masterShare ?? 0,
           } : null,
-        })),
+          /** Мастер не выйдет в это время — запись нужно передать, перенести или отменить */
+          conflict: conflict && !a.paid,
+          alternatives: conflict && !a.paid ? alternativesFor(a) : [],
+        };
+        }),
       };
     }),
   };

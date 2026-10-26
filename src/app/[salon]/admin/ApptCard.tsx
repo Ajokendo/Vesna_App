@@ -12,6 +12,8 @@ export type ApptItem = {
   pause: { after: number; min: number } | null;
   phone: string | null; balance: number; payer: string;
   payment: { finalPrice: number; pointsUsed: number; cash: number; pointsEarned: number; method: string | null; masterShare: number } | null;
+  /** Мастер не выйдет в это время */
+  conflict?: boolean;
 };
 
 const METHODS = [
@@ -27,7 +29,7 @@ export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent 
   const walk = a.source === 'WALK_IN';
   const look = {
     background: a.paid ? 'var(--accent-soft)' : walk ? 'var(--cream)' : '#fff',
-    border: `1px solid ${a.paid ? '#a9bc9c' : walk ? 'var(--gold)' : '#b9c7bc'}`,
+    border: a.conflict ? '2px solid var(--danger)' : `1px solid ${a.paid ? '#a9bc9c' : walk ? 'var(--gold)' : '#b9c7bc'}`,
   };
   const box = (from: number, to: number, children: React.ReactNode, key: string) => {
     const h = (to - from) * px;
@@ -42,7 +44,7 @@ export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent 
   const title = (
     <>
       <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>
-        {a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}
+        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}
       </div>
       {(a.pause ? a.pause.after : a.end - a.start) * px >= 34 && (
         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>
