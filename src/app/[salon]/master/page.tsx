@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import BackHome from '@/app/BackHome';
+import BottomBar from '@/app/BottomBar';
 import { notFound, redirect } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { currentMaster, signInMaster, signOutMaster } from '@/server/master-auth';
@@ -37,7 +37,6 @@ export default async function MasterPage({ params, searchParams }: {
     return (
       <main className="app">
         <div className="page">
-          <BackHome slug={slug} />
           <header className="row">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {salon.logoUrl && <img src={salon.logoUrl} alt="" width={44} height={44} style={{ borderRadius: 12 }} />}
@@ -84,6 +83,7 @@ export default async function MasterPage({ params, searchParams }: {
             </form>
           )}
         </div>
+      <BottomBar items={[{ label: 'Главная', icon: 'home', href: `/${slug}` }]} />
       </main>
     );
   }
@@ -103,7 +103,6 @@ export default async function MasterPage({ params, searchParams }: {
   return (
     <main className="app">
       <div className="page" style={{ gap: 18 }}>
-        <BackHome slug={slug} />
         <header className="row">
           <span className="avatar">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -113,7 +112,6 @@ export default async function MasterPage({ params, searchParams }: {
             <h1 style={{ fontSize: 22 }}>{me.name}</h1>
             <span className="small muted">{day.scheduleLabel}{isOwner ? '' : ` · ваша доля ${day.percent}%`}</span>
           </div>
-          <form action={logout}><button type="submit" className="btn" style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>Выйти</button></form>
         </header>
 
         {/* ближайшая неделя */}
@@ -236,6 +234,12 @@ export default async function MasterPage({ params, searchParams }: {
           скидку салон и мастер делят поровну.
         </p>
       </div>
+      <BottomBar items={[
+        { label: 'Главная', icon: 'home', href: `/${slug}` },
+        { label: 'Записи', icon: 'list', href: link(now.date), current: true },
+        { label: 'Заработок', icon: 'money', href: `${link(date)}#earn` },
+        { label: 'Выйти', icon: 'exit', action: logout },
+      ]} />
     </main>
   );
 }
