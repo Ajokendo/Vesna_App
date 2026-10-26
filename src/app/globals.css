@@ -68,4 +68,3 @@ h1, h2, h3 { font-family: var(--serif); margin: 0; }
   padding-left: max(16px, env(safe-area-inset-left)) !important; padding-right: max(16px, env(safe-area-inset-right)) !important; }
 @media (min-width: 700px) { .safe { padding-left: max(28px, env(safe-area-inset-left)) !important; padding-right: max(28px, env(safe-area-inset-right)) !important; } }
 
-.staff-menu summary::-webkit-details-marker { display: none; }

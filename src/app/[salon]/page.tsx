@@ -22,14 +22,6 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             <h1 style={{ fontSize: 22 }}>{salon.name}</h1>
             <div className="muted small">{salon.tagline} · {salon.city}</div>
           </div>
-          {/* вход для сотрудников — сразу виден вверху, без прокрутки */}
-          <details className="staff-menu" style={{ position: 'relative' }}>
-            <summary className="btn" style={{ minHeight: 40, padding: '0 12px', fontSize: 13, listStyle: 'none', cursor: 'pointer' }}>Сотрудникам ▾</summary>
-            <div className="card stack" style={{ position: 'absolute', right: 0, top: 46, zIndex: 20, gap: 8, padding: 10, minWidth: 200, boxShadow: '0 8px 24px rgba(30,40,30,.15)' }}>
-              <Link href={`/${salon.slug}/master`} className="btn" style={{ minHeight: 44 }}>Кабинет мастера</Link>
-              <Link href={`/${salon.slug}/admin`} className="btn" style={{ minHeight: 44 }}>Администратор</Link>
-            </div>
-          </details>
         </header>
 
         <section className="stack">
@@ -73,11 +65,15 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             ) : null}
           </div>
         </section>
-        <nav className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 16 }} aria-label="Для сотрудников">
-          <span className="small muted" style={{ textAlign: 'center' }}>Для сотрудников салона</span>
-          <div className="grid2">
-            <Link href={`/${salon.slug}/master`} className="btn" style={{ minHeight: 48, fontSize: 15, padding: '0 10px' }}>Кабинет мастера</Link>
-            <Link href={`/${salon.slug}/admin`} className="btn" style={{ minHeight: 48, fontSize: 15, padding: '0 10px' }}>Администратор</Link>
+        {/* вход для сотрудников: прилипает к низу экрана, виден сразу без прокрутки */}
+        <nav aria-label="Для сотрудников" style={{
+          position: 'sticky', bottom: 0, zIndex: 10, margin: '0 -20px calc(-32px - env(safe-area-inset-bottom))',
+          padding: '10px 20px calc(10px + env(safe-area-inset-bottom))', background: 'rgba(247,248,244,.96)', borderTop: '1px solid var(--line)',
+          backdropFilter: 'blur(6px)',
+        }}>
+          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+            <Link href={`/${salon.slug}/master`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Кабинет мастера</Link>
+            <Link href={`/${salon.slug}/admin`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Администратор</Link>
           </div>
         </nav>
       </div>
