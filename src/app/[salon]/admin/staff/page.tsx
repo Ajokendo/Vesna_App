@@ -56,7 +56,7 @@ export default async function StaffPins({ params, searchParams }: {
                 {sp.ok === m.id ? '✓ PIN сохранён' : m.locked ? 'Вход временно заблокирован' : m.hasPin ? 'PIN выдан' : m.isOwner ? 'Не обязательно — видит всё в журнале' : 'PIN не выдан'}
               </div>
             </div>
-            <input name="pin" aria-label={`Новый PIN для ${m.name}`} placeholder={m.hasPin ? 'Новый PIN' : 'PIN'} inputMode="numeric" pattern="\d{4,6}" required={!m.isOwner} autoComplete="off"
+            <input name="pin" aria-label={`Новый PIN для ${m.name}`} placeholder={m.hasPin ? 'Новый PIN' : 'PIN'} inputMode="numeric" pattern="\d{4,6}" required autoComplete="off"
               style={{ minHeight: 48, width: 130, borderRadius: 12, border: '1px solid #dde5de', padding: '0 14px', fontSize: 16 }} />
             <button type="submit" className="btn primary">{m.hasPin ? 'Сменить' : 'Задать'}</button>
           </form>
