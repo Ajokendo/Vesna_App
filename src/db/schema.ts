@@ -60,6 +60,10 @@ export const staff = pgTable('staff', {
   roles: roleEnum('roles').array().notNull().default([]),
   /** null — комиссия салона по умолчанию; у владельца-мастера комиссия не начисляется */
   commission: integer('commission'),
+  /** Вход в кабинет мастера: PIN хранится только в виде хеша (scrypt) */
+  pinHash: text('pin_hash'),
+  pinFailed: integer('pin_failed').notNull().default(0),
+  pinLockedUntil: timestamp('pin_locked_until', { withTimezone: true }),
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
 }, (t) => [index('staff_salon_idx').on(t.salonId)]);

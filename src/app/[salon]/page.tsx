@@ -65,6 +65,10 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             ) : null}
           </div>
         </section>
+        <nav className="row small" style={{ justifyContent: 'center', gap: 18 }} aria-label="Для сотрудников">
+          <Link href={`/${salon.slug}/master`} className="muted">Вход для мастеров</Link>
+          <Link href={`/${salon.slug}/admin`} className="muted">Администратор</Link>
+        </nav>
       </div>
     </main>
   );

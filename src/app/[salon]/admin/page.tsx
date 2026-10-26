@@ -43,7 +43,8 @@ export default async function Journal({ params, searchParams }: {
           <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
           <p className="muted" style={{ margin: '4px 0 0' }}>{weekdayFull(date)}, {dayMonth(date)} · записей: {total}</p>
         </div>
-        <nav className="row" aria-label="Дата">
+        <nav className="row" aria-label="Дата" style={{ flexWrap: 'wrap' }}>
+          <Link className="btn" href={`/${slug}/admin/staff`}>Мастера и PIN</Link>
           <Link className="btn" href={link(addDays(date, -1))} aria-label="Предыдущий день">‹</Link>
           <Link className="btn" href={link(now.date)}>Сегодня</Link>
           <Link className="btn" href={link(addDays(date, 1))} aria-label="Следующий день">›</Link>
