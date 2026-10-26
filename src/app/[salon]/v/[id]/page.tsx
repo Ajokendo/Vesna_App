@@ -7,6 +7,7 @@ import { dayMonth, hhmm, utcToZoned, weekdayFull } from '@/lib/time';
 import { formatPrice, formatSom } from '@/lib/pricing';
 import PushOptIn from '@/app/PushOptIn';
 import ConfirmButton from './ConfirmButton';
+import LateButtons from './LateButtons';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Моя запись' };
@@ -34,6 +35,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
           <div><h1 style={{ fontSize: 22 }}>Ваша запись</h1><span className="small muted">Салон «{a.salon.name}»</span></div>
         </header>
         {cancelled && <div className="error">Эта запись отменена.</div>}
+        {a.status === 'NO_SHOW' && <div className="error">Эта запись закрыта: вас не дождались. Запишитесь на другое время — будем рады вас видеть.</div>}
         <section className="card stack" style={{ gap: 12 }}>
           <div>
             <div style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 700 }}>{hhmm(minute)}–{hhmm(end)}</div>
@@ -53,9 +55,10 @@ export default async function Visit({ params, searchParams }: { params: Promise<
           <div className="row"><span className="grow muted">{a.paid ? 'Оплачено' : 'К оплате в салоне'}</span><strong>{a.paid ? formatSom(a.finalPrice ?? a.price) : formatPrice(a.price, a.priceMax)}</strong></div>
           <div className="row"><span className="grow muted">Адрес</span><strong>{[a.salon.city, a.salon.address].filter(Boolean).join(', ')}</strong></div>
         </section>
-        {!cancelled && !a.paid && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
+        {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
+        {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
         {!cancelled && !a.paid && <PushOptIn slug={slug} appointmentId={a.id} token={t} compact />}
-        {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Не сможете прийти? Напишите нам</a>}
+        {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Написать в салон в WhatsApp</a>}
         <Link href={`/${slug}`} className="small muted" style={{ textAlign: 'center' }}>На главную</Link>
       </div>
     </main>

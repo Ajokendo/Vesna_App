@@ -1,8 +1,9 @@
 import 'server-only';
-import { and, eq, gte, inArray, lt, ne } from 'drizzle-orm';
+import { and, eq, gte, inArray, lt } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull, zonedToUtc } from '@/lib/time';
 import { payerOf, sendToClients, signId } from './push';
+import { occupiesTime } from './status';
 
 // Уведомления клиенту по его записи: при записи, утром в день визита (с кнопкой «Подтвердить»), за час,
 // при передаче другому мастеру и при отмене. Каждое отправляется один раз.
@@ -91,7 +92,7 @@ export async function runDueReminders(now = new Date()) {
     const local = utcToZoned(now, salon.timezone);
     const appts = await db.select({ id: s.appointments.id, startsAt: s.appointments.startsAt, clientId: s.appointments.clientId, createdAt: s.appointments.createdAt })
       .from(s.appointments).where(and(
-        eq(s.appointments.salonId, salon.id), ne(s.appointments.status, 'CANCELLED'), eq(s.appointments.paid, false),
+        eq(s.appointments.salonId, salon.id), occupiesTime(), eq(s.appointments.paid, false),
         gte(s.appointments.startsAt, now), lt(s.appointments.startsAt, zonedToUtc(addDays(local.date, 1), 0, salon.timezone)),
       ));
     if (!appts.length) continue;

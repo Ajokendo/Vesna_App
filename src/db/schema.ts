@@ -45,6 +45,10 @@ export const salons = pgTable('salons', {
   displayStepMinutes: integer('display_step_minutes').notNull().default(15),
   /** Комиссия мастера по умолчанию, % */
   defaultCommission: integer('default_commission').notNull().default(50),
+  /** Опоздание: через сколько минут после начала записи напомнить администратору позвонить клиенту */
+  lateCallMinutes: integer('late_call_minutes').notNull().default(5),
+  /** Через сколько минут можно отметить «не пришёл» и отдать время другому клиенту */
+  noShowMinutes: integer('no_show_minutes').notNull().default(15),
   /** Сколько процентов от оплаченных деньгами возвращается клиенту баллами (1 балл = 1 сом) */
   pointsPercent: integer('points_percent').notNull().default(5),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -208,6 +212,13 @@ export const appointments = pgTable('appointments', {
   plannedEndsAt: timestamp('planned_ends_at', { withTimezone: true }),
   endChangedBy: text('end_changed_by'),
   endChangedAt: timestamp('end_changed_at', { withTimezone: true }),
+  /** Клиент пришёл (отметка администратора или мастера) */
+  arrivedAt: timestamp('arrived_at', { withTimezone: true }),
+  /** Клиент сам предупредил, что опоздает на N минут */
+  lateMinutes: integer('late_minutes'),
+  lateReportedAt: timestamp('late_reported_at', { withTimezone: true }),
+  /** Кто отменил запись: ADMIN, CLIENT */
+  cancelledBy: text('cancelled_by'),
   /** Клиент подтвердил визит (кнопка в утреннем уведомлении) */
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

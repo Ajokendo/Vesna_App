@@ -1,11 +1,12 @@
 import 'server-only';
-import { and, asc, eq, gte, inArray, lt, ne } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import type { HairLength } from '@/db/schema';
 import { workingHours, workDaysLabel } from '@/lib/schedule';
 import { availableStarts, busyParts, fits } from '@/lib/slots';
 import { calcPayment } from '@/lib/payment';
 import { notifySoon } from './notify';
+import { occupiesTime } from './status';
 import { signId } from './push';
 import { resolveService, quote } from '@/lib/pricing';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
@@ -82,7 +83,7 @@ async function staffDay(staffIds: string[], date: DateStr, tz: string) {
     db.query.staff.findMany({ where: inArray(s.staff.id, staffIds), with: { schedule: true, exceptions: true }, orderBy: asc(s.staff.sortOrder) }),
     db.select().from(s.appointments).where(and(
       inArray(s.appointments.staffId, staffIds), gte(s.appointments.startsAt, from), lt(s.appointments.startsAt, to),
-      ne(s.appointments.status, 'CANCELLED'),
+      occupiesTime(),
     )),
   ]);
   return members.map((m) => ({
@@ -181,7 +182,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
     // «Снятие нашей работы бесплатно»: была ли у клиента раньше услуга этой категории
     const past = await tx.select({ id: s.appointments.id }).from(s.appointments)
       .innerJoin(s.services, eq(s.services.id, s.appointments.serviceId))
-      .where(and(eq(s.appointments.clientId, visitor.id), eq(s.services.categoryId, svc.categoryId), lt(s.appointments.startsAt, new Date()), ne(s.appointments.status, 'CANCELLED')))
+      .where(and(eq(s.appointments.clientId, visitor.id), eq(s.services.categoryId, svc.categoryId), lt(s.appointments.startsAt, new Date()), occupiesTime()))
       .limit(1);
     // Баллы списываются на кассе, при оплате — при записи только считаем цену
     const q = quote({ service: resolved, addons, repeatEligible: past.length > 0 });
@@ -213,11 +214,21 @@ export async function getJournal(salonSlug: string, date: DateStr) {
   const masters = staffRows.filter((m) => m.roles.includes('MASTER'));
   const from = zonedToUtc(date, 0, salon.timezone);
   const to = zonedToUtc(addDays(date, 1), 0, salon.timezone);
-  const appts = await db.query.appointments.findMany({
-    where: and(eq(s.appointments.salonId, salon.id), gte(s.appointments.startsAt, from), lt(s.appointments.startsAt, to), ne(s.appointments.status, 'CANCELLED')),
-    with: { client: { with: { guardian: true } }, service: { with: { category: { with: { staff: true } }, restrictions: true } }, addons: { with: { addon: true } } },
+  const allAppts = await db.query.appointments.findMany({
+    where: and(eq(s.appointments.salonId, salon.id), gte(s.appointments.startsAt, from), lt(s.appointments.startsAt, to)),
+    with: { client: { with: { guardian: true } }, service: { with: { category: { with: { staff: true } }, restrictions: true } }, addons: { with: { addon: true } }, staff: true },
     orderBy: asc(s.appointments.startsAt),
   });
+  // не пришли / отменены — не занимают время, показываются отдельным списком
+  const dropped = allAppts.filter((a) => a.status === 'NO_SHOW' || a.status === 'CANCELLED');
+  const appts = allAppts.filter((a) => a.status !== 'NO_SHOW' && a.status !== 'CANCELLED');
+  const noShowCounts = new Map<string, number>();
+  const visitorIds = [...new Set(appts.map((a) => a.clientId))];
+  if (visitorIds.length) {
+    const rows = await db.select({ c: s.appointments.clientId }).from(s.appointments)
+      .where(and(inArray(s.appointments.clientId, visitorIds), eq(s.appointments.status, 'NO_SHOW')));
+    for (const r of rows) noShowCounts.set(r.c, (noShowCounts.get(r.c) ?? 0) + 1);
+  }
   const payerIds = [...new Set(appts.map((a) => a.client.guardianId ?? a.client.id))];
   const withPush = new Set(payerIds.length ? (await db.select({ c: s.pushSubscriptions.clientId }).from(s.pushSubscriptions)
     .where(inArray(s.pushSubscriptions.clientId, payerIds))).map((r) => r.c) : []);
@@ -236,6 +247,10 @@ export async function getJournal(salonSlug: string, date: DateStr) {
   };
   return {
     salon,
+    dropped: dropped.map((a) => ({
+      id: a.id, start: minuteOf(a.startsAt), client: a.client.name, phone: (a.client.guardian ?? a.client).phone, service: a.service.name,
+      master: a.staff.name, reason: a.status === 'NO_SHOW' ? 'NO_SHOW' as const : a.cancelledBy === 'CLIENT' ? 'CLIENT' as const : 'ADMIN' as const,
+    })),
     columns: masters.map((m) => {
       const ex = m.exceptions.find((e) => String(e.date) === date);
       const day = days.get(m.id) ?? null;
@@ -275,6 +290,11 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           endChange: a.endChangedBy && a.plannedEndsAt ? {
             byMaster: a.endChangedBy.startsWith('MASTER'), planned: minuteOf(a.plannedEndsAt),
           } : null,
+          arrived: !!a.arrivedAt,
+          /** Клиент сам предупредил, что опоздает */
+          lateMinutes: a.lateMinutes,
+          /** Сколько раз этот клиент не приходил раньше */
+          noShows: noShowCounts.get(a.clientId) ?? 0,
           /** Клиент подтвердил визит из уведомления */
           confirmed: !!a.confirmedAt,
           /** У клиента включены уведомления */

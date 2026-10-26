@@ -7,6 +7,7 @@ import NewAppointment from './NewAppointment';
 import ApptCard from './ApptCard';
 import ReminderTicker from './ReminderTicker';
 import { AbsenceControl, ConflictList, type Conflict } from './Absence';
+import DroppedList from './DroppedList';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export default async function Journal({ params, searchParams }: {
   const now = utcToZoned(new Date(), salon.timezone);
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : now.date;
   const group = GROUPS.find((g) => g.id === sp.group)?.id ?? 'hair';
-  const [{ columns }, catalog, cash] = await Promise.all([getJournal(slug, date), getCatalog(salon.id), getCashReport(slug, date)]);
+  const [{ columns, dropped }, catalog, cash] = await Promise.all([getJournal(slug, date), getCatalog(salon.id), getCashReport(slug, date)]);
   const cols = columns.filter((c) => c.group === group);
 
   const START = Math.min(9 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.start));
@@ -66,6 +67,7 @@ export default async function Journal({ params, searchParams }: {
       <ReminderTicker />
       <NewAppointment slug={slug} date={date} catalog={catalog} />
 
+      <DroppedList slug={slug} items={dropped} />
       <ConflictList slug={slug} salonName={salon.name} dateLabel={`${weekdayFull(date)}, ${dayMonth(date)},`} items={columns.flatMap((c) => c.items.filter((i) => i.conflict).map((i): Conflict => ({
         id: i.id, start: i.start, end: i.end, client: i.client, phone: i.phone, service: i.service, master: c.name, alternatives: i.alternatives,
       })))} />
@@ -108,7 +110,8 @@ export default async function Journal({ params, searchParams }: {
               {c.day && c.day.start > START && <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: (c.day.start - START) * PX, background: '#f3f4f0' }} />}
               {c.day && c.day.end < END && <div style={{ position: 'absolute', left: 0, right: 0, top: (c.day.end - START) * PX, bottom: 0, background: '#f3f4f0' }} />}
               {c.items.map((a) => (
-                <ApptCard key={a.id} a={a} top={(a.start - START) * PX} px={PX} slug={slug} earnPercent={salon.pointsPercent} masterPercent={c.masterPercent} />
+                <ApptCard key={a.id} a={a} top={(a.start - START) * PX} px={PX} slug={slug} earnPercent={salon.pointsPercent} masterPercent={c.masterPercent}
+                  rules={{ nowMinute: date === now.date ? now.minute : date < now.date ? 24 * 60 : null, callAfter: salon.lateCallMinutes, noShowAfter: salon.noShowMinutes, salonName: salon.name }} />
               ))}
               {date === now.date && now.minute >= START && now.minute <= END && (
                 <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: (now.minute - START) * PX, borderTop: '2px dashed #b23a5a' }} />

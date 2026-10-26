@@ -6,6 +6,8 @@ import { getMasterDay, getMasterMonth, getMasterWeek, getMastersForLogin } from 
 import { addDays, dayMonth, dayMonthShort, hhmm, utcToZoned, weekdayFull, weekdayShort } from '@/lib/time';
 import { formatPrice, formatSom } from '@/lib/pricing';
 import EndToggle from './EndToggle';
+import VisitButtons from './VisitButtons';
+import { lateState } from '@/lib/late';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Кабинет мастера' };
@@ -161,7 +163,21 @@ export default async function MasterPage({ params, searchParams }: {
                 {i.plannedEnd != null && i.plannedEnd !== i.end && (
                   <span className="small" style={{ color: '#7a5a1c', fontWeight: 700 }}>⏱ Окончание изменено: было {hhmm(i.plannedEnd)}{i.endChangedByMaster ? ' (вы)' : ' (администратор)'}</span>
                 )}
-                {!i.paid && date >= now.date && <EndToggle slug={slug} id={i.id} start={i.start} end={i.end} />}
+                {(() => {
+                  if (i.status === 'NO_SHOW') return <span className="small" style={{ color: 'var(--danger)', fontWeight: 700 }}>Клиент не пришёл — время свободно</span>;
+                  if (i.status === 'CANCELLED') return <span className="small muted" style={{ fontWeight: 700 }}>Запись отменена</span>;
+                  const late = lateState({ start: i.start, nowMinute: date === now.date ? now.minute : null, paid: i.paid, arrived: i.arrived, lateMinutes: i.lateMinutes, callAfter: salon.lateCallMinutes, noShowAfter: salon.noShowMinutes });
+                  return (
+                    <>
+                      {i.lateMinutes ? <span className="small" style={{ color: '#7a5a1c', fontWeight: 700 }}>Клиент предупредил: опоздает на {i.lateMinutes} мин</span> : null}
+                      {late === 'call' && <span className="small" style={{ color: '#b0620c', fontWeight: 700 }}>Клиент опаздывает — администратор звонит ему</span>}
+                      {late === 'noshow' && <span className="small" style={{ color: 'var(--danger)', fontWeight: 700 }}>Клиент так и не пришёл?</span>}
+                      {i.arrived && !i.paid && <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>✓ Клиент в салоне</span>}
+                      {!i.paid && !i.arrived && date === now.date && now.minute >= i.start - 15 && <VisitButtons slug={slug} id={i.id} canNoShow={now.minute >= i.start} />}
+                      {!i.paid && date >= now.date && <EndToggle slug={slug} id={i.id} start={i.start} end={i.end} />}
+                    </>
+                  );
+                })()}
               </div>
             </article>
           ))}

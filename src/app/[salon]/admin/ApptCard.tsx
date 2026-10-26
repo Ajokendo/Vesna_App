@@ -6,6 +6,7 @@ import { hhmm } from '@/lib/time';
 import { formatPrice, formatSom } from '@/lib/pricing';
 import { calcPayment } from '@/lib/payment';
 import EndTimeEditor from '@/app/EndTimeEditor';
+import { lateState, type LateState } from '@/lib/late';
 
 export type ApptItem = {
   id: string; start: number; end: number; client: string; service: string; addons: string[];
@@ -18,6 +19,9 @@ export type ApptItem = {
   confirmed?: boolean;
   push?: boolean;
   endChange?: { byMaster: boolean; planned: number } | null;
+  arrived?: boolean;
+  lateMinutes?: number | null;
+  noShows?: number;
 };
 
 const METHODS = [
@@ -26,15 +30,20 @@ const METHODS = [
 const METHOD_NAME: Record<string, string> = { CASH: 'наличными', CARD: 'картой', QR: 'по QR', POINTS: 'баллами' };
 
 /** Запись в колонке мастера. Окрашивание с выдержкой рисуется двумя частями: в выдержку мастер свободен */
-export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent }: {
-  a: ApptItem; top: number; px: number; slug: string; earnPercent: number; masterPercent: number;
+export type LateRules = { nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
+
+export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent, rules }: {
+  a: ApptItem; top: number; px: number; slug: string; earnPercent: number; masterPercent: number; rules: LateRules;
 }) {
   const [open, setOpen] = useState(false);
   const walk = a.source === 'WALK_IN';
+  const late = lateState({ start: a.start, nowMinute: rules.nowMinute, paid: a.paid, arrived: !!a.arrived, lateMinutes: a.lateMinutes ?? null, callAfter: rules.callAfter, noShowAfter: rules.noShowAfter });
   const look = {
-    background: a.paid ? 'var(--accent-soft)' : walk ? 'var(--cream)' : '#fff',
-    border: a.conflict ? '2px solid var(--danger)' : a.endChange?.byMaster && !a.paid ? '2px solid var(--gold)' : `1px solid ${a.paid ? '#a9bc9c' : walk ? 'var(--gold)' : '#b9c7bc'}`,
+    background: a.paid ? 'var(--accent-soft)' : late === 'noshow' ? '#fbebeb' : late === 'call' ? '#fdf1e2' : walk ? 'var(--cream)' : '#fff',
+    border: a.conflict ? '2px solid var(--danger)' : late === 'noshow' ? '2px solid var(--danger)' : late === 'call' ? '2px solid #d98a2b'
+      : a.endChange?.byMaster && !a.paid ? '2px solid var(--gold)' : `1px solid ${a.paid ? '#a9bc9c' : walk ? 'var(--gold)' : '#b9c7bc'}`,
   };
+  const lateTag = late === 'noshow' ? ' · не пришёл?' : late === 'call' ? ' · опаздывает' : late === 'reported' ? ` · опоздает на ${a.lateMinutes}` : '';
   const box = (from: number, to: number, children: React.ReactNode, key: string) => {
     const h = (to - from) * px;
     return (
@@ -48,7 +57,7 @@ export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent 
   const title = (
     <>
       <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>
-        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}{!a.paid && a.confirmed ? ' · подтвердил' : ''}{a.push ? ' 🔔' : ''}{a.endChange ? ` ⏱${a.endChange.byMaster ? ' мастер' : ''}` : ''}
+        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}{!a.paid && a.confirmed ? ' · подтвердил' : ''}{a.push ? ' 🔔' : ''}{a.endChange ? ` ⏱${a.endChange.byMaster ? ' мастер' : ''}` : ''}{a.arrived && !a.paid ? ' · в салоне' : ''}{lateTag}
       </div>
       {a.endChange && (a.end - a.start) * px >= 48 && (
         <div style={{ fontSize: 11, fontWeight: 800, color: '#7a5a1c' }}>
@@ -84,13 +93,13 @@ export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent 
   return (
     <>
       {parts}
-      {open && <PayDialog a={a} slug={slug} earnPercent={earnPercent} masterPercent={masterPercent} onClose={() => setOpen(false)} />}
+      {open && <PayDialog a={a} slug={slug} earnPercent={earnPercent} masterPercent={masterPercent} rules={rules} late={late} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function PayDialog({ a, slug, earnPercent, masterPercent, onClose }: {
-  a: ApptItem; slug: string; earnPercent: number; masterPercent: number; onClose: () => void;
+function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }: {
+  a: ApptItem; slug: string; earnPercent: number; masterPercent: number; rules: LateRules; late: LateState; onClose: () => void;
 }) {
   const router = useRouter();
   const isRange = a.priceMax != null && a.priceMax > a.price;
@@ -135,6 +144,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, onClose }: {
           <div className="small muted">{a.service}{a.addons.length ? ` + ${a.addons.join(', ').toLowerCase()}` : ''}</div>
           {a.phone && <div className="small muted">{a.phone}</div>}
         </div>
+        {!a.payment && <VisitStatus a={a} slug={slug} rules={rules} late={late} onDone={onClose} />}
         <EndTime a={a} slug={slug} />
 
         {a.payment ? (
@@ -244,6 +254,48 @@ function CancelVisit({ a, slug, onDone }: { a: ApptItem; slug: string; onDone: (
           style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--danger)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>
           Клиент не придёт — отменить запись
         </button>
+      )}
+      {error && <div className="error" role="alert">{error}</div>}
+    </div>
+  );
+}
+
+/** Пришёл ли клиент: «Пришёл», позвонить / написать опаздывающему, «Не пришёл» */
+function VisitStatus({ a, slug, rules, late, onDone }: { a: ApptItem; slug: string; rules: LateRules; late: LateState; onDone: () => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const started = rules.nowMinute != null && rules.nowMinute >= a.start;
+  const phone = a.phone?.replace(/\D/g, '') ?? '';
+  const text = `Здравствуйте, ${a.client}! Это салон «${rules.salonName}». Ждём вас к ${hhmm(a.start)} — вы в пути?`;
+
+  async function act(action: 'ARRIVED' | 'NO_SHOW') {
+    setBusy(true); setError(null);
+    const res = await fetch(`/api/${slug}/admin/appointments/${a.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+    setBusy(false);
+    if (!res.ok) { setError((await res.json().catch(() => ({}))).error ?? 'Не получилось'); return; }
+    if (action === 'NO_SHOW') onDone();
+    router.refresh();
+  }
+
+  const small = { minHeight: 40, padding: '0 12px', fontSize: 14 } as const;
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      {!!a.noShows && <div className="error" style={{ fontSize: 13 }}>Этот клиент уже не приходил {a.noShows} {a.noShows === 1 ? 'раз' : a.noShows < 5 ? 'раза' : 'раз'} — стоит заранее подтвердить визит.</div>}
+      {a.lateMinutes ? <div className="note">Клиент предупредил: опоздает на {a.lateMinutes} мин.</div> : null}
+      {late === 'call' && <div className="note" style={{ background: '#fdf1e2' }}>Прошло больше {rules.callAfter} мин — позвоните клиенту.</div>}
+      {late === 'noshow' && <div className="error" style={{ fontSize: 13 }}>Прошло больше {rules.noShowAfter} мин. Если клиент не отвечает — отметьте «Не пришёл», и время мастера освободится.</div>}
+      {a.arrived ? (
+        <div className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>✓ Клиент в салоне</div>
+      ) : (
+        <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+          <button type="button" className="btn primary" style={small} disabled={busy} onClick={() => act('ARRIVED')}>Пришёл</button>
+          {phone && started && <a className="btn" style={small} href={`tel:+${phone}`}>Позвонить</a>}
+          {phone && started && <a className="btn" style={small} target="_blank" rel="noreferrer" href={`https://wa.me/${phone}?text=${encodeURIComponent(text)}`}>WhatsApp</a>}
+          {started && (
+            <button type="button" className="btn" style={{ ...small, color: 'var(--danger)', borderColor: late === 'noshow' ? 'var(--danger)' : '#e5c9cf' }} disabled={busy} onClick={() => act('NO_SHOW')}>Не пришёл</button>
+          )}
+        </div>
       )}
       {error && <div className="error" role="alert">{error}</div>}
     </div>

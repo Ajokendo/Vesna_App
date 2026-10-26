@@ -6,6 +6,7 @@ import { busyParts, fits } from '@/lib/slots';
 import { addDays, daysBetween, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { getSalon } from './salon';
 import { notifySoon } from './notify';
+import { occupiesTime } from './status';
 
 // Мастер не выйдет (заболел, семейные дела): отметка в графике на день, несколько дней или часть дня.
 // Онлайн-запись на это время сразу закрывается; уже записанных клиентов администратор
@@ -94,7 +95,7 @@ export async function reassignAppointment(slug: string, appointmentId: string, t
     const day = workingHours(m?.schedule ?? null, (m?.exceptions ?? []).map((e) => ({ ...e, date: String(e.date) })), date);
     if (!day) throw new Error(`${m?.name ?? 'Мастер'} в этот день не работает`);
     const others = await tx.select().from(s.appointments).where(and(
-      eq(s.appointments.staffId, toStaffId), ne(s.appointments.status, 'CANCELLED'), ne(s.appointments.id, a.id),
+      eq(s.appointments.staffId, toStaffId), occupiesTime(), ne(s.appointments.id, a.id),
       gte(s.appointments.startsAt, zonedToUtc(date, 0, salon.timezone)), lt(s.appointments.startsAt, zonedToUtc(addDays(date, 1), 0, salon.timezone)),
     ));
     const busy = others.flatMap((o) => busyParts(
@@ -114,7 +115,7 @@ export async function cancelAppointment(slug: string, appointmentId: string) {
   const a = await db.query.appointments.findFirst({ where: and(eq(s.appointments.id, appointmentId), eq(s.appointments.salonId, salon.id)) });
   if (!a) throw new Error('Запись не найдена');
   if (a.paid) throw new Error('Запись уже оплачена — сначала отмените оплату');
-  await db.update(s.appointments).set({ status: 'CANCELLED' }).where(eq(s.appointments.id, a.id));
+  await db.update(s.appointments).set({ status: 'CANCELLED', cancelledBy: 'ADMIN' }).where(eq(s.appointments.id, a.id));
   await notifySoon(a.id, 'CANCELLED');
 }
 
@@ -148,7 +149,7 @@ export async function setAppointmentEnd(slug: string, appointmentId: string, end
     if (endMinute < start + 5) throw new Error('Запись не может длиться меньше 5 минут');
     if (endMinute > 24 * 60) throw new Error('Окончание — не позже 24:00');
     const others = await tx.query.appointments.findMany({
-      where: and(eq(s.appointments.staffId, a.staffId), ne(s.appointments.status, 'CANCELLED'), ne(s.appointments.id, a.id),
+      where: and(eq(s.appointments.staffId, a.staffId), occupiesTime(), ne(s.appointments.id, a.id),
         gte(s.appointments.startsAt, zonedToUtc(date, 0, salon.timezone)), lt(s.appointments.startsAt, zonedToUtc(addDays(date, 1), 0, salon.timezone))),
       with: { client: true },
     });
@@ -174,4 +175,60 @@ export async function setAppointmentEnd(slug: string, appointmentId: string, end
     }).where(eq(s.appointments.id, a.id));
     return { end: endMinute };
   });
+}
+
+/** Клиент не пришёл: время мастера освобождается, запись остаётся в истории со статусом «не пришёл» */
+export async function markNoShow(slug: string, appointmentId: string, by: { role: 'ADMIN' } | { role: 'MASTER'; staffId: string } = { role: 'ADMIN' }) {
+  const salon = await getSalon(slug);
+  if (!salon) throw new Error('Салон не найден');
+  const a = await db.query.appointments.findFirst({ where: and(eq(s.appointments.id, appointmentId), eq(s.appointments.salonId, salon.id)) });
+  if (!a || a.status === 'CANCELLED') throw new Error('Запись не найдена');
+  if (by.role === 'MASTER' && a.staffId !== by.staffId) throw new Error('Это не ваша запись');
+  if (a.paid) throw new Error('Запись уже оплачена');
+  if (a.startsAt.getTime() > Date.now()) throw new Error('Время записи ещё не наступило');
+  await db.update(s.appointments).set({ status: 'NO_SHOW' }).where(eq(s.appointments.id, a.id));
+}
+
+/** Отметили «не пришёл» по ошибке — клиент всё-таки пришёл (если его время ещё свободно) */
+export async function undoNoShow(slug: string, appointmentId: string) {
+  const salon = await getSalon(slug);
+  if (!salon) throw new Error('Салон не найден');
+  return db.transaction(async (tx) => {
+    const [a] = await tx.select().from(s.appointments)
+      .where(and(eq(s.appointments.id, appointmentId), eq(s.appointments.salonId, salon.id))).for('update');
+    if (!a || a.status !== 'NO_SHOW') throw new Error('Запись не найдена');
+    await tx.select({ id: s.staff.id }).from(s.staff).where(eq(s.staff.id, a.staffId)).for('update');
+    const others = await tx.query.appointments.findMany({
+      where: and(eq(s.appointments.staffId, a.staffId), occupiesTime(), ne(s.appointments.id, a.id),
+        lt(s.appointments.startsAt, a.endsAt), gte(s.appointments.endsAt, a.startsAt)),
+      with: { client: true },
+    });
+    const clash = others.find((o) => o.startsAt < a.endsAt && o.endsAt > a.startsAt);
+    if (clash) throw new Error(`Это время у мастера уже занято (${clash.client.name}). Запишите клиента на другое время или к другому мастеру.`);
+    await tx.update(s.appointments).set({ status: a.confirmedAt ? 'CONFIRMED' : 'BOOKED' }).where(eq(s.appointments.id, a.id));
+  });
+}
+
+/** Клиент пришёл — запись больше не помечается «опаздывает» */
+export async function markArrived(slug: string, appointmentId: string, by: { role: 'ADMIN' } | { role: 'MASTER'; staffId: string } = { role: 'ADMIN' }) {
+  const salon = await getSalon(slug);
+  if (!salon) throw new Error('Салон не найден');
+  const a = await db.query.appointments.findFirst({ where: and(eq(s.appointments.id, appointmentId), eq(s.appointments.salonId, salon.id)) });
+  if (!a || a.status === 'CANCELLED' || a.status === 'NO_SHOW') throw new Error('Запись не найдена');
+  if (by.role === 'MASTER' && a.staffId !== by.staffId) throw new Error('Это не ваша запись');
+  await db.update(s.appointments).set({ arrivedAt: new Date(), status: a.paid ? a.status : 'ARRIVED' }).where(eq(s.appointments.id, a.id));
+}
+
+/** Клиент сам предупреждает со страницы своей записи: опоздаю на N минут */
+export async function clientReportsLate(appointmentId: string, minutes: number) {
+  const a = await db.query.appointments.findFirst({ where: eq(s.appointments.id, appointmentId) });
+  if (!a || a.status === 'CANCELLED' || a.status === 'NO_SHOW' || a.paid) throw new Error('Запись не найдена или уже закрыта');
+  await db.update(s.appointments).set({ lateMinutes: minutes, lateReportedAt: new Date() }).where(eq(s.appointments.id, a.id));
+}
+
+/** Клиент сам отменяет запись со страницы записи: время освобождается, в журнале видно «отменил клиент» */
+export async function clientCancels(appointmentId: string) {
+  const a = await db.query.appointments.findFirst({ where: eq(s.appointments.id, appointmentId) });
+  if (!a || a.status === 'CANCELLED' || a.status === 'NO_SHOW' || a.paid) throw new Error('Запись не найдена или уже закрыта');
+  await db.update(s.appointments).set({ status: 'CANCELLED', cancelledBy: 'CLIENT' }).where(eq(s.appointments.id, a.id));
 }

@@ -46,6 +46,9 @@ export async function getMasterDay(salon: Salon, m: Staff, date: DateStr) {
       /** Время окончания меняли — каким оно было по записи */
       plannedEnd: a.plannedEndsAt ? utcToZoned(a.plannedEndsAt, salon.timezone).minute : null,
       endChangedByMaster: !!a.endChangedBy?.startsWith('MASTER'),
+      status: a.status,
+      arrived: !!a.arrivedAt,
+      lateMinutes: a.lateMinutes,
       price: a.price, priceMax: a.priceMax,
       paid: a.paid,
       finalPrice: a.finalPrice ?? a.price,
@@ -70,7 +73,7 @@ export async function getMasterDay(salon: Salon, m: Staff, date: DateStr) {
       points: paid.reduce((n, i) => n + i.pointsUsed, 0),
       cash: paid.reduce((n, i) => n + i.cash, 0),
       share: paid.reduce((n, i) => n + i.share, 0),
-      waiting: items.length - paid.length,
+      waiting: items.filter((i) => !i.paid && i.status !== 'NO_SHOW').length,
     },
   };
 }
