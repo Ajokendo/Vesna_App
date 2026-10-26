@@ -128,7 +128,7 @@ type StaffDef = {
 const H = (h: number, m = 0) => h * 60 + m;
 
 const STAFF: StaffDef[] = [
-  { name: 'Сурмакан', title: 'Хозяйка салона · маникюр, педикюр, наращивание', photo: '/masters/v2/surmakan.jpg', roles: ['OWNER', 'MASTER'],
+  { name: 'Сурмакан', title: 'Маникюр, педикюр, наращивание ногтей', photo: '/masters/v2/surmakan.jpg', roles: ['OWNER', 'MASTER'],
     cats: ['mani', 'ext', 'pedi'], schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 3, 4], start: H(9), end: H(15) } },
   { name: 'Анастасия', title: 'Мужские и женские стрижки, сложные стрижки и окрашивание', photo: '/masters/v2/anastasia.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [2, 3, 5, 6], start: H(9, 30), end: H(19) } },
@@ -176,7 +176,9 @@ async function main() {
       for (const [i, m] of STAFF.entries()) {
         const found = await db.query.staff.findFirst({ where: and(eq(s.staff.salonId, existing.id), eq(s.staff.name, m.name)) });
         if (!found) { await insertStaff(existing.id, m, i, catIds); console.log(`Добавлен сотрудник: ${m.name}`); }
-        else if (m.photo && found.photoUrl !== m.photo) await db.update(s.staff).set({ photoUrl: m.photo }).where(eq(s.staff.id, found.id));
+        else if ((m.photo && found.photoUrl !== m.photo) || found.title !== m.title) {
+          await db.update(s.staff).set({ photoUrl: m.photo ?? found.photoUrl, title: m.title }).where(eq(s.staff.id, found.id));
+        }
       }
       // выдержка краски и длительности окрашивания — из прайса
       for (const c of CATEGORIES) for (const v of c.services) {

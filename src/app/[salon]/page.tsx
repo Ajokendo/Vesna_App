@@ -49,7 +49,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
                   {m.photoUrl ? <img src={m.photoUrl} alt={m.name} /> : m.name[0]}
                 </div>
                 <strong>{m.name}</strong>
-                <span className="small muted" style={{ lineHeight: 1.3 }}>{m.isOwner ? 'Хозяйка салона' : m.title?.split(',')[0]}</span>
+                <span className="small muted" style={{ lineHeight: 1.3 }}>{m.title?.split(',')[0]}</span>
               </div>
             ))}
           </div>

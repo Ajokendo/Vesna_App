@@ -105,7 +105,7 @@ export default async function MasterPage({ params, searchParams }: {
           </span>
           <div className="grow">
             <h1 style={{ fontSize: 22 }}>{me.name}</h1>
-            <span className="small muted">{day.scheduleLabel}{isOwner ? ' · хозяйка салона' : ` · ваша доля ${day.percent}%`}</span>
+            <span className="small muted">{day.scheduleLabel}{isOwner ? '' : ` · ваша доля ${day.percent}%`}</span>
           </div>
           <form action={logout}><button type="submit" className="btn" style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>Выйти</button></form>
         </header>

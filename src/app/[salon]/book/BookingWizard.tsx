@@ -258,7 +258,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                   </span>
                   <span className="grow stack" style={{ gap: 2 }}>
                     <strong style={{ fontSize: 16 }}>{m ? m.name : 'Любой свободный мастер'}</strong>
-                    <span className="small muted">{m ? (m.isOwner ? `Хозяйка салона · ${m.title?.split('·')[1]?.trim() ?? ''}` : m.title) : 'Подберём мастера на ваше время'}</span>
+                    <span className="small muted">{m ? m.title : 'Подберём мастера на ваше время'}</span>
                     {m && <span className="small muted">{m.scheduleLabel}</span>}
                   </span>
                 </button>
