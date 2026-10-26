@@ -1,5 +1,6 @@
 'use client';
 
+import { GROUPS, categoryGroup, type GroupId } from '@/lib/groups';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { Catalog } from '@/server/salon';
@@ -11,7 +12,7 @@ const LENGTHS: { id: HairLength; name: string }[] = [
 ];
 
 /** Быстрая запись с ресепшн: по телефону или клиент «с улицы» */
-export default function NewAppointment({ slug, date, catalog }: { slug: string; date: string; catalog: Catalog }) {
+export default function NewAppointment({ slug, date, catalog, group }: { slug: string; date: string; catalog: Catalog; group?: GroupId }) {
   const router = useRouter();
   const [open, setOpen] = useState<null | 'ADMIN' | 'WALK_IN'>(null);
   const [serviceId, setServiceId] = useState('');
@@ -58,11 +59,11 @@ export default function NewAppointment({ slug, date, catalog }: { slug: string; 
   const selectStyle = { minHeight: 48, borderRadius: 12, border: '1px solid #dde5de', padding: '0 12px', background: '#fff', fontSize: 15 } as const;
   return (
     <section className="card stack" style={{ maxWidth: 720 }}>
-      <strong style={{ fontSize: 17 }}>{open === 'WALK_IN' ? 'Клиент без записи' : 'Новая запись'}</strong>
+      <strong style={{ fontSize: 17 }}>{open === 'WALK_IN' ? 'Клиент без записи' : 'Новая запись'}{group ? ` · ${GROUPS.find((g) => g.id === group)?.name}` : ''}</strong>
       <label className="field">Услуга
         <select style={selectStyle} value={serviceId} onChange={(e) => { setServiceId(e.target.value); setStaffId(''); }}>
           <option value="">Выберите услугу</option>
-          {catalog.categories.map((c) => (
+          {catalog.categories.filter((c) => !group || categoryGroup(c.name) === group).map((c) => (
             <optgroup key={c.id} label={`${c.hall === 'MEN' ? 'Муж.' : 'Жен.'} · ${c.name}`}>
               {c.services.map((v) => {
                 const r = resolveService(v, c.byLength ? length : null);

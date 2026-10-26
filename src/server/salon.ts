@@ -10,6 +10,7 @@ import { occupiesTime } from './status';
 import { signId } from './push';
 import { resolveService, quote } from '@/lib/pricing';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
+import { categoryGroup } from '@/lib/groups';
 
 export async function getSalon(slug: string) {
   return db.query.salons.findFirst({ where: eq(s.salons.slug, slug) });
@@ -255,8 +256,8 @@ export async function getJournal(salonSlug: string, date: DateStr) {
       const ex = m.exceptions.find((e) => String(e.date) === date);
       const day = days.get(m.id) ?? null;
       const cats = m.categories.map((c) => c.category.name);
-      const group = cats.some((n) => /стриж|окраш|уклад|Борода|Детск|Детям/i.test(n)) ? 'hair'
-        : cats.some((n) => /Маник|Педик|Наращ/i.test(n)) ? 'nails' : 'brows';
+      const groups = cats.map(categoryGroup);
+      const group = groups.includes('hair') ? 'hair' : groups.includes('nails') ? 'nails' : 'brows';
       return {
         id: m.id, name: m.name, photoUrl: m.photoUrl, group,
         masterPercent: m.roles.includes('OWNER') ? 0 : (m.commission ?? salon.defaultCommission),

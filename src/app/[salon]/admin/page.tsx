@@ -8,14 +8,11 @@ import ReminderTicker from './ReminderTicker';
 import { AbsenceControl, ConflictList, type Conflict } from './Absence';
 import DroppedList from './DroppedList';
 import DayStrip from './DayStrip';
+import { GROUPS } from '@/lib/groups';
 
 export const dynamic = 'force-dynamic';
 
-const GROUPS = [
-  { id: 'hair', name: 'Парикмахеры' },
-  { id: 'nails', name: 'Ногтевой сервис' },
-  { id: 'brows', name: 'Брови и шугаринг' },
-] as const;
+
 
 const PX = 1.2; // пикселей на минуту
 
@@ -65,13 +62,13 @@ export default async function Journal({ params, searchParams }: {
         {GROUPS.map((g) => (
           <Link key={g.id} href={link(date, g.id)} aria-current={g.id === group ? 'page' : undefined}
             style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4px 6px', fontSize: 14, lineHeight: 1.2, borderRadius: 12, fontWeight: 800, textDecoration: 'none', color: g.id === group ? 'var(--ink)' : 'var(--muted)', background: g.id === group ? '#fff' : 'transparent' }}>
-            {g.name} · {columns.filter((c) => c.group === g.id).length}
+            {g.name}
           </Link>
         ))}
       </div>
 
       <ReminderTicker />
-      <NewAppointment slug={slug} date={date} catalog={catalog} />
+      <NewAppointment key={group} slug={slug} date={date} catalog={catalog} group={group} />
 
       <DroppedList slug={slug} items={dropped} />
       <ConflictList slug={slug} salonName={salon.name} dateLabel={`${weekdayFull(date)}, ${dayMonth(date)},`} items={columns.flatMap((c) => c.items.filter((i) => i.conflict).map((i): Conflict => ({
