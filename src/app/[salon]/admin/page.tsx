@@ -45,9 +45,9 @@ export default async function Journal({ params, searchParams }: {
 
   const [{ columns, dropped }, catalog] = await Promise.all([getJournal(slug, date), getCatalog(salon.id)]);
   // вкладки — только те разделы, где есть мастера (у салона без ногтевого сервиса не будет «Ногтей»)
-  const groups = GROUPS.filter((g) => columns.some((c) => c.group === g.id));
+  const groups = GROUPS.filter((g) => columns.some((c) => c.groups.includes(g.id)));
   const group = groups.find((g) => g.id === sp.group)?.id ?? groups[0]?.id ?? 'hair';
-  const cols = columns.filter((c) => c.group === group);
+  const cols = columns.filter((c) => c.groups.includes(group));
 
   const START = Math.min(9 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.start));
   const END = Math.max(20 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.end));

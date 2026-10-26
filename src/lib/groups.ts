@@ -3,7 +3,8 @@
 export const GROUPS = [
   { id: 'hair', name: 'Волосы' },
   { id: 'nails', name: 'Ногти' },
-  { id: 'brows', name: 'Брови и шугаринг' },
+  { id: 'brows', name: 'Брови' },
+  { id: 'sugar', name: 'Шугаринг' },
   { id: 'face', name: 'Косметология' },
 ] as const;
 export type GroupId = (typeof GROUPS)[number]['id'];
@@ -15,6 +16,7 @@ export function categoryGroup(nameOrCat: string | { name: string; journalGroup?:
   const name = cat.name;
   if (/стриж|окраш|уклад|причёс|причес|борода|детск|детям|волос|барбер/i.test(name)) return 'hair';
   if (/маник|педик|наращ|ногт|гель/i.test(name)) return 'nails';
+  if (/депил|шугар|воск|эпил/i.test(name)) return 'sugar';
   if (/космет|лиц|чистк|пилинг|массаж/i.test(name)) return 'face';
   return 'brows';
 }

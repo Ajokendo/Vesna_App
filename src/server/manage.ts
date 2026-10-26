@@ -106,7 +106,7 @@ export const CategoryInput = z.object({
   byLength: z.boolean(),
   forKids: z.boolean(),
   active: z.boolean(),
-  journalGroup: z.enum(['hair', 'nails', 'brows', 'face']).nullable().optional(),
+  journalGroup: z.enum(['hair', 'nails', 'brows', 'sugar', 'face']).nullable().optional(),
 });
 
 export async function saveCategory(slug: string, input: z.infer<typeof CategoryInput>) {

@@ -260,10 +260,11 @@ export async function getJournal(salonSlug: string, date: DateStr) {
     columns: masters.map((m) => {
       const ex = m.exceptions.find((e) => String(e.date) === date);
       const day = days.get(m.id) ?? null;
-      const groups = m.categories.map((c) => categoryGroup(c.category));
-      const group = (['hair', 'nails', 'brows', 'face'] as const).find((g) => groups.includes(g)) ?? 'brows';
+      // мастер показывается во всех вкладках журнала, где у него есть услуги (например, брови и шугаринг)
+      const groups = [...new Set(m.categories.map((c) => categoryGroup(c.category)))];
+      const group = groups[0] ?? 'brows';
       return {
-        id: m.id, name: m.name, photoUrl: m.photoUrl, group,
+        id: m.id, name: m.name, photoUrl: m.photoUrl, group, groups,
         masterPercent: m.roles.includes('OWNER') ? 0 : (m.commission ?? salon.defaultCommission),
         scheduleLabel: workDaysLabel(m.schedule ?? null),
         day,
