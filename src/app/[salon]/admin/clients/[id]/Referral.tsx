@@ -33,7 +33,7 @@ export default function Referral({ slug, clientId, info, canSet, bonus }: {
           <span className="small muted">Новый клиент пришёл по совету знакомого? Укажите телефон того, кто пригласил, — после первой оплаты ему начислится {bonus} баллов.</span>
           <div className="row" style={{ gap: 8 }}>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Телефон пригласившего"
-              style={{ minHeight: 42, flex: 1, borderRadius: 12, border: '1px solid #dde5de', padding: '0 12px', fontSize: 15 }} />
+              style={{ minHeight: 42, flex: 1, minWidth: 0, borderRadius: 12, border: '1px solid #dde5de', padding: '0 12px', fontSize: 15 }} />
             <button type="button" className="btn" disabled={busy || phone.replace(/\D/g, '').length < 6} onClick={save} style={{ minHeight: 42 }}>Отметить</button>
           </div>
           {msg && <div className="error" role="alert">{msg}</div>}
