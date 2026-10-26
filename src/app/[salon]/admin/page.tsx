@@ -80,7 +80,8 @@ export default async function Journal({ params, searchParams }: {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <div style={{ minWidth: 220 * cols.length + 64, display: 'grid', gridTemplateColumns: `64px repeat(${cols.length}, minmax(220px, 1fr))` }}>
-          <div style={{ borderBottom: '1px solid var(--line)' }} />
+          {/* колонка времени «заморожена» слева: при прокрутке вбок остаётся на месте */}
+          <div style={{ borderBottom: '1px solid var(--line)', position: 'sticky', left: 0, zIndex: 3, background: 'var(--card)', borderRight: '1px solid var(--line)' }} />
           {cols.map((c) => {
             const st = STATE[stateOf(c)];
             const hours = c.day ? `${hhmm(c.day.start)}–${hhmm(c.day.end)}` : '';
@@ -103,7 +104,7 @@ export default async function Journal({ params, searchParams }: {
             );
           })}
 
-          <div style={{ position: 'relative', height: (END - START) * PX }}>
+          <div style={{ position: 'sticky', left: 0, zIndex: 3, height: (END - START) * PX, background: 'var(--card)', borderRight: '1px solid var(--line)', boxShadow: '4px 0 8px -6px rgba(30,40,30,.25)' }}>
             {hours.map((m) => (
               <span key={m} className="small muted" style={{ position: 'absolute', right: 10, top: Math.max(2, (m - START) * PX - 8), fontWeight: 700 }}>{hhmm(m)}</span>
             ))}
