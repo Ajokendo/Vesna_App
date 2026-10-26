@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { isAdmin } from '@/server/admin-auth';
-import { CategoryInput, SalonSettings, ServiceInput, saveCategory, saveService, saveStaff, StaffInput, updateSalonSettings } from '@/server/manage';
+import { CategoryInput, SalonSettings, ServiceInput, saveCategory, saveService, saveStaff, saveStaffOrder, StaffInput, StaffOrder, updateSalonSettings } from '@/server/manage';
 
 const Body = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('salon'), data: SalonSettings }),
   z.object({ kind: z.literal('service'), data: ServiceInput }),
   z.object({ kind: z.literal('category'), data: CategoryInput }),
   z.object({ kind: z.literal('staff'), data: StaffInput }),
+  z.object({ kind: z.literal('order'), data: StaffOrder }),
 ]);
 
 const LABEL: Record<string, string> = {
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: str
     if (b.kind === 'salon') { await updateSalonSettings(salon, b.data); return NextResponse.json({ ok: true }); }
     if (b.kind === 'service') return NextResponse.json(await saveService(salon, b.data));
     if (b.kind === 'staff') return NextResponse.json(await saveStaff(salon, b.data));
+    if (b.kind === 'order') return NextResponse.json(await saveStaffOrder(salon, b.data));
     return NextResponse.json(await saveCategory(salon, b.data));
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 409 });

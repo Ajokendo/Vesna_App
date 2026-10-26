@@ -51,7 +51,9 @@ export default async function Journal({ params, searchParams }: {
 
   const START = Math.min(9 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.start));
   const END = Math.max(20 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.end));
-  const hours = Array.from({ length: Math.floor((END - START) / 60) + 1 }, (_, i) => START + i * 60).filter((m) => m % 60 === 0 || m === START);
+  // отметки времени каждые 30 минут: часы — крупно, половины — мельче
+  const firstMark = Math.ceil(START / 30) * 30;
+  const hours = Array.from({ length: Math.floor((END - firstMark) / 30) + 1 }, (_, i) => firstMark + i * 30);
   const total = columns.reduce((n, c) => n + c.items.length, 0);
   const link = (d: string, g: string = group) => `/${slug}/admin?date=${d}&group=${g}`;
 
@@ -115,13 +117,18 @@ export default async function Journal({ params, searchParams }: {
 
           <div style={{ position: 'sticky', left: 0, zIndex: 3, height: (END - START) * PX, background: 'var(--card)', borderRight: '1px solid var(--line)', boxShadow: '4px 0 8px -6px rgba(30,40,30,.25)' }}>
             {hours.map((m) => (
-              <span key={m} className="small muted" style={{ position: 'absolute', right: 10, top: Math.max(2, (m - START) * PX - 8), fontWeight: 700 }}>{hhmm(m)}</span>
+              <span key={m} className="muted" style={{
+                position: 'absolute', right: 10, top: Math.max(2, (m - START) * PX - 8), lineHeight: '16px',
+                fontWeight: m % 60 ? 600 : 800, fontSize: m % 60 ? 11 : 13, opacity: m % 60 ? 0.75 : 1,
+              }}>{hhmm(m)}</span>
             ))}
           </div>
           {cols.map((c) => (
             <div key={c.id} style={{
               position: 'relative', height: (END - START) * PX, borderLeft: '1px solid var(--line)',
-              background: `repeating-linear-gradient(to bottom, #dde5de 0 1px, transparent 1px ${60 * PX}px), repeating-linear-gradient(to bottom, #f1f4f0 0 1px, transparent 1px ${15 * PX}px)`,
+              background: `repeating-linear-gradient(to bottom, #d3ddd4 0 1px, transparent 1px ${60 * PX}px), repeating-linear-gradient(to bottom, #e4eae3 0 1px, transparent 1px ${30 * PX}px), repeating-linear-gradient(to bottom, #f2f5f1 0 1px, transparent 1px ${15 * PX}px)`,
+              // линии сетки ровно на :00 и :30, даже если день начинается не с целого часа
+              backgroundPosition: `0 ${((60 - (START % 60)) % 60) * PX}px, 0 ${((30 - (START % 30)) % 30) * PX}px, 0 ${((15 - (START % 15)) % 15) * PX}px`,
             }}>
               {!c.day && (
                 <div style={{ position: 'absolute', inset: 8, borderRadius: 14, background: STATE[stateOf(c)].body, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 24, fontWeight: 800, fontSize: 15, color: STATE[stateOf(c)].fg }}>

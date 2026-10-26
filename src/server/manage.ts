@@ -203,6 +203,17 @@ export async function saveStaff(slug: string, input: z.infer<typeof StaffInput>)
   return { id };
 }
 
+export const StaffOrder = z.object({ ids: z.array(z.string()).min(1).max(100) });
+
+/** Порядок мастеров (главная, запись, журнал): по списку id */
+export async function saveStaffOrder(slug: string, input: z.infer<typeof StaffOrder>) {
+  const salon = await salonOf(slug);
+  const own = await db.query.staff.findMany({ where: eq(s.staff.salonId, salon.id), columns: { id: true } });
+  const ids = input.ids.filter((id) => own.some((m) => m.id === id));
+  for (const [i, id] of ids.entries()) await db.update(s.staff).set({ sortOrder: i }).where(eq(s.staff.id, id));
+  return { ok: true };
+}
+
 /** Всё для страницы настроек: разделы и услуги (включая скрытые), мастера */
 export async function getManageData(slug: string) {
   const salon = await salonOf(slug);

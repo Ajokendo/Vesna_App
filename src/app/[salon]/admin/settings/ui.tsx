@@ -13,7 +13,7 @@ export function useSave(slug: string) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  async function save(kind: 'salon' | 'service' | 'category' | 'staff', data: unknown) {
+  async function save(kind: 'salon' | 'service' | 'category' | 'staff' | 'order', data: unknown) {
     setBusy(true); setMsg(null);
     const res = await fetch(`/api/${slug}/admin/manage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, data }) });
     const d = await res.json().catch(() => ({}));

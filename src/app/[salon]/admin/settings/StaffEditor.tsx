@@ -23,13 +23,28 @@ async function shrink(file: File): Promise<string> {
 
 export default function StaffEditor({ slug, staff, categories, defaultCommission }: { slug: string; staff: Staff[]; categories: Cat[]; defaultCommission: number }) {
   const [adding, setAdding] = useState(false);
+  const order = useSave(slug);
+  const arrow = { width: 32, height: 28, borderRadius: 8, border: '1px solid var(--line)', background: '#fff', cursor: 'pointer', fontSize: 11, color: 'var(--muted)' } as const;
+  function move(i: number, d: number) {
+    const ids = staff.map((m) => m.id);
+    [ids[i], ids[i + d]] = [ids[i + d], ids[i]];
+    order.save('order', { ids });
+  }
   return (
     <div className="stack" style={{ gap: 12 }}>
       <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
         Здесь — кто работает, какие услуги делает и по какому графику. Разовые изменения (заболела, вышла в выходной) отмечайте в журнале кнопкой «Не выйдет / Выйдет».
-        PIN для кабинета мастера — на вкладке <Link href={`/${slug}/admin/settings?tab=pins`}>«PIN-коды»</Link>.
+        Стрелками ▲▼ задаётся порядок мастеров на главной, в записи и в журнале. PIN для кабинета мастера — на вкладке <Link href={`/${slug}/admin/settings?tab=pins`}>«PIN-коды»</Link>.
       </p>
-      {staff.map((m) => <StaffCard key={m.id} slug={slug} m={m} categories={categories} defaultCommission={defaultCommission} />)}
+      {staff.map((m, i) => (
+        <div key={m.id} className="row" style={{ gap: 6, alignItems: 'stretch' }}>
+          <div className="stack" style={{ gap: 4, justifyContent: 'center' }}>
+            <button type="button" aria-label={`${m.name} выше`} disabled={i === 0 || order.busy} onClick={() => move(i, -1)} style={arrow}>▲</button>
+            <button type="button" aria-label={`${m.name} ниже`} disabled={i === staff.length - 1 || order.busy} onClick={() => move(i, 1)} style={arrow}>▼</button>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}><StaffCard slug={slug} m={m} categories={categories} defaultCommission={defaultCommission} /></div>
+        </div>
+      ))}
       {adding ? <StaffForm slug={slug} categories={categories} defaultCommission={defaultCommission} onDone={() => setAdding(false)} /> : (
         <button type="button" className="btn" style={{ alignSelf: 'flex-start' }} onClick={() => setAdding(true)}>+ Новый мастер</button>
       )}
