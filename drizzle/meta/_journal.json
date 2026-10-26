@@ -50,6 +50,13 @@
       "when": 1792992863460,
       "tag": "0006_late_noshow",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792994050320,
+      "tag": "0007_staff_photo",
+      "breakpoints": true
     }
   ]
 }

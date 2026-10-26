@@ -113,6 +113,82 @@ export async function saveCategory(slug: string, input: z.infer<typeof CategoryI
   return { id: row.id };
 }
 
+const Minute = z.number().int().min(0).max(24 * 60);
+export const StaffInput = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(2).max(60),
+  title: z.string().trim().max(80).nullable(),
+  phone: z.string().trim().max(30).nullable(),
+  isMaster: z.boolean(),
+  commission: z.number().int().min(0).max(100).nullable(),
+  active: z.boolean(),
+  categoryIds: z.array(z.string()).max(50),
+  /** undefined — фото не менять; null — убрать; строка — новое фото (уменьшенное на телефоне) */
+  photo: z.string().startsWith('data:image/').max(400_000).nullable().optional(),
+  schedule: z.object({
+    kind: z.enum(['WEEKLY', 'CYCLE']),
+    weekdays: z.array(z.number().int().min(0).max(6)).max(7),
+    cycleWork: z.number().int().min(1).max(14).nullable(),
+    cycleOff: z.number().int().min(1).max(14).nullable(),
+    cycleStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    startMinute: Minute, endMinute: Minute,
+    breakStart: Minute.nullable(), breakEnd: Minute.nullable(),
+  }).nullable(),
+});
+
+/** Добавить или изменить сотрудника: данные, фото, услуги, график, доля */
+export async function saveStaff(slug: string, input: z.infer<typeof StaffInput>) {
+  const salon = await salonOf(slug);
+  const sch = input.schedule;
+  if (sch) {
+    if (sch.endMinute <= sch.startMinute) throw new Error('Конец рабочего дня должен быть позже начала');
+    if (sch.kind === 'WEEKLY' && !sch.weekdays.length) throw new Error('Отметьте рабочие дни недели');
+    if (sch.kind === 'CYCLE' && (!sch.cycleWork || !sch.cycleOff || !sch.cycleStart)) throw new Error('Для графика «через день» укажите дни работы, отдыха и первый рабочий день');
+    if ((sch.breakStart == null) !== (sch.breakEnd == null)) throw new Error('Укажите и начало, и конец перерыва (или оставьте оба пустыми)');
+    if (sch.breakStart != null && sch.breakEnd != null && (sch.breakEnd <= sch.breakStart || sch.breakStart < sch.startMinute || sch.breakEnd > sch.endMinute))
+      throw new Error('Перерыв должен быть внутри рабочего дня');
+  }
+  if (input.isMaster && !sch) throw new Error('У мастера должен быть график');
+  const cats = input.categoryIds.length ? await db.query.serviceCategories.findMany({ where: eq(s.serviceCategories.salonId, salon.id) }) : [];
+  const catIds = input.categoryIds.filter((id) => cats.some((c) => c.id === id));
+
+  let staffId = input.id;
+  const existing = staffId ? await db.query.staff.findFirst({ where: and(eq(s.staff.id, staffId), eq(s.staff.salonId, salon.id)) }) : undefined;
+  if (staffId && !existing) throw new Error('Сотрудник не найден');
+  const roles = new Set(existing?.roles ?? []);
+  if (input.isMaster) roles.add('MASTER'); else roles.delete('MASTER');
+  const isOwner = roles.has('OWNER');
+  const base = {
+    name: input.name, title: input.title || null, phone: input.phone || null, active: isOwner ? true : input.active,
+    roles: [...roles], commission: isOwner ? null : input.commission,
+  };
+  if (existing) {
+    await db.update(s.staff).set(base).where(eq(s.staff.id, existing.id));
+  } else {
+    const all = await db.query.staff.findMany({ where: eq(s.staff.salonId, salon.id) });
+    const [row] = await db.insert(s.staff).values({ ...base, salonId: salon.id, sortOrder: Math.max(-1, ...all.map((m) => m.sortOrder)) + 1 }).returning();
+    staffId = row.id;
+  }
+  const id = staffId!;
+  if (input.photo !== undefined) {
+    await db.update(s.staff).set(input.photo
+      ? { photoData: input.photo, photoUrl: `/api/${slug}/staff/${id}/photo?v=${Date.now().toString(36)}` }
+      : { photoData: null, photoUrl: null }).where(eq(s.staff.id, id));
+  }
+  await db.delete(s.staffCategories).where(eq(s.staffCategories.staffId, id));
+  if (catIds.length) await db.insert(s.staffCategories).values(catIds.map((categoryId) => ({ staffId: id, categoryId })));
+  if (sch) {
+    const v = {
+      kind: sch.kind, weekdays: sch.kind === 'WEEKLY' ? [...new Set(sch.weekdays)].sort() : [],
+      cycleWork: sch.kind === 'CYCLE' ? sch.cycleWork : null, cycleOff: sch.kind === 'CYCLE' ? sch.cycleOff : null,
+      cycleStart: sch.kind === 'CYCLE' ? sch.cycleStart : null,
+      startMinute: sch.startMinute, endMinute: sch.endMinute, breakStart: sch.breakStart, breakEnd: sch.breakEnd,
+    };
+    await db.insert(s.schedules).values({ staffId: id, ...v }).onConflictDoUpdate({ target: s.schedules.staffId, set: v });
+  }
+  return { id };
+}
+
 /** Всё для страницы настроек: разделы и услуги (включая скрытые), мастера */
 export async function getManageData(slug: string) {
   const salon = await salonOf(slug);
@@ -133,7 +209,7 @@ export async function getManageData(slug: string) {
       })),
     })),
     staff: staff.map((m) => ({
-      id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, roles: m.roles, commission: m.commission, active: m.active,
+      id: m.id, name: m.name, title: m.title, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, commission: m.commission, active: m.active,
       categoryIds: m.categories.map((c) => c.categoryId),
       schedule: m.schedule ? {
         kind: m.schedule.kind, weekdays: m.schedule.weekdays, cycleWork: m.schedule.cycleWork, cycleOff: m.schedule.cycleOff,

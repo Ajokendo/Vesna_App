@@ -60,6 +60,8 @@ export const staff = pgTable('staff', {
   name: text('name').notNull(),
   phone: text('phone'),
   photoUrl: text('photo_url'),
+  /** Фото, загруженное в настройках (data:image/jpeg;base64,…) — отдаётся по /api/<салон>/staff/<id>/photo */
+  photoData: text('photo_data'),
   title: text('title'),
   /** Одному человеку можно выдать несколько ролей (например, владелец и мастер) */
   roles: roleEnum('roles').array().notNull().default([]),

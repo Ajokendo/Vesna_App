@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getManageData } from '@/server/manage';
 import SalonForm from './SalonForm';
 import ServicesEditor from './ServicesEditor';
+import StaffEditor from './StaffEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,7 @@ export default async function Settings({ params, searchParams }: { params: Promi
       </nav>
       {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} />}
       {tab === 'services' && <ServicesEditor slug={slug} categories={data.categories} />}
-      {tab === 'staff' && <p className="muted">Скоро: мастера, их услуги, графики и фото.</p>}
+      {tab === 'staff' && <StaffEditor slug={slug} staff={data.staff} categories={data.categories} defaultCommission={data.salon.defaultCommission} />}
     </main>
   );
 }
