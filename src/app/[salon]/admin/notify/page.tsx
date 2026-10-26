@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { pushStats, recentBroadcasts } from '@/server/broadcast';
@@ -17,7 +16,6 @@ export default async function NotifyPage({ params }: { params: Promise<{ salon: 
   const today = utcToZoned(new Date(), salon.timezone).date;
   return (
     <main className="safe" style={{ padding: '24px 28px 40px', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <Link href={`/${slug}/admin`} className="small muted">‹ Журнал</Link>
       <header>
         <h1 style={{ fontSize: 26 }}>Уведомления</h1>
         <p className="muted" style={{ margin: '6px 0 0', lineHeight: 1.5 }}>

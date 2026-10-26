@@ -21,7 +21,6 @@ export default async function Settings({ params, searchParams }: { params: Promi
   try { data = await getManageData(slug); } catch { notFound(); }
   return (
     <main className="safe" style={{ padding: '24px 28px 48px', maxWidth: 960, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <Link href={`/${slug}/admin`} className="small muted">‹ Журнал</Link>
       <header>
         <h1 style={{ fontSize: 26 }}>Настройки салона</h1>
         <p className="muted" style={{ margin: '6px 0 0' }}>Изменения сразу видны клиентам в онлайн-записи и в журнале.</p>

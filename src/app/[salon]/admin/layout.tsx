@@ -1,12 +1,23 @@
 import BackHome from '@/app/BackHome';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import AdminNav from './AdminNav';
 import { isAdmin, signInWithPin } from '@/server/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ salon: string }> }) {
   const { salon } = await params;
-  if (await isAdmin()) return <>{children}</>;
+  if (await isAdmin()) {
+    return (
+      <>
+        {children}
+        {/* место под нижнюю панель, чтобы она не закрывала конец страницы */}
+        <div aria-hidden style={{ height: 'calc(76px + env(safe-area-inset-bottom))' }} />
+        <Suspense><AdminNav slug={salon} /></Suspense>
+      </>
+    );
+  }
 
   async function login(formData: FormData) {
     'use server';

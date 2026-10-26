@@ -22,6 +22,14 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             <h1 style={{ fontSize: 22 }}>{salon.name}</h1>
             <div className="muted small">{salon.tagline} · {salon.city}</div>
           </div>
+          {/* вход для сотрудников — сразу виден вверху, без прокрутки */}
+          <details className="staff-menu" style={{ position: 'relative' }}>
+            <summary className="btn" style={{ minHeight: 40, padding: '0 12px', fontSize: 13, listStyle: 'none', cursor: 'pointer' }}>Сотрудникам ▾</summary>
+            <div className="card stack" style={{ position: 'absolute', right: 0, top: 46, zIndex: 20, gap: 8, padding: 10, minWidth: 200, boxShadow: '0 8px 24px rgba(30,40,30,.15)' }}>
+              <Link href={`/${salon.slug}/master`} className="btn" style={{ minHeight: 44 }}>Кабинет мастера</Link>
+              <Link href={`/${salon.slug}/admin`} className="btn" style={{ minHeight: 44 }}>Администратор</Link>
+            </div>
+          </details>
         </header>
 
         <section className="stack">

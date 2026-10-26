@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { isAdmin } from '@/server/admin-auth';
@@ -32,7 +31,6 @@ export default async function StaffPins({ params, searchParams }: {
 
   return (
     <main className="safe" style={{ padding: '24px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <Link href={`/${slug}/admin`} className="small muted">‹ Журнал</Link>
       <header>
         <h1 style={{ fontSize: 26 }}>Мастера и PIN-коды</h1>
         <p className="muted" style={{ margin: '6px 0 0', lineHeight: 1.5 }}>

@@ -31,10 +31,7 @@ export function AbsenceControl({ slug, staffId, name, date, absence, normal, usu
 
   if (absence) {
     return (
-      <div className="stack" style={{ gap: 4, marginTop: 6 }}>
-        <span className="small" style={{ fontWeight: 800, color: absence.dayOff || normal ? 'var(--danger)' : 'var(--accent-dark)' }}>
-          {absence.dayOff ? 'Не выйдет' : `${normal ? 'Работает' : 'Выходит в выходной'} ${toTime(absence.start ?? 0)}–${toTime(absence.end ?? 0)}`}{absence.note ? ` · ${absence.note}` : ''}
-        </span>
+      <div className="stack" style={{ gap: 4 }}>
         <button type="button" className="small" onClick={restore} disabled={busy}
           style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--accent-dark)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>
           {busy ? 'Возвращаем…' : 'Вернуть обычный график'}
@@ -48,7 +45,7 @@ export function AbsenceControl({ slug, staffId, name, date, absence, normal, usu
     return (
       <>
         <button type="button" className="small" onClick={() => setOpen(true)}
-          style={{ marginTop: 6, alignSelf: 'flex-start', border: '1px solid #c9d6c0', background: 'var(--accent-soft)', borderRadius: 8, padding: '3px 8px', color: 'var(--accent-dark)', fontWeight: 700, cursor: 'pointer' }}>
+          style={{ alignSelf: 'flex-start', border: '1px solid #c9d6c0', background: 'var(--accent-soft)', borderRadius: 8, padding: '3px 8px', color: 'var(--accent-dark)', fontWeight: 700, cursor: 'pointer' }}>
           Выйдет в выходной…
         </button>
         {open && <ExtraDayDialog slug={slug} staffId={staffId} name={name} date={date} usual={usual} onClose={() => setOpen(false)} />}
@@ -58,7 +55,7 @@ export function AbsenceControl({ slug, staffId, name, date, absence, normal, usu
   return (
     <>
       <button type="button" className="small" onClick={() => setOpen(true)}
-        style={{ marginTop: 6, alignSelf: 'flex-start', border: '1px solid #e5c9cf', background: '#fbf3f4', borderRadius: 8, padding: '3px 8px', color: 'var(--danger)', fontWeight: 700, cursor: 'pointer' }}>
+        style={{ alignSelf: 'flex-start', border: '1px solid #e5c9cf', background: '#fbf3f4', borderRadius: 8, padding: '3px 8px', color: 'var(--danger)', fontWeight: 700, cursor: 'pointer' }}>
         Не выйдет…
       </button>
       {open && <AbsenceDialog slug={slug} staffId={staffId} name={name} date={date} normal={normal} onClose={() => setOpen(false)} />}
