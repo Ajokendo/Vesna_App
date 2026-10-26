@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { addDays, hhmm, weekdayMon0, zonedToUtc, utcToZoned } from './time';
 import { isWorkingDay, scheduleLabel, workingHours, type ScheduleLike } from './schedule';
-import { availableStarts } from './slots';
+import { availableStarts, busyParts } from './slots';
+import { calcPayment } from './payment';
 import { ageOn, pickByAge, quote, resolveService, formatPrice, type ServiceLike } from './pricing';
 
 const weekly = (weekdays: number[], start = 570, end = 1140, br?: [number, number]): ScheduleLike => ({
@@ -127,5 +128,53 @@ describe('цены', () => {
     expect(ageOn('2018-03-15', '2026-10-31')).toBe(8);
     expect(pickByAge(tiers, ageOn('2018-03-15', '2026-10-31'))?.price).toBe(350);
     expect(pickByAge(tiers, 15)).toBeUndefined();
+  });
+});
+
+describe('выдержка краски: мастер свободен, пока краска впитывается', () => {
+  const day = { start: 540, end: 1200, breaks: [] };
+  const pause = { after: 30, min: 35 }; // нанесение 30 мин, выдержка 35, затем смывка и укладка
+  it('во время выдержки окрашивания можно записать стрижку', () => {
+    // окрашивание 10:00–11:45, выдержка 10:30–11:05
+    const busy = busyParts(600, 705, pause);
+    expect(busy).toEqual([{ start: 600, end: 630 }, { start: 665, end: 705 }]);
+    const starts = availableStarts({ day, durationMin: 30, busy, earliestMin: 600 });
+    expect(starts).toContain(630);      // 10:30 — сразу после нанесения
+    expect(starts).not.toContain(640);  // 10:40–11:10 залезает на смывку
+  });
+  it('окрашивание можно начать так, чтобы чужая стрижка пришлась на выдержку', () => {
+    const busy = [{ start: 660, end: 690 }]; // стрижка 11:00–11:30
+    const starts = availableStarts({ day, durationMin: 105, pause, busy, earliestMin: 600 });
+    expect(starts).toContain(630); // 10:30: нанесение до 11:00, выдержка 11:00–11:35
+    expect(availableStarts({ day, durationMin: 105, busy, earliestMin: 600 })).not.toContain(630); // без выдержки — нельзя
+  });
+  it('выдержка берётся из прайса по длине волос', () => {
+    const s: ServiceLike = { id: 'c', name: 'В один тон', price: null, priceMax: null, durationMin: null, durationLabel: null, ageMin: null, ageMax: null,
+      byLength: { SHORT: { price: 600, dur: 105, pa: 30, pm: 35 } } };
+    expect(resolveService(s, 'SHORT')?.pause).toEqual({ after: 30, min: 35 });
+  });
+});
+
+describe('оплата баллами и доля мастера', () => {
+  const base = { earnPercent: 5, masterPercent: 50 };
+  it('без баллов: 5% баллами, мастеру половина', () => {
+    expect(calcPayment({ ...base, price: 600, points: 0, balance: 0 })).toMatchObject({ cash: 600, pointsEarned: 30, masterShare: 300, salonShare: 300 });
+  });
+  it('часть баллами: из 140 списали 100, услуга 600 → баллы с 500, делят 500', () => {
+    expect(calcPayment({ ...base, price: 600, points: 100, balance: 140 }))
+      .toEqual({ price: 600, pointsUsed: 100, cash: 500, pointsEarned: 25, balanceAfter: 65, masterPercent: 50, masterShare: 250, salonShare: 250 });
+  });
+  it('целиком баллами: ни мастеру, ни салону, баллы не начисляются', () => {
+    expect(calcPayment({ ...base, price: 500, points: 500, balance: 520 })).toMatchObject({ cash: 0, pointsEarned: 0, masterShare: 0, salonShare: 0, balanceAfter: 20 });
+  });
+  it('200 баллов из 500 → делят 300', () => {
+    expect(calcPayment({ ...base, price: 500, points: 200, balance: 200 })).toMatchObject({ cash: 300, masterShare: 150, salonShare: 150 });
+  });
+  it('хозяйка-мастер: комиссии нет, всё салону', () => {
+    expect(calcPayment({ ...base, masterPercent: 0, price: 800, points: 0, balance: 0 })).toMatchObject({ masterShare: 0, salonShare: 800 });
+  });
+  it('нельзя списать больше, чем есть или чем стоит услуга', () => {
+    expect(() => calcPayment({ ...base, price: 600, points: 150, balance: 140 })).toThrow('140');
+    expect(() => calcPayment({ ...base, price: 300, points: 400, balance: 500 })).toThrow();
   });
 });

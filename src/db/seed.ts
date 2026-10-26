@@ -6,9 +6,10 @@ import { and, eq } from 'drizzle-orm';
 import { db, schema as s } from './index';
 import type { ByLength } from './schema';
 import { addDays, utcToZoned, zonedToUtc } from '../lib/time';
+import { workingHours } from '../lib/schedule';
 
 type Svc = {
-  name: string; price?: number; max?: number; dur?: number; label?: string;
+  name: string; price?: number; max?: number; dur?: number; label?: string; pause?: [number, number];
   byLength?: ByLength; age?: [number, number]; only?: string[];
 };
 type Cat = {
@@ -16,10 +17,12 @@ type Cat = {
   services: Svc[]; addons?: { name: string; price: number; dur: number; free?: boolean }[];
 };
 
-const L = (short?: [number, number, string?, number?], medium?: [number, number, string?, number?], long?: [number, number, string?, number?], xlong?: [number, number, string?, number?]): ByLength => {
+// [цена, минут, как в прайсе, цена «до», выдержка: с какой минуты, сколько минут]
+type LP = [number, number, string?, number?, number?, number?];
+const L = (short?: LP, medium?: LP, long?: LP, xlong?: LP): ByLength => {
   const out: ByLength = {};
-  const put = (k: 'SHORT' | 'MEDIUM' | 'LONG' | 'XLONG', v?: [number, number, string?, number?]) => {
-    if (v) out[k] = { price: v[0], dur: v[1], label: v[2] ?? null, max: v[3] ?? null };
+  const put = (k: 'SHORT' | 'MEDIUM' | 'LONG' | 'XLONG', v?: LP) => {
+    if (v) out[k] = { price: v[0], dur: v[1], label: v[2] ?? null, max: v[3] ?? null, pa: v[4] ?? null, pm: v[5] ?? null };
   };
   put('SHORT', short); put('MEDIUM', medium); put('LONG', long); put('XLONG', xlong);
   return out;
@@ -39,7 +42,7 @@ const CATEGORIES: Cat[] = [
     { name: 'Рисунок', price: 50, dur: 10 },
   ] },
   { key: 'beard', hall: 'MEN', name: 'Борода', services: [{ name: 'Борода + форма', price: 200, dur: 20 }] },
-  { key: 'mcolor', hall: 'MEN', name: 'Мужское окрашивание', services: [{ name: 'Покраска (работа)', price: 300, dur: 30 }],
+  { key: 'mcolor', hall: 'MEN', name: 'Мужское окрашивание', services: [{ name: 'Покраска (работа)', price: 300, dur: 45, label: '30–45 мин', pause: [10, 20] }],
     addons: [{ name: 'Мужская краска (материал)', price: 300, dur: 0 }] },
   { key: 'kids', hall: 'MEN', name: 'Детская стрижка', note: 'цена по возрасту', forKids: true, services: [
     { name: 'От 1 года до 6 лет', price: 300, dur: 20, age: [1, 6] },
@@ -62,11 +65,12 @@ const CATEGORIES: Cat[] = [
     { name: 'Причёска', byLength: L(undefined, [800, 60], [900, 75]) },
   ] },
   { key: 'wcolor', hall: 'WOMEN', name: 'Окрашивание (работа)', note: 'краска оплачивается отдельно', byLength: true, services: [
-    { name: 'В один тон', byLength: L([600, 105, '1,5–2 ч'], [700, 105, '1,5–2 ч'], [1000, 105, '1,5–2 ч'], [1200, 135, '2–2,5 ч']) },
+    // Выдержка краски (мастер свободен) — предварительно, уточняется у мастеров
+    { name: 'В один тон', byLength: L([600, 105, '1,5–2 ч', undefined, 30, 35], [700, 105, '1,5–2 ч', undefined, 30, 35], [1000, 105, '1,5–2 ч', undefined, 30, 35], [1200, 135, '2–2,5 ч', undefined, 45, 40]) },
     { name: 'Сложное окрашивание', only: ['Анастасия', 'Керемет'],
-      byLength: L([2000, 210, '3–4 ч'], [4000, 210, '3–4 ч'], [6000, 240, '3–5 ч'], [8000, 300, '4–6 ч']) },
+      byLength: L([2000, 210, '3–4 ч', undefined, 90, 40], [4000, 210, '3–4 ч', undefined, 90, 40], [6000, 240, '3–5 ч', undefined, 110, 40], [8000, 300, '4–6 ч', undefined, 140, 45]) },
     { name: 'Тотал блонд', only: ['Анастасия', 'Керемет'],
-      byLength: L([1000, 150, '2–3 ч', 2000], [1500, 150, '2–3 ч', 2500], [1600, 150, '2–3 ч', 3000], [2000, 210, '3–4 ч', 4000]) },
+      byLength: L([1000, 150, '2–3 ч', 2000, 40, 45], [1500, 150, '2–3 ч', 2500, 40, 45], [1600, 150, '2–3 ч', 3000, 45, 45], [2000, 210, '3–4 ч', 4000, 60, 50]) },
   ] },
   { key: 'wkids', hall: 'WOMEN', name: 'Детям', note: 'в женском зале', forKids: true, services: [
     { name: 'Детская стрижка от 1 до 6 лет', price: 400, dur: 25, age: [1, 6] },
@@ -174,7 +178,16 @@ async function main() {
         if (!found) { await insertStaff(existing.id, m, i, catIds); console.log(`Добавлен сотрудник: ${m.name}`); }
         else if (m.photo && !found.photoUrl) await db.update(s.staff).set({ photoUrl: m.photo }).where(eq(s.staff.id, found.id));
       }
-      console.log('Салон «Весна» уже в базе — обновлены сотрудники и фото.'); return;
+      // выдержка краски и длительности окрашивания — из прайса
+      for (const c of CATEGORIES) for (const v of c.services) {
+        const catId = catIds.get(c.key); if (!catId) continue;
+        if (!v.pause && !v.byLength) continue;
+        await db.update(s.services).set({
+          byLength: v.byLength ?? null, durationMin: v.dur ?? null, durationLabel: v.label ?? null,
+          pauseAfterMin: v.pause?.[0] ?? null, pauseMin: v.pause?.[1] ?? null,
+        }).where(and(eq(s.services.categoryId, catId), eq(s.services.name, v.name)));
+      }
+      console.log('Салон «Весна» уже в базе — обновлены сотрудники, фото и выдержка окрашивания.'); return;
     }
   }
 
@@ -195,7 +208,8 @@ async function main() {
     for (const [si, v] of c.services.entries()) {
       const [row] = await db.insert(s.services).values({
         categoryId: cat.id, name: v.name, price: v.price ?? null, priceMax: v.max ?? null, durationMin: v.dur ?? null,
-        durationLabel: v.label ?? null, byLength: v.byLength ?? null, ageMin: v.age?.[0] ?? null, ageMax: v.age?.[1] ?? null, sortOrder: si,
+        durationLabel: v.label ?? null, byLength: v.byLength ?? null, ageMin: v.age?.[0] ?? null, ageMax: v.age?.[1] ?? null,
+        pauseAfterMin: v.pause?.[0] ?? null, pauseMin: v.pause?.[1] ?? null, sortOrder: si,
       }).returning();
       serviceIds.set(`${c.key}:${v.name}`, row.id);
     }
@@ -240,17 +254,25 @@ async function seedDemo(salonId: string, staffIds: Map<string, string>, serviceI
     [1, 'Залина', 'brows:Ламинирование ресниц + ботокс + покраска', 'Айпери', H(10), 90],
     [1, 'Залина', 'depil:Ноги полностью', 'Гульнара', H(14), 45],
     [1, 'Сурмакан', 'mani:Укрепление базой + цветное покрытие', 'Аида', H(11), 90],
+    // окрашивание с выдержкой: в выдержку у Анастасии стрижка
+    [1, 'Анастасия', 'wcolor:В один тон', 'Дарья', H(10), 105, 'SHORT'],
+    [1, 'Анастасия', 'mcut:Модельная', 'Данияр', H(10, 30), 30],
   ];
   for (const [dd, who, key, client, start, dur, len] of plan) {
-    const date = addDays(today, dd);
+    // ближайший рабочий день мастера, начиная с завтра
+    const sched = await db.query.schedules.findFirst({ where: eq(s.schedules.staffId, staffIds.get(who)!) });
+    let date = addDays(today, dd);
+    for (let i = 0; i < 7 && !workingHours(sched ?? null, [], date); i++) date = addDays(date, 1);
     const serviceId = serviceIds.get(key);
     if (!serviceId) continue;
     const clientId = client === 'Аида' ? aida.id : clientIds[names.indexOf(client)];
     const svc = await db.query.services.findFirst({ where: eq(s.services.id, serviceId) });
-    const price = len && svc?.byLength ? svc.byLength[len as 'LONG']?.price ?? 0 : svc?.price ?? 0;
+    const lp = len && svc?.byLength ? svc.byLength[len as 'LONG'] : null;
+    const price = lp ? lp.price : svc?.price ?? 0;
     await db.insert(s.appointments).values({
       salonId, staffId: staffIds.get(who)!, clientId, serviceId, hairLength: (len as 'LONG') ?? null,
       startsAt: zonedToUtc(date, start, tz), endsAt: zonedToUtc(date, start + dur, tz), price, source: 'ONLINE',
+      pauseStart: lp?.pa ?? null, pauseMin: lp?.pm ?? null,
     });
   }
 }

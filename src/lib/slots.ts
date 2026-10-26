@@ -4,10 +4,13 @@
 // чтобы короткие услуги шли подряд (две стрижки по 15 минут за полчаса).
 
 import type { Interval, WorkingDay } from './schedule';
+import type { Pause } from './pricing';
 
 export type SlotQuery = {
   day: WorkingDay;
   durationMin: number;
+  /** Выдержка внутри услуги: в это время у мастера можно занять другое окно */
+  pause?: Pause | null;
   busy: Interval[];
   stepMin?: number;
   displayStepMin?: number;
@@ -21,10 +24,16 @@ export function overlaps(a: Interval, b: Interval) {
   return a.start < b.end && a.end > b.start;
 }
 
-export function fits(day: WorkingDay, busy: Interval[], start: number, durationMin: number): boolean {
-  const slot = { start, end: start + durationMin };
-  if (slot.start < day.start || slot.end > day.end) return false;
-  return ![...day.breaks, ...busy].some((b) => overlaps(slot, b));
+/** Когда мастер реально занят записью: вся запись минус выдержка */
+export function busyParts(start: number, end: number, pause?: Pause | null): Interval[] {
+  if (!pause || start + pause.after + pause.min >= end) return [{ start, end }];
+  return [{ start, end: start + pause.after }, { start: start + pause.after + pause.min, end }];
+}
+
+export function fits(day: WorkingDay, busy: Interval[], start: number, durationMin: number, pause?: Pause | null): boolean {
+  if (start < day.start || start + durationMin > day.end) return false;
+  const blocked = [...day.breaks, ...busy];
+  return !busyParts(start, start + durationMin, pause).some((part) => blocked.some((b) => overlaps(part, b)));
 }
 
 export function availableStarts(q: SlotQuery): number[] {
@@ -37,10 +46,14 @@ export function availableStarts(q: SlotQuery): number[] {
   const candidates = new Set<number>();
   for (let t = ceilTo(q.day.start, display); t + dur <= q.day.end; t += display) candidates.add(t);
   candidates.add(ceilTo(q.day.start, step));
-  for (const b of blocked) candidates.add(ceilTo(b.end, step));
+  for (const b of blocked) {
+    candidates.add(ceilTo(b.end, step));
+    // услугу с выдержкой можно начать так, чтобы чужая запись пришлась на выдержку
+    if (q.pause) candidates.add(ceilTo(b.start - q.pause.after, step));
+  }
   if (Number.isFinite(earliest)) candidates.add(ceilTo(earliest, step));
 
   return [...candidates]
-    .filter((t) => t >= earliest && fits(q.day, q.busy, t, dur))
+    .filter((t) => t >= earliest && fits(q.day, q.busy, t, dur, q.pause))
     .sort((a, b) => a - b);
 }

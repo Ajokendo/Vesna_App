@@ -13,21 +13,31 @@ export type ServiceLike = {
   byLength: ByLength | null;
   ageMin: number | null;
   ageMax: number | null;
+  pauseAfterMin?: number | null;
+  pauseMin?: number | null;
 };
+
+/** Выдержка внутри услуги: с минуты after от начала, длительностью min; мастер в это время свободен */
+export type Pause = { after: number; min: number };
 
 export type AddonLike = { id: string; name: string; price: number; durationMin: number; rule: 'FREE_IF_REPEAT' | null };
 
-export type ResolvedService = { price: number; priceMax: number | null; durationMin: number; durationLabel: string | null };
+export type ResolvedService = { price: number; priceMax: number | null; durationMin: number; durationLabel: string | null; pause: Pause | null };
+
+function pauseOf(after: number | null | undefined, min: number | null | undefined, dur: number): Pause | null {
+  if (!after || !min || after + min >= dur) return null;
+  return { after, min };
+}
 
 export function resolveService(s: ServiceLike, length?: HairLength | null): ResolvedService | null {
   if (s.byLength) {
     if (!length) return null;
     const v = s.byLength[length];
     if (!v) return null;
-    return { price: v.price, priceMax: v.max ?? null, durationMin: v.dur, durationLabel: v.label ?? null };
+    return { price: v.price, priceMax: v.max ?? null, durationMin: v.dur, durationLabel: v.label ?? null, pause: pauseOf(v.pa, v.pm, v.dur) };
   }
   if (s.price == null || s.durationMin == null) return null;
-  return { price: s.price, priceMax: s.priceMax, durationMin: s.durationMin, durationLabel: s.durationLabel };
+  return { price: s.price, priceMax: s.priceMax, durationMin: s.durationMin, durationLabel: s.durationLabel, pause: pauseOf(s.pauseAfterMin, s.pauseMin, s.durationMin) };
 }
 
 /** Детская услуга, подходящая по возрасту */
