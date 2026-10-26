@@ -4,18 +4,21 @@ import { getManageData } from '@/server/manage';
 import SalonForm from './SalonForm';
 import ServicesEditor from './ServicesEditor';
 import StaffEditor from './StaffEditor';
+import PinList from './PinList';
 
 export const dynamic = 'force-dynamic';
 
 const TABS = [
-  { id: 'salon', name: 'Салон и правила' },
-  { id: 'services', name: 'Услуги и цены' },
-  { id: 'staff', name: 'Мастера и графики' },
+  { id: 'salon', name: 'Салон' },
+  { id: 'services', name: 'Услуги' },
+  { id: 'staff', name: 'Мастера' },
+  { id: 'pins', name: 'PIN-коды' },
 ] as const;
 
-export default async function Settings({ params, searchParams }: { params: Promise<{ salon: string }>; searchParams: Promise<{ tab?: string }> }) {
+export default async function Settings({ params, searchParams }: { params: Promise<{ salon: string }>; searchParams: Promise<{ tab?: string; ok?: string; e?: string }> }) {
   const { salon: slug } = await params;
-  const { tab: t } = await searchParams;
+  const sp = await searchParams;
+  const t = sp.tab;
   const tab = TABS.find((x) => x.id === t)?.id ?? 'salon';
   let data;
   try { data = await getManageData(slug); } catch { notFound(); }
@@ -25,16 +28,17 @@ export default async function Settings({ params, searchParams }: { params: Promi
         <h1 style={{ fontSize: 26 }}>Настройки салона</h1>
         <p className="muted" style={{ margin: '6px 0 0' }}>Изменения сразу видны клиентам в онлайн-записи и в журнале.</p>
       </header>
-      <nav className="tabs" style={{ alignSelf: 'flex-start' }}>
+      <nav className="tabs" style={{ width: '100%', maxWidth: 720 }}>
         {TABS.map((x) => (
           <Link key={x.id} href={`/${slug}/admin/settings?tab=${x.id}`} aria-current={x.id === tab ? 'page' : undefined}
-            style={{ minHeight: 44, display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: 12, fontWeight: 800, textDecoration: 'none', color: x.id === tab ? 'var(--ink)' : 'var(--muted)', background: x.id === tab ? '#fff' : 'transparent' }}>
+            style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4px 6px', fontSize: 14, lineHeight: 1.2, borderRadius: 12, fontWeight: 800, textDecoration: 'none', color: x.id === tab ? 'var(--ink)' : 'var(--muted)', background: x.id === tab ? '#fff' : 'transparent' }}>
             {x.name}
           </Link>
         ))}
       </nav>
       {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} />}
       {tab === 'services' && <ServicesEditor slug={slug} categories={data.categories} />}
+      {tab === 'pins' && <PinList slug={slug} salonId={data.salon.id} sp={sp} />}
       {tab === 'staff' && <StaffEditor slug={slug} staff={data.staff} categories={data.categories} defaultCommission={data.salon.defaultCommission} />}
     </main>
   );

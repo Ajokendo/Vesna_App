@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 const ITEMS = [
+  { path: 'HOME', label: 'Главная', icon: 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10' },
   { path: '', label: 'Журнал', icon: 'M4 5h16M4 10h16M4 15h10M4 20h7' },
   { path: '/cash', label: 'Касса', icon: 'M3 7h18v12H3zM3 11h18M7 15h3' },
   { path: '/notify', label: 'Уведомления', icon: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0' },
-  { path: '/staff', label: 'Мастера, PIN', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
   { path: '/settings', label: 'Настройки', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2 .2-1.5-1.5L17 5l-3-1-1 2h-2l-1-2-3 1 .5 1.7L6 8.2 4 8l-1 3 2 1v0l-2 1 1 3 2-.2 1.5 1.5L7 19l3 1 1-2h2l1 2 3-1-.5-1.7 1.5-1.5 2 .2 1-3z' },
 ];
 
@@ -25,7 +25,7 @@ export default function AdminNav({ slug }: { slug: string }) {
     }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${ITEMS.length}, 1fr)`, maxWidth: 720, margin: '0 auto' }}>
         {ITEMS.map((it) => {
-          const href = base + it.path;
+          const href = it.path === 'HOME' ? `/${slug}` : base + it.path;
           const on = pathname === href;
           const keepDate = date && (it.path === '' || it.path === '/cash');
           return (

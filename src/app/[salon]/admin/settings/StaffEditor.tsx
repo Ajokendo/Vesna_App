@@ -27,7 +27,7 @@ export default function StaffEditor({ slug, staff, categories, defaultCommission
     <div className="stack" style={{ gap: 12 }}>
       <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
         Здесь — кто работает, какие услуги делает и по какому графику. Разовые изменения (заболела, вышла в выходной) отмечайте в журнале кнопкой «Не выйдет / Выйдет».
-        PIN для кабинета мастера — на странице <Link href={`/${slug}/admin/staff`}>«Мастера и PIN»</Link>.
+        PIN для кабинета мастера — на вкладке <Link href={`/${slug}/admin/settings?tab=pins`}>«PIN-коды»</Link>.
       </p>
       {staff.map((m) => <StaffCard key={m.id} slug={slug} m={m} categories={categories} defaultCommission={defaultCommission} />)}
       {adding ? <StaffForm slug={slug} categories={categories} defaultCommission={defaultCommission} onDone={() => setAdding(false)} /> : (

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import BackHome from '@/app/BackHome';
 import { notFound } from 'next/navigation';
 import { getCatalog, getJournal, getSalon } from '@/server/salon';
 import { dayMonth, hhmm, utcToZoned, weekdayFull } from '@/lib/time';
@@ -58,7 +57,6 @@ export default async function Journal({ params, searchParams }: {
 
   return (
     <main className="safe" style={{ padding: '24px 28px 40px', display: 'flex', flexDirection: 'column', gap: 18, minHeight: '100dvh', overflowX: 'clip', maxWidth: '100vw' }}>
-      <BackHome slug={slug} />
       <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
 
       <DayStrip salon={salon} date={date} today={now.date} href={(d) => link(d)} note={`записей: ${total} · под датой — число записей в этот день`} />
