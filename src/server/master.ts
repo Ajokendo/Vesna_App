@@ -43,6 +43,9 @@ export async function getMasterDay(salon: Salon, m: Staff, date: DateStr) {
       service: a.service.name + (a.hairLength ? ` (${lengthName[a.hairLength]})` : ''),
       addons: a.addons.map((x) => ({ name: x.addon.name, price: x.price })),
       pause: a.pauseStart != null && a.pauseMin ? { from: start + a.pauseStart, to: start + a.pauseStart + a.pauseMin } : null,
+      /** Время окончания меняли — каким оно было по записи */
+      plannedEnd: a.plannedEndsAt ? utcToZoned(a.plannedEndsAt, salon.timezone).minute : null,
+      endChangedByMaster: !!a.endChangedBy?.startsWith('MASTER'),
       price: a.price, priceMax: a.priceMax,
       paid: a.paid,
       finalPrice: a.finalPrice ?? a.price,

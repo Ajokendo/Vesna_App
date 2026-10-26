@@ -204,6 +204,10 @@ export const appointments = pgTable('appointments', {
   paid: boolean('paid').notNull().default(false),
   paymentMethod: text('payment_method'),
   comment: text('comment'),
+  /** Время окончания поменяли (мастер закончит раньше / задержится): каким оно было по записи, кто и когда поменял */
+  plannedEndsAt: timestamp('planned_ends_at', { withTimezone: true }),
+  endChangedBy: text('end_changed_by'),
+  endChangedAt: timestamp('end_changed_at', { withTimezone: true }),
   /** Клиент подтвердил визит (кнопка в утреннем уведомлении) */
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

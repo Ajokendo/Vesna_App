@@ -271,6 +271,10 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           } : null,
           /** Мастер не выйдет в это время — запись нужно передать, перенести или отменить */
           conflict: conflict && !a.paid,
+          /** Время окончания меняли: кто (мастер или администратор) и каким оно было по записи */
+          endChange: a.endChangedBy && a.plannedEndsAt ? {
+            byMaster: a.endChangedBy.startsWith('MASTER'), planned: minuteOf(a.plannedEndsAt),
+          } : null,
           /** Клиент подтвердил визит из уведомления */
           confirmed: !!a.confirmedAt,
           /** У клиента включены уведомления */

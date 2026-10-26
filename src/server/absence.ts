@@ -134,13 +134,15 @@ export async function upcomingAbsences(salonId: string, from: DateStr, to: DateS
  * Мастер закончит раньше или задержится: администратор меняет время окончания записи.
  * Нельзя наехать на следующего клиента этого мастера — тогда подсказываем, кто следующий.
  */
-export async function setAppointmentEnd(slug: string, appointmentId: string, endMinute: number) {
+export async function setAppointmentEnd(slug: string, appointmentId: string, endMinute: number, by: { role: 'ADMIN' } | { role: 'MASTER'; staffId: string } = { role: 'ADMIN' }) {
   const salon = await getSalon(slug);
   if (!salon) throw new Error('Салон не найден');
   return db.transaction(async (tx) => {
     const [a] = await tx.select().from(s.appointments)
       .where(and(eq(s.appointments.id, appointmentId), eq(s.appointments.salonId, salon.id))).for('update');
     if (!a || a.status === 'CANCELLED') throw new Error('Запись не найдена');
+    if (by.role === 'MASTER' && a.staffId !== by.staffId) throw new Error('Это не ваша запись');
+    const staffRow = await tx.query.staff.findFirst({ where: eq(s.staff.id, a.staffId) });
     await tx.select({ id: s.staff.id }).from(s.staff).where(eq(s.staff.id, a.staffId)).for('update');
     const { date, minute: start } = utcToZoned(a.startsAt, salon.timezone);
     if (endMinute < start + 5) throw new Error('Запись не может длиться меньше 5 минут');
@@ -165,6 +167,9 @@ export async function setAppointmentEnd(slug: string, appointmentId: string, end
     }
     await tx.update(s.appointments).set({
       endsAt: zonedToUtc(date, endMinute, salon.timezone),
+      plannedEndsAt: a.plannedEndsAt ?? a.endsAt,
+      endChangedBy: by.role === 'MASTER' ? `MASTER:${staffRow?.name ?? ''}` : 'ADMIN',
+      endChangedAt: new Date(),
       ...(keepPause ? {} : { pauseStart: null, pauseMin: null }),
     }).where(eq(s.appointments.id, a.id));
     return { end: endMinute };

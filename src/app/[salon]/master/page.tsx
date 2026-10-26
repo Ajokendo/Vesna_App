@@ -5,6 +5,7 @@ import { currentMaster, signInMaster, signOutMaster } from '@/server/master-auth
 import { getMasterDay, getMasterMonth, getMasterWeek, getMastersForLogin } from '@/server/master';
 import { addDays, dayMonth, dayMonthShort, hhmm, utcToZoned, weekdayFull, weekdayShort } from '@/lib/time';
 import { formatPrice, formatSom } from '@/lib/pricing';
+import EndToggle from './EndToggle';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Кабинет мастера' };
@@ -157,6 +158,10 @@ export default async function MasterPage({ params, searchParams }: {
                 {i.addons.map((a) => <span key={a.name} className="small">+ {a.name}{a.price ? ` · ${formatSom(a.price)}` : ' · бесплатно'}</span>)}
                 {i.pause && <span className="note" style={{ padding: '4px 8px', fontSize: 12 }}>Выдержка краски {hhmm(i.pause.from)}–{hhmm(i.pause.to)}: в это время вы свободны</span>}
                 <span className="small muted">Стоимость: {i.paid ? formatSom(i.finalPrice) : formatPrice(i.price, i.priceMax)}</span>
+                {i.plannedEnd != null && i.plannedEnd !== i.end && (
+                  <span className="small" style={{ color: '#7a5a1c', fontWeight: 700 }}>⏱ Окончание изменено: было {hhmm(i.plannedEnd)}{i.endChangedByMaster ? ' (вы)' : ' (администратор)'}</span>
+                )}
+                {!i.paid && date >= now.date && <EndToggle slug={slug} id={i.id} start={i.start} end={i.end} />}
               </div>
             </article>
           ))}
