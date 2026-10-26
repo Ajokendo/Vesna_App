@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import BackHome from '@/app/BackHome';
 import { notFound } from 'next/navigation';
-import { getCashReport, getCatalog, getJournal, getSalon } from '@/server/salon';
-import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull } from '@/lib/time';
+import { getCashReport, getCatalog, getDayCounts, getJournal, getSalon } from '@/server/salon';
+import { addDays, daysBetween, dayMonth, hhmm, utcToZoned, weekdayFull, weekdayShort } from '@/lib/time';
 import { formatSom } from '@/lib/pricing';
 import NewAppointment from './NewAppointment';
 import ApptCard from './ApptCard';
@@ -30,7 +31,12 @@ export default async function Journal({ params, searchParams }: {
   const now = utcToZoned(new Date(), salon.timezone);
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : now.date;
   const group = GROUPS.find((g) => g.id === sp.group)?.id ?? 'hair';
-  const [{ columns, dropped }, catalog, cash] = await Promise.all([getJournal(slug, date), getCatalog(salon.id), getCashReport(slug, date)]);
+  // полоска из 7 дней: с сегодняшнего; если выбрана дата за её пределами — неделя, начиная с этой даты
+  const off = daysBetween(now.date, date);
+  const stripFrom = off >= 0 && off < 7 ? now.date : addDays(now.date, Math.floor(off / 7) * 7);
+  const [{ columns, dropped }, catalog, cash, strip] = await Promise.all([
+    getJournal(slug, date), getCatalog(salon.id), getCashReport(slug, date), getDayCounts(salon, stripFrom, 7),
+  ]);
   const cols = columns.filter((c) => c.group === group);
 
   const START = Math.min(9 * 60, ...cols.filter((c) => c.day).map((c) => c.day!.start));
@@ -40,21 +46,48 @@ export default async function Journal({ params, searchParams }: {
   const link = (d: string, g: string = group) => `/${slug}/admin?date=${d}&group=${g}`;
 
   return (
-    <main style={{ padding: '24px 28px 40px', display: 'flex', flexDirection: 'column', gap: 18, minHeight: '100dvh' }}>
-      <header className="row" style={{ flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
-          <p className="muted" style={{ margin: '4px 0 0' }}>{weekdayFull(date)}, {dayMonth(date)} · записей: {total}</p>
-        </div>
-        <nav className="row" aria-label="Дата" style={{ flexWrap: 'wrap' }}>
-          <Link className="btn" href={`/${slug}/admin/notify`}>Уведомления</Link>
-          <Link className="btn" href={`/${slug}/admin/staff`}>Мастера и PIN</Link>
-          <Link className="btn" href={`/${slug}/admin/settings`}>Настройки</Link>
-          <Link className="btn" href={link(addDays(date, -1))} aria-label="Предыдущий день">‹</Link>
-          <Link className="btn" href={link(now.date)}>Сегодня</Link>
-          <Link className="btn" href={link(addDays(date, 1))} aria-label="Следующий день">›</Link>
+    <main className="safe" style={{ padding: '24px 28px 40px', display: 'flex', flexDirection: 'column', gap: 18, minHeight: '100dvh' }}>
+      <BackHome slug={slug} />
+      <header className="row" style={{ flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>
+        <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
+        <nav className="row" aria-label="Разделы" style={{ flexWrap: 'wrap', gap: 6 }}>
+          <Link className="btn" style={{ minHeight: 40, fontSize: 14 }} href={`/${slug}/admin/notify`}>Уведомления</Link>
+          <Link className="btn" style={{ minHeight: 40, fontSize: 14 }} href={`/${slug}/admin/staff`}>Мастера и PIN</Link>
+          <Link className="btn" style={{ minHeight: 40, fontSize: 14 }} href={`/${slug}/admin/settings`}>Настройки</Link>
         </nav>
       </header>
+
+      {/* даты: как в кабинете мастера — сразу видно неделю и число записей */}
+      <section className="stack" style={{ gap: 10, maxWidth: 640 }}>
+        <div className="row" style={{ gap: 6, alignItems: 'stretch' }}>
+          <Link className="btn" href={link(addDays(stripFrom, -7))} aria-label="Предыдущая неделя" style={{ minHeight: 'auto', padding: '0 8px', fontSize: 20 }}>‹</Link>
+          <nav className="grid7" aria-label="Дни" style={{ flex: 1 }}>
+            {strip.map((d) => {
+              const on = d.date === date;
+              const today = d.date === now.date;
+              return (
+                <Link key={d.date} href={link(d.date)} aria-current={on ? 'date' : undefined} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 0', borderRadius: 12, textDecoration: 'none',
+                  background: on ? 'var(--accent)' : '#fff', color: on ? '#fff' : 'var(--ink)',
+                  border: `${today && !on ? 2 : 1}px solid ${on || today ? 'var(--accent)' : 'var(--line)'}`,
+                }}>
+                  <span className="small" style={{ fontWeight: 700, color: 'inherit' }}>{today ? 'сег.' : weekdayShort(d.date)}</span>
+                  <strong style={{ fontSize: 16 }}>{Number(d.date.slice(8))}</strong>
+                  <span style={{ fontSize: 12, fontWeight: 800 }} title="записей">{d.count || '—'}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          <Link className="btn" href={link(addDays(stripFrom, 7))} aria-label="Следующая неделя" style={{ minHeight: 'auto', padding: '0 8px', fontSize: 20 }}>›</Link>
+        </div>
+        <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <h2 style={{ fontSize: 20 }}>{date === now.date ? 'Сегодня' : weekdayFull(date)}, {dayMonth(date)}</h2>
+            <span className="small muted">записей: {total} · под датой — число записей в этот день</span>
+          </div>
+          {date !== now.date && <Link className="btn" style={{ minHeight: 40, fontSize: 14 }} href={link(now.date)}>← Вернуться к сегодня</Link>}
+        </div>
+      </section>
 
       <div className="tabs" style={{ alignSelf: 'flex-start' }}>
         {GROUPS.map((g) => (

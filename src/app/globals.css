@@ -23,7 +23,7 @@ button, input, select { font: inherit; color: inherit; }
 h1, h2, h3 { font-family: var(--serif); margin: 0; }
 
 .app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
-.page { padding: 20px 20px 32px; display: flex; flex-direction: column; gap: 20px; flex: 1; }
+.page { padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 20px; flex: 1; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
 .muted { color: var(--muted); }
@@ -62,3 +62,8 @@ h1, h2, h3 { font-family: var(--serif); margin: 0; }
 .progress span.on { background: var(--accent); }
 .note { background: #f3ead6; color: #5a4520; border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.4; }
 .error { background: #fbebeb; color: var(--danger); border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 600; }
+
+/* Экраны без .page (журнал, настройки): отступы от выреза камеры и полоски «домой» на iPhone/Android */
+.safe { padding-top: max(24px, env(safe-area-inset-top)) !important; padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important;
+  padding-left: max(16px, env(safe-area-inset-left)) !important; padding-right: max(16px, env(safe-area-inset-right)) !important; }
+@media (min-width: 700px) { .safe { padding-left: max(28px, env(safe-area-inset-left)) !important; padding-right: max(28px, env(safe-area-inset-right)) !important; } }

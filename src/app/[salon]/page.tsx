@@ -65,9 +65,12 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             ) : null}
           </div>
         </section>
-        <nav className="row small" style={{ justifyContent: 'center', gap: 18 }} aria-label="Для сотрудников">
-          <Link href={`/${salon.slug}/master`} className="muted">Вход для мастеров</Link>
-          <Link href={`/${salon.slug}/admin`} className="muted">Администратор</Link>
+        <nav className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 16 }} aria-label="Для сотрудников">
+          <span className="small muted" style={{ textAlign: 'center' }}>Для сотрудников салона</span>
+          <div className="grid2">
+            <Link href={`/${salon.slug}/master`} className="btn" style={{ minHeight: 48, fontSize: 15, padding: '0 10px' }}>Кабинет мастера</Link>
+            <Link href={`/${salon.slug}/admin`} className="btn" style={{ minHeight: 48, fontSize: 15, padding: '0 10px' }}>Администратор</Link>
+          </div>
         </nav>
       </div>
     </main>

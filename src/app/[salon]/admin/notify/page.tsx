@@ -16,7 +16,7 @@ export default async function NotifyPage({ params }: { params: Promise<{ salon: 
   const [stats, history, masters] = await Promise.all([pushStats(salon.id), recentBroadcasts(salon.id), getMastersForLogin(salon.id)]);
   const today = utcToZoned(new Date(), salon.timezone).date;
   return (
-    <main style={{ padding: '24px 28px 40px', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <main className="safe" style={{ padding: '24px 28px 40px', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <Link href={`/${slug}/admin`} className="small muted">‹ Журнал</Link>
       <header>
         <h1 style={{ fontSize: 26 }}>Уведомления</h1>

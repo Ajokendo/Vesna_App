@@ -31,7 +31,7 @@ export default async function StaffPins({ params, searchParams }: {
   }
 
   return (
-    <main style={{ padding: '24px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <main className="safe" style={{ padding: '24px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <Link href={`/${slug}/admin`} className="small muted">‹ Журнал</Link>
       <header>
         <h1 style={{ fontSize: 26 }}>Мастера и PIN-коды</h1>

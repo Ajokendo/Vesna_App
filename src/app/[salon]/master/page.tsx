@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackHome from '@/app/BackHome';
 import { notFound, redirect } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { currentMaster, signInMaster, signOutMaster } from '@/server/master-auth';
@@ -36,6 +37,7 @@ export default async function MasterPage({ params, searchParams }: {
     return (
       <main className="app">
         <div className="page">
+          <BackHome slug={slug} />
           <header className="row">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {salon.logoUrl && <img src={salon.logoUrl} alt="" width={44} height={44} style={{ borderRadius: 12 }} />}
@@ -101,6 +103,7 @@ export default async function MasterPage({ params, searchParams }: {
   return (
     <main className="app">
       <div className="page" style={{ gap: 18 }}>
+        <BackHome slug={slug} />
         <header className="row">
           <span className="avatar">
             {/* eslint-disable-next-line @next/next/no-img-element */}

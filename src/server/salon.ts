@@ -400,3 +400,14 @@ export async function getCashReport(salonSlug: string, date: DateStr) {
     methods: Object.entries(methods).map(([k, v]) => ({ method: PAYMENT_METHODS[k as PaymentMethod] ?? k, amount: v })),
   };
 }
+
+/** Число записей по дням (для полоски дат в журнале) */
+export async function getDayCounts(salon: { id: string; timezone: string }, from: DateStr, days: number) {
+  const rows = await db.select({ startsAt: s.appointments.startsAt }).from(s.appointments).where(and(
+    eq(s.appointments.salonId, salon.id), occupiesTime(),
+    gte(s.appointments.startsAt, zonedToUtc(from, 0, salon.timezone)), lt(s.appointments.startsAt, zonedToUtc(addDays(from, days), 0, salon.timezone)),
+  ));
+  const counts: Record<string, number> = {};
+  for (const r of rows) { const d = utcToZoned(r.startsAt, salon.timezone).date; counts[d] = (counts[d] ?? 0) + 1; }
+  return Array.from({ length: days }, (_, i) => { const date = addDays(from, i); return { date, count: counts[date] ?? 0 }; });
+}
