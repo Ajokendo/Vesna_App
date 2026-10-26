@@ -124,7 +124,7 @@ export default async function Journal({ params, searchParams }: {
               {c.day && c.day.end < END && <div style={{ position: 'absolute', left: 0, right: 0, top: (c.day.end - START) * PX, bottom: 0, background: '#f3f4f0' }} />}
               {c.items.map((a) => (
                 <ApptCard key={a.id} a={a} top={(a.start - START) * PX} px={PX} slug={slug} earnPercent={salon.pointsPercent} masterPercent={c.masterPercent}
-                  rules={{ nowMinute: date === now.date ? now.minute : date < now.date ? 24 * 60 : null, callAfter: salon.lateCallMinutes, noShowAfter: salon.noShowMinutes, salonName: salon.name }} />
+                  rules={{ today: now.date, nowMinute: date === now.date ? now.minute : date < now.date ? 24 * 60 : null, callAfter: salon.lateCallMinutes, noShowAfter: salon.noShowMinutes, salonName: salon.name }} />
               ))}
               {date === now.date && now.minute >= START && now.minute <= END && (
                 <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: (now.minute - START) * PX, borderTop: '2px dashed #b23a5a' }} />

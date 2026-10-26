@@ -90,7 +90,7 @@ function AbsenceDialog({ slug, staffId, name, date, normal, onClose }: {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={`${name} не выйдет`} onClick={onClose} style={{
-      position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
       <div className="card stack" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, gap: 14 }}>
         <strong style={{ fontSize: 18 }}>{name} не выйдет</strong>
@@ -148,7 +148,7 @@ function ExtraDayDialog({ slug, staffId, name, date, usual, onClose }: {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={`${name} выйдет в выходной`} onClick={onClose} style={{
-      position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
       <div className="card stack" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, gap: 14 }}>
         <strong style={{ fontSize: 18 }}>{name} выйдет в свой выходной</strong>

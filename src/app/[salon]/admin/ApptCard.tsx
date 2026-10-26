@@ -7,9 +7,11 @@ import { formatPrice, formatSom } from '@/lib/pricing';
 import { calcPayment } from '@/lib/payment';
 import EndTimeEditor from '@/app/EndTimeEditor';
 import { lateState, type LateState } from '@/lib/late';
+import Link from 'next/link';
+import { RescheduleButton } from './Reschedule';
 
 export type ApptItem = {
-  id: string; start: number; end: number; client: string; service: string; addons: string[];
+  id: string; start: number; end: number; date?: string; clientId?: string; client: string; service: string; addons: string[];
   price: number; priceMax: number | null; source: string; paid: boolean;
   pause: { after: number; min: number } | null;
   phone: string | null; balance: number; payer: string;
@@ -30,7 +32,7 @@ const METHODS = [
 const METHOD_NAME: Record<string, string> = { CASH: 'наличными', CARD: 'картой', QR: 'по QR', POINTS: 'баллами' };
 
 /** Запись в колонке мастера. Окрашивание с выдержкой рисуется двумя частями: в выдержку мастер свободен */
-export type LateRules = { nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
+export type LateRules = { today?: string; nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
 
 export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent, rules }: {
   a: ApptItem; top: number; px: number; slug: string; earnPercent: number; masterPercent: number; rules: LateRules;
@@ -136,11 +138,13 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
   const maxPoints = Math.min(a.balance, priceN || 0);
   return (
     <div role="dialog" aria-modal="true" aria-label="Оплата" onClick={onClose} style={{
-      position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
       <div className="card stack" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, gap: 14, maxHeight: '92dvh', overflowY: 'auto' }}>
         <div>
-          <strong style={{ fontSize: 18 }}>{a.client}</strong>
+          {a.clientId ? (
+            <Link href={`/${slug}/admin/clients/${a.clientId}`} style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>{a.client} ›</Link>
+          ) : <strong style={{ fontSize: 18 }}>{a.client}</strong>}
           <div className="small muted">{a.service}{a.addons.length ? ` + ${a.addons.join(', ').toLowerCase()}` : ''}</div>
           {a.phone && <div className="small muted">{a.phone}</div>}
         </div>
@@ -201,6 +205,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
               </div>
             )}
             {(calcError || error) && <div className="error" role="alert">{calcError || error}</div>}
+            {a.date && rules.today && <RescheduleButton slug={slug} id={a.id} title={`${a.client} · ${a.service}`} date={a.date} today={rules.today} onMoved={onClose} style={{ alignSelf: 'flex-start' }} />}
             <CancelVisit a={a} slug={slug} onDone={onClose} />
             <div className="row">
               <button type="button" className="btn" onClick={onClose}>Отмена</button>

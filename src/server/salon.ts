@@ -272,6 +272,7 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           const conflict = !!ex && (!day || minuteOf(a.startsAt) < day.start || minuteOf(a.endsAt) > day.end);
           return {
           id: a.id, start: utcToZoned(a.startsAt, salon.timezone).minute, end: utcToZoned(a.endsAt, salon.timezone).minute,
+          date, clientId: a.clientId,
           client: a.client.name, service: a.service.name, category: a.service.category.name,
           addons: a.addons.map((x) => x.addon.name), price: a.price, priceMax: a.priceMax,
           status: a.status, source: a.source, paid: a.paid,

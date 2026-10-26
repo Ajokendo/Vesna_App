@@ -16,7 +16,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
         <header className="row">
           {salon.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={salon.logoUrl} alt={`Логотип салона «${salon.name}»`} width={52} height={52} style={{ borderRadius: '50%', border: '1px solid var(--line)', background: '#fff' }} />
+            <img src={salon.logoUrl} alt={`Логотип салона «${salon.name}»`} width={52} height={52} style={{ borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--ground)' }} />
           ) : null}
           <div className="grow">
             <h1 style={{ fontSize: 22 }}>{salon.name}</h1>
@@ -25,14 +25,14 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
         </header>
 
         <section className="stack">
-          <h2 style={{ fontSize: 24 }}>Запишитесь онлайн</h2>
+          <h2 style={{ fontSize: 22 }}>Запишитесь онлайн</h2>
           <p className="muted" style={{ margin: 0 }}>Выберите услугу, мастера и удобное время — без звонков.</p>
           <div className="grid2">
-            <Link href={`/${slug}/book?hall=MEN`} className="card" style={{ background: '#e4ebdd', textDecoration: 'none', color: 'inherit', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <Link href={`/${slug}/book?hall=MEN`} className="card" style={{ background: '#e4ebdd', textDecoration: 'none', color: 'inherit', minHeight: 92, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
               <strong style={{ fontSize: 17 }}>Мужской зал</strong>
               <span className="small muted">Стрижки, борода, детские</span>
             </Link>
-            <Link href={`/${slug}/book?hall=WOMEN`} className="card" style={{ background: 'var(--cream)', textDecoration: 'none', color: 'inherit', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <Link href={`/${slug}/book?hall=WOMEN`} className="card" style={{ background: 'var(--cream)', textDecoration: 'none', color: 'inherit', minHeight: 92, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
               <strong style={{ fontSize: 17 }}>Женский зал</strong>
               <span className="small muted">Волосы, ногти, брови, шугаринг</span>
             </Link>
@@ -43,27 +43,26 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           <h2 style={{ fontSize: 18 }}>Наши мастера</h2>
           <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
             {staff.map((m) => (
-              <div key={m.id} className="card" style={{ flex: '0 0 140px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div className="avatar" style={{ width: 72, height: 72 }}>
+              <div key={m.id} className="card" style={{ flex: '0 0 120px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 8px' }}>
+                <div className="avatar" style={{ width: 60, height: 60 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {m.photoUrl ? <img src={m.photoUrl} alt={m.name} /> : m.name[0]}
                 </div>
                 <strong>{m.name}</strong>
-                <span className="small muted" style={{ lineHeight: 1.3 }}>{m.title?.split(',')[0]}</span>
+                <span className="small muted" style={{ lineHeight: 1.25, fontSize: 13 }}>{m.title?.split(',')[0]}</span>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="card" style={{ borderColor: 'var(--gold)' }}>
-          <h2 style={{ fontSize: 18, marginBottom: 8 }}>Салон «{salon.name}»</h2>
-          <div className="stack small">
-            <span>{salon.city}, {salon.address}</span>
+        <section className="card row" style={{ borderColor: 'var(--gold)', gap: 12, padding: '12px 14px', flexWrap: 'wrap' }}>
+          <div className="stack small" style={{ gap: 2, flex: '1 1 180px' }}>
+            <strong style={{ fontSize: 15 }}>{salon.city}, {salon.address}</strong>
             <span className="muted">С 09:00 до 20:00, у каждого мастера свой график</span>
-            {salon.whatsapp ? (
-              <a className="btn" href={`https://wa.me/${salon.whatsapp.replace(/\D/g, '')}`}>Написать в WhatsApp</a>
-            ) : null}
           </div>
+          {salon.whatsapp ? (
+            <a className="btn" style={{ minHeight: 42, padding: '0 14px', fontSize: 14 }} href={`https://wa.me/${salon.whatsapp.replace(/\D/g, '')}`}>WhatsApp</a>
+          ) : null}
         </section>
         {/* вход для сотрудников: прилипает к низу экрана, виден сразу без прокрутки */}
         <nav aria-label="Для сотрудников" style={{

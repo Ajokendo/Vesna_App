@@ -177,6 +177,8 @@ export const clients = pgTable('clients', {
   promoOptOut: boolean('promo_opt_out').notNull().default(false),
   /** Для детей и родственников: чей это член семьи */
   guardianId: text('guardian_id'),
+  /** Заметка администратора о клиенте (аллергия, любимый мастер, особенности) — клиент её не видит */
+  note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex('client_salon_phone').on(t.salonId, t.phone), index('client_salon_idx').on(t.salonId)]);
 
