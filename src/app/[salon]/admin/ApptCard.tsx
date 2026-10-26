@@ -125,9 +125,10 @@ function PayDialog({ a, slug, earnPercent, masterPercent, onClose }: {
       <div className="card stack" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, gap: 14, maxHeight: '92dvh', overflowY: 'auto' }}>
         <div>
           <strong style={{ fontSize: 18 }}>{a.client}</strong>
-          <div className="small muted">{hhmm(a.start)}–{hhmm(a.end)} · {a.service}{a.addons.length ? ` + ${a.addons.join(', ').toLowerCase()}` : ''}</div>
+          <div className="small muted">{a.service}{a.addons.length ? ` + ${a.addons.join(', ').toLowerCase()}` : ''}</div>
           {a.phone && <div className="small muted">{a.phone}</div>}
         </div>
+        <EndTime a={a} slug={slug} />
 
         {a.payment ? (
           <>
@@ -200,6 +201,58 @@ function Line({ label, value, strong }: { label: string; value: string; strong?:
   return (
     <div className="row" style={{ justifyContent: 'space-between', fontSize: strong ? 16 : 14, fontWeight: strong ? 800 : 500 }}>
       <span className={strong ? undefined : 'muted'}>{label}</span><span>{value}</span>
+    </div>
+  );
+}
+
+/** Мастер закончит раньше или задержится — меняем время окончания записи */
+function EndTime({ a, slug }: { a: ApptItem; slug: string }) {
+  const router = useRouter();
+  const [end, setEnd] = useState(a.end);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const changed = end !== a.end;
+  const shift = (d: number) => { setSaved(false); setError(null); setEnd((e) => Math.max(a.start + 5, Math.min(24 * 60, e + d))); };
+
+  async function save() {
+    setBusy(true); setError(null);
+    const res = await fetch(`/api/${slug}/admin/appointments/${a.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endMinute: end }),
+    });
+    setBusy(false);
+    if (!res.ok) { setError((await res.json().catch(() => ({}))).error ?? 'Не получилось'); return; }
+    setSaved(true);
+    router.refresh();
+  }
+
+  const small = { minHeight: 36, padding: '0 10px', fontSize: 13 } as const;
+  return (
+    <div className="stack" style={{ gap: 8, background: 'var(--ground)', borderRadius: 14, padding: 12 }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <span className="small" style={{ fontWeight: 700 }}>Время</span>
+        <span style={{ fontWeight: 800 }}>
+          {hhmm(a.start)}–{hhmm(end)}
+          <span className="small muted" style={{ fontWeight: 500 }}> · {end - a.start} мин{changed ? ` (было до ${hhmm(a.end)})` : ''}</span>
+        </span>
+      </div>
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+        <span className="small muted" style={{ marginRight: 2 }}>Окончание:</span>
+        <button type="button" className="btn" style={small} onClick={() => shift(-15)}>−15</button>
+        <button type="button" className="btn" style={small} onClick={() => shift(-5)}>−5</button>
+        <button type="button" className="btn" style={small} onClick={() => shift(5)}>+5</button>
+        <button type="button" className="btn" style={small} onClick={() => shift(15)}>+15</button>
+        <input type="time" step={300} aria-label="Время окончания" value={hhmm(end)}
+          onChange={(e) => { const [h, m] = e.target.value.split(':').map(Number); if (!Number.isNaN(h)) { setSaved(false); setEnd(h * 60 + m); } }}
+          style={{ minHeight: 36, borderRadius: 10, border: '1px solid #dde5de', padding: '0 8px', fontSize: 14 }} />
+      </div>
+      {changed && !saved && (
+        <button type="button" className="btn primary" style={{ minHeight: 40 }} disabled={busy} onClick={save}>
+          {busy ? 'Сохраняем…' : end < a.end ? `Закончит в ${hhmm(end)} — освободить время` : `Закончит в ${hhmm(end)} — продлить`}
+        </button>
+      )}
+      {saved && <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>✓ Сохранено — журнал и онлайн-запись обновились</span>}
+      {error && <div className="error" role="alert">{error}</div>}
     </div>
   );
 }

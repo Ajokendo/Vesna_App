@@ -129,3 +129,44 @@ export async function upcomingAbsences(salonId: string, from: DateStr, to: DateS
   return rows.map((r) => ({ ...r, date: String(r.date), name: staff.find((m) => m.id === r.staffId)?.name ?? '' }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/**
+ * Мастер закончит раньше или задержится: администратор меняет время окончания записи.
+ * Нельзя наехать на следующего клиента этого мастера — тогда подсказываем, кто следующий.
+ */
+export async function setAppointmentEnd(slug: string, appointmentId: string, endMinute: number) {
+  const salon = await getSalon(slug);
+  if (!salon) throw new Error('Салон не найден');
+  return db.transaction(async (tx) => {
+    const [a] = await tx.select().from(s.appointments)
+      .where(and(eq(s.appointments.id, appointmentId), eq(s.appointments.salonId, salon.id))).for('update');
+    if (!a || a.status === 'CANCELLED') throw new Error('Запись не найдена');
+    await tx.select({ id: s.staff.id }).from(s.staff).where(eq(s.staff.id, a.staffId)).for('update');
+    const { date, minute: start } = utcToZoned(a.startsAt, salon.timezone);
+    if (endMinute < start + 5) throw new Error('Запись не может длиться меньше 5 минут');
+    if (endMinute > 24 * 60) throw new Error('Окончание — не позже 24:00');
+    const others = await tx.query.appointments.findMany({
+      where: and(eq(s.appointments.staffId, a.staffId), ne(s.appointments.status, 'CANCELLED'), ne(s.appointments.id, a.id),
+        gte(s.appointments.startsAt, zonedToUtc(date, 0, salon.timezone)), lt(s.appointments.startsAt, zonedToUtc(addDays(date, 1), 0, salon.timezone))),
+      with: { client: true },
+    });
+    // выдержка краски остаётся, только если запись не стала короче неё
+    const keepPause = a.pauseStart != null && a.pauseMin != null && start + a.pauseStart + a.pauseMin < endMinute;
+    const pause = keepPause ? { after: a.pauseStart!, min: a.pauseMin! } : null;
+    const mine = busyParts(start, endMinute, pause);
+    for (const o of others) {
+      const os = utcToZoned(o.startsAt, salon.timezone).minute;
+      const oe = utcToZoned(o.endsAt, salon.timezone).minute;
+      const theirs = busyParts(os, oe, o.pauseStart != null && o.pauseMin ? { after: o.pauseStart, min: o.pauseMin } : null);
+      if (mine.some((p) => theirs.some((q) => p.start < q.end && p.end > q.start))) {
+        const hh = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        throw new Error(`В ${hh(os)} у мастера следующий клиент — ${o.client.name}. Можно продлить максимум до ${hh(os)} или сначала передать этого клиента другому мастеру.`);
+      }
+    }
+    await tx.update(s.appointments).set({
+      endsAt: zonedToUtc(date, endMinute, salon.timezone),
+      ...(keepPause ? {} : { pauseStart: null, pauseMin: null }),
+    }).where(eq(s.appointments.id, a.id));
+    return { end: endMinute };
+  });
+}
