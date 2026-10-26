@@ -128,22 +128,22 @@ type StaffDef = {
 const H = (h: number, m = 0) => h * 60 + m;
 
 const STAFF: StaffDef[] = [
-  { name: 'Сурмакан', title: 'Хозяйка салона · маникюр, педикюр, наращивание', photo: '/masters/surmakan.jpg', roles: ['OWNER', 'MASTER'],
+  { name: 'Сурмакан', title: 'Хозяйка салона · маникюр, педикюр, наращивание', photo: '/masters/v2/surmakan.jpg', roles: ['OWNER', 'MASTER'],
     cats: ['mani', 'ext', 'pedi'], schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 3, 4], start: H(9), end: H(15) } },
-  { name: 'Анастасия', title: 'Мужские и женские стрижки, сложные стрижки и окрашивание', photo: '/masters/anastasia.jpg', roles: ['MASTER'],
+  { name: 'Анастасия', title: 'Мужские и женские стрижки, сложные стрижки и окрашивание', photo: '/masters/v2/anastasia.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [2, 3, 5, 6], start: H(9, 30), end: H(19) } },
-  { name: 'Диана', title: 'Мужские и женские стрижки, окрашивание в один тон, укладки', photo: '/masters/diana.jpg', roles: ['MASTER'],
+  { name: 'Диана', title: 'Мужские и женские стрижки, окрашивание в один тон, укладки', photo: '/masters/v2/diana.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 5, 6], start: H(9, 30), end: H(20) } },
-  { name: 'Керемет', title: 'Универсал: стрижки, укладки, окрашивание', photo: '/masters/keremet.jpg', roles: ['MASTER'],
+  { name: 'Керемет', title: 'Универсал: стрижки, укладки, окрашивание', photo: '/masters/v2/keremet.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [1, 2, 3, 4], start: H(9), end: H(15) } },
-  { name: 'Жаннат', title: 'Мужские стрижки', photo: '/masters/zhannat.jpg', roles: ['MASTER'],
+  { name: 'Жаннат', title: 'Мужские стрижки', photo: '/masters/v2/zhannat.jpg', roles: ['MASTER'],
     cats: ['mcut', 'beard', 'mcolor', 'kids'], schedule: { kind: 'WEEKLY', weekdays: [0, 3, 4, 5, 6], start: H(9, 30), end: H(20) } },
   // Выходной дни у графиков «6 через 1» уточняются у салона; дата отсчёта — предположение.
-  { name: 'Жамиля', title: 'Маникюр, педикюр, наращивание', photo: '/masters/jamilya.jpg', roles: ['MASTER'],
+  { name: 'Жамиля', title: 'Маникюр, педикюр, наращивание', photo: '/masters/v2/jamilya.jpg', roles: ['MASTER'],
     cats: ['mani', 'ext', 'pedi'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-27', start: H(9, 30), end: H(20) } },
-  { name: 'Азиза', title: 'Маникюр и педикюр с покрытием, гигиенический', photo: '/masters/aziza.jpg', roles: ['MASTER'],
+  { name: 'Азиза', title: 'Маникюр и педикюр с покрытием, гигиенический', photo: '/masters/v2/aziza.jpg', roles: ['MASTER'],
     cats: ['mani', 'pedi'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-26', start: H(9, 30), end: H(20) } },
-  { name: 'Залина', title: 'Шугаринг, брови, ламинирование ресниц и бровей', photo: '/masters/zalina.jpg', roles: ['MASTER'],
+  { name: 'Залина', title: 'Шугаринг, брови, ламинирование ресниц и бровей', photo: '/masters/v2/zalina.jpg', roles: ['MASTER'],
     cats: ['brows', 'depil', 'mwax'], schedule: { kind: 'CYCLE', work: 6, off: 1, from: '2026-10-26', start: H(9, 30), end: H(20) } },
   // Администратор — отдельная штатная единица, клиентов не обслуживает. График уточняется у салона.
   { name: 'Рэйна', title: 'Администратор', roles: ['ADMIN'],
@@ -176,7 +176,7 @@ async function main() {
       for (const [i, m] of STAFF.entries()) {
         const found = await db.query.staff.findFirst({ where: and(eq(s.staff.salonId, existing.id), eq(s.staff.name, m.name)) });
         if (!found) { await insertStaff(existing.id, m, i, catIds); console.log(`Добавлен сотрудник: ${m.name}`); }
-        else if (m.photo && !found.photoUrl) await db.update(s.staff).set({ photoUrl: m.photo }).where(eq(s.staff.id, found.id));
+        else if (m.photo && found.photoUrl !== m.photo) await db.update(s.staff).set({ photoUrl: m.photo }).where(eq(s.staff.id, found.id));
       }
       // выдержка краски и длительности окрашивания — из прайса
       for (const c of CATEGORIES) for (const v of c.services) {
