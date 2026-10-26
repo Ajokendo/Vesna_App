@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ClientNav from '@/app/ClientNav';
+import LogoMenu from '@/app/LogoMenu';
 import { mapLink } from '@/lib/map';
 import { getCatalog, getSalon } from '@/server/salon';
 
@@ -19,12 +20,14 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
     <main className="app home">
       <div className="page" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', paddingBottom: 16, justifyContent: 'space-evenly' }}>
         <header className="row">
-          {salon.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={salon.logoUrl} alt={`Логотип салона «${salon.name}»`} width={52} height={52} style={{ borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--ground)' }} />
-          ) : (
-            <span aria-hidden style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 700 }}>{salon.name[0]}</span>
-          )}
+          <LogoMenu slug={slug}>
+            {salon.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={salon.logoUrl} alt={`Логотип салона «${salon.name}»`} width={52} height={52} draggable={false} style={{ display: 'block', borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--ground)' }} />
+            ) : (
+              <span aria-hidden style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 700 }}>{salon.name[0]}</span>
+            )}
+          </LogoMenu>
           <div className="grow">
             <h1 style={{ fontSize: 22 }}>{salon.name}</h1>
             <div className="muted small">{salon.tagline} · {salon.city}</div>

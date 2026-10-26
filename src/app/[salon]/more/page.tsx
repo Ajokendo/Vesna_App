@@ -36,7 +36,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
         {me && <Forget slug={slug} name={me.client.name} />}
 
         <div className="stack small muted" style={{ gap: 4, marginTop: 8, textAlign: 'center' }}>
-          <span>Для сотрудников салона: подержите палец на значке приложения или войдите здесь —</span>
+          <span>Для сотрудников салона: подержите палец на значке приложения или на логотипе на главной — или войдите здесь:</span>
           <span className="row" style={{ justifyContent: 'center', gap: 14 }}>
             <Link href={`/${slug}/master`} className="muted">Кабинет мастера</Link>
             <Link href={`/${slug}/admin`} className="muted">Администратор</Link>
