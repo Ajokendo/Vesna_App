@@ -67,7 +67,7 @@ export default async function ClientCard({ params }: { params: Promise<{ salon: 
       )}
 
       <ClientEditor slug={slug} c={c} child={!!card.guardian} />
-      <Referral slug={slug} clientId={card.guardian?.id ?? c.id} info={ref} canSet={!ref.rewarded} bonus={salon.referralBonus} />
+      <Referral slug={slug} clientId={card.guardian?.id ?? c.id} info={ref} canSet={card.stats.visits === 0 && !ref.rewarded} bonus={salon.referralBonus} />
 
       <section className="stack" style={{ gap: 8 }}>
         <h2 style={{ fontSize: 18 }}>Предстоящие записи</h2>
