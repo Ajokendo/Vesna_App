@@ -112,7 +112,7 @@ export async function getMastersForLogin(salonId: string) {
     orderBy: asc(s.staff.sortOrder),
   });
   return rows.filter((m) => m.roles.includes('MASTER')).map((m) => ({
-    id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, hasPin: !!m.pinHash,
+    id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, hasPin: !!m.pinHash, isOwner: m.roles.includes('OWNER'),
     locked: !!m.pinLockedUntil && m.pinLockedUntil > new Date(),
   }));
 }
