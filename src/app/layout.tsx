@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'Салон красоты «Весна» — онлайн-запись',
   description: 'Запись к мастерам салона «Весна», Бишкек',
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/logo.jpg?v=2', apple: '/logo.jpg?v=2' },
+  icons: { icon: '/icon-192.png?v=2', apple: '/icon-192.png?v=2' },
 };
 
 export const viewport: Viewport = { themeColor: '#4E6B45', width: 'device-width', initialScale: 1, viewportFit: 'cover' };

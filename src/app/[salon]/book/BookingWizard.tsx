@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import PushOptIn from '@/app/PushOptIn';
+import ClientNav from '@/app/ClientNav';
 import { useEffect, useMemo, useState } from 'react';
 import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
@@ -135,8 +136,9 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
             <div className="row"><span className="grow muted">Адрес</span><strong>{address}</strong></div>
           </div>
           <PushOptIn slug={slug} appointmentId={done.id} token={done.token} />
-          <Link href={`/${slug}`} className="btn block">На главную</Link>
+          <Link href={`/${slug}/my`} className="btn block">Мои записи</Link>
         </div>
+        <ClientNav slug={slug} />
       </main>
     );
   }
@@ -367,6 +369,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           </button>
         )}
       </div>
+      <ClientNav slug={slug} />
     </main>
   );
 }

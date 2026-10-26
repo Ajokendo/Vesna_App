@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createAppointment } from '@/server/salon';
+import { rememberClient } from '@/server/me';
 
 const Body = z.object({
   serviceId: z.string().min(1),
@@ -25,7 +26,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ salon: str
     return NextResponse.json({ error: msg }, { status: 400 });
   }
   try {
-    const res = await createAppointment(salon, { ...parsed.data, source: 'ONLINE' });
+    const { clientId, ...res } = await createAppointment(salon, { ...parsed.data, source: 'ONLINE' });
+    // этот телефон запоминает клиента: «Мои записи» и «Баллы» без паролей
+    await rememberClient(salon, clientId);
     return NextResponse.json(res, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 409 });

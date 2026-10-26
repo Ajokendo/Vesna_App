@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
@@ -8,6 +7,8 @@ import { formatPrice, formatSom } from '@/lib/pricing';
 import PushOptIn from '@/app/PushOptIn';
 import ConfirmButton from './ConfirmButton';
 import LateButtons from './LateButtons';
+import ClaimMe from './ClaimMe';
+import ClientNav from '@/app/ClientNav';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Моя запись' };
@@ -59,8 +60,9 @@ export default async function Visit({ params, searchParams }: { params: Promise<
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
         {!cancelled && !a.paid && <PushOptIn slug={slug} appointmentId={a.id} token={t} compact />}
         {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Написать в салон в WhatsApp</a>}
-        <Link href={`/${slug}`} className="small muted" style={{ textAlign: 'center' }}>На главную</Link>
       </div>
+      <ClaimMe slug={slug} id={a.id} token={t} />
+      <ClientNav slug={slug} />
     </main>
   );
 }

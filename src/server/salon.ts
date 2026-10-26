@@ -196,7 +196,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
       price: q.total, priceMax: q.totalMax, pointsUsed: q.pointsUsed, source: input.source ?? 'ONLINE',
     }).returning();
     for (const a of q.addons) await tx.insert(s.appointmentAddons).values({ appointmentId: appt.id, addonId: a.id, price: a.price });
-    return { id: appt.id, staffId, startsAt, quote: q };
+    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id };
   });
   // если у клиента уже включены уведомления — сразу подтверждение записи
   await notifySoon(created.id, 'BOOKED');

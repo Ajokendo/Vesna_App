@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import ClientNav from '@/app/ClientNav';
 import { getCatalog, getSalon } from '@/server/salon';
 
 export const dynamic = 'force-dynamic';
@@ -67,17 +68,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           ) : null}
         </section>
       </div>
-      {/* вход для сотрудников: всегда внизу экрана */}
-      <nav aria-label="Для сотрудников" style={{
-        flex: '0 0 auto',
-        padding: '10px max(20px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))', background: 'rgba(247,248,244,.96)', borderTop: '1px solid var(--line)',
-        backdropFilter: 'blur(6px)',
-      }}>
-        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-          <Link href={`/${salon.slug}/master`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Кабинет мастера</Link>
-          <Link href={`/${salon.slug}/admin`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Администратор</Link>
-        </div>
-      </nav>
+      <ClientNav slug={slug} inline />
     </main>
   );
 }
