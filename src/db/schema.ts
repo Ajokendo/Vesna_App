@@ -16,6 +16,7 @@ export const hairLengthEnum = pgEnum('hair_length', ['SHORT', 'MEDIUM', 'LONG', 
 export const addonRuleEnum = pgEnum('addon_rule', ['FREE_IF_REPEAT']);
 export const appointmentStatusEnum = pgEnum('appointment_status', ['BOOKED', 'CONFIRMED', 'ARRIVED', 'DONE', 'CANCELLED', 'NO_SHOW']);
 export const appointmentSourceEnum = pgEnum('appointment_source', ['ONLINE', 'ADMIN', 'WALK_IN']);
+export const genderEnum = pgEnum('gender', ['F', 'M']);
 
 export type HairLength = (typeof hairLengthEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
@@ -164,6 +165,10 @@ export const clients = pgTable('clients', {
   phone: text('phone'),
   birthDate: date('birth_date'),
   points: integer('points').notNull().default(0),
+  /** Пол — для поздравлений (8 Марта); подставляется по залу, куда клиент записывается */
+  gender: genderEnum('gender'),
+  /** Клиент отписался от поздравлений и акций (сообщения о его записях приходят всегда) */
+  promoOptOut: boolean('promo_opt_out').notNull().default(false),
   /** Для детей и родственников: чей это член семьи */
   guardianId: text('guardian_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -199,6 +204,8 @@ export const appointments = pgTable('appointments', {
   paid: boolean('paid').notNull().default(false),
   paymentMethod: text('payment_method'),
   comment: text('comment'),
+  /** Клиент подтвердил визит (кнопка в утреннем уведомлении) */
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index('appt_salon_time').on(t.salonId, t.startsAt), index('appt_staff_time').on(t.staffId, t.startsAt)]);
 
@@ -223,6 +230,48 @@ export const pointsLedger = pgTable('points_ledger', {
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index('points_client_idx').on(t.clientId)]);
+
+/** Служебные настройки приложения (ключи push-уведомлений, секрет ссылок) */
+export const appSettings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
+/** Телефоны клиентов, разрешившие push-уведомления */
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('push_client_idx').on(t.clientId)]);
+
+export const notificationKindEnum = pgEnum('notification_kind', ['BOOKED', 'MORNING', 'HOUR', 'MOVED', 'CANCELLED']);
+
+/** Какие уведомления по записи уже отправлены — чтобы не слать повторно */
+export const appointmentNotifications = pgTable('appointment_notifications', {
+  appointmentId: text('appointment_id').notNull().references(() => appointments.id, { onDelete: 'cascade' }),
+  kind: notificationKindEnum('kind').notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+  delivered: integer('delivered').notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.appointmentId, t.kind] })]);
+
+/** Рассылки салона: «нет света», праздники, акции */
+export const broadcasts = pgTable('broadcasts', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  /** SERVICE — важное о работе салона (уходит всем выбранным), PROMO — поздравления и акции (кроме отписавшихся) */
+  kind: text('kind').notNull(),
+  audience: text('audience').notNull(),
+  recipients: integer('recipients').notNull().default(0),
+  delivered: integer('delivered').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 // ——— связи для удобных запросов ———
 

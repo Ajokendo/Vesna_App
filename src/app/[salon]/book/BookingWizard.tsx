@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import PushOptIn from '@/app/PushOptIn';
 import { useEffect, useMemo, useState } from 'react';
 import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
@@ -39,7 +40,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
   const [client, setClient] = useState({ name: '', phone: '+996 ' });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<null | { total: number; totalMax: number | null; staffName: string }>(null);
+  const [done, setDone] = useState<null | { total: number; totalMax: number | null; staffName: string; id: string; token: string }>(null);
 
   const childAge = forChild && child.birthDate ? ageOn(child.birthDate, today) : null;
 
@@ -114,7 +115,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
     const data = await res.json();
     setSending(false);
     if (!res.ok) { setError(data.error ?? 'Не получилось записаться'); return; }
-    setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId) });
+    setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId), id: data.id, token: data.visitToken });
   }
 
   if (done && date && slot) {
@@ -133,7 +134,8 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
             <div className="row"><span className="grow muted">К оплате в салоне</span><strong>{formatPrice(done.total, done.totalMax)}</strong></div>
             <div className="row"><span className="grow muted">Адрес</span><strong>{address}</strong></div>
           </div>
-          <Link href={`/${slug}`} className="btn primary block">На главную</Link>
+          <PushOptIn slug={slug} appointmentId={done.id} token={done.token} />
+          <Link href={`/${slug}`} className="btn block">На главную</Link>
         </div>
       </main>
     );

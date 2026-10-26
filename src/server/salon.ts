@@ -5,6 +5,8 @@ import type { HairLength } from '@/db/schema';
 import { workingHours, workDaysLabel } from '@/lib/schedule';
 import { availableStarts, busyParts, fits } from '@/lib/slots';
 import { calcPayment } from '@/lib/payment';
+import { notifySoon } from './notify';
+import { signId } from './push';
 import { resolveService, quote } from '@/lib/pricing';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 
@@ -141,7 +143,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
   if (!salon) throw new Error('Салон не найден');
   const { svc, resolved, addons, durationMin } = await bookingDuration(input);
 
-  return db.transaction(async (tx) => {
+  const created = await db.transaction(async (tx) => {
     // Блокируем строки мастеров, чтобы две записи одновременно не заняли одно окно
     const eligible = eligibleStaffIds(svc);
     const candidates = input.staffId === 'any' ? eligible : eligible.filter((id) => id === input.staffId);
@@ -171,6 +173,10 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
       const child = await tx.query.clients.findFirst({ where: and(eq(s.clients.guardianId, client.id), eq(s.clients.name, input.forChild.name)) });
       visitor = child ?? (await tx.insert(s.clients).values({ salonId: salon.id, name: input.forChild.name, birthDate: input.forChild.birthDate, guardianId: client.id }).returning())[0];
     }
+    // Пол для поздравлений: по залу, если ещё не известен (детские услуги не в счёт)
+    if (!visitor.gender && !svc.category.forKids && !input.forChild) {
+      await tx.update(s.clients).set({ gender: svc.category.hall === 'WOMEN' ? 'F' : 'M' }).where(eq(s.clients.id, visitor.id));
+    }
 
     // «Снятие нашей работы бесплатно»: была ли у клиента раньше услуга этой категории
     const past = await tx.select({ id: s.appointments.id }).from(s.appointments)
@@ -190,6 +196,9 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
     for (const a of q.addons) await tx.insert(s.appointmentAddons).values({ appointmentId: appt.id, addonId: a.id, price: a.price });
     return { id: appt.id, staffId, startsAt, quote: q };
   });
+  // если у клиента уже включены уведомления — сразу подтверждение записи
+  await notifySoon(created.id, 'BOOKED');
+  return { ...created, visitToken: await signId(created.id) };
 }
 
 /** Журнал администратора на день */
@@ -209,6 +218,9 @@ export async function getJournal(salonSlug: string, date: DateStr) {
     with: { client: { with: { guardian: true } }, service: { with: { category: { with: { staff: true } }, restrictions: true } }, addons: { with: { addon: true } } },
     orderBy: asc(s.appointments.startsAt),
   });
+  const payerIds = [...new Set(appts.map((a) => a.client.guardianId ?? a.client.id))];
+  const withPush = new Set(payerIds.length ? (await db.select({ c: s.pushSubscriptions.clientId }).from(s.pushSubscriptions)
+    .where(inArray(s.pushSubscriptions.clientId, payerIds))).map((r) => r.c) : []);
   const tz = salon.timezone;
   const minuteOf = (d: Date) => utcToZoned(d, tz).minute;
   const pauseOf = (a: (typeof appts)[number]) => (a.pauseStart != null && a.pauseMin ? { after: a.pauseStart, min: a.pauseMin } : null);
@@ -259,6 +271,10 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           } : null,
           /** Мастер не выйдет в это время — запись нужно передать, перенести или отменить */
           conflict: conflict && !a.paid,
+          /** Клиент подтвердил визит из уведомления */
+          confirmed: !!a.confirmedAt,
+          /** У клиента включены уведомления */
+          push: withPush.has(a.client.guardianId ?? a.client.id),
           alternatives: conflict && !a.paid ? alternativesFor(a) : [],
         };
         }),

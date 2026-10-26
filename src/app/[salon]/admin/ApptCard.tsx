@@ -14,6 +14,8 @@ export type ApptItem = {
   payment: { finalPrice: number; pointsUsed: number; cash: number; pointsEarned: number; method: string | null; masterShare: number } | null;
   /** Мастер не выйдет в это время */
   conflict?: boolean;
+  confirmed?: boolean;
+  push?: boolean;
 };
 
 const METHODS = [
@@ -44,7 +46,7 @@ export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent 
   const title = (
     <>
       <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>
-        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}
+        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}{!a.paid && a.confirmed ? ' · подтвердил' : ''}{a.push ? ' 🔔' : ''}
       </div>
       {(a.pause ? a.pause.after : a.end - a.start) * px >= 34 && (
         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>

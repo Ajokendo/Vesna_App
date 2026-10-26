@@ -5,6 +5,7 @@ import { workingHours } from '@/lib/schedule';
 import { busyParts, fits } from '@/lib/slots';
 import { addDays, daysBetween, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { getSalon } from './salon';
+import { notifySoon } from './notify';
 
 // Мастер не выйдет (заболел, семейные дела): отметка в графике на день, несколько дней или часть дня.
 // Онлайн-запись на это время сразу закрывается; уже записанных клиентов администратор
@@ -102,8 +103,8 @@ export async function reassignAppointment(slug: string, appointmentId: string, t
     ));
     if (!fits(day, busy, minute, dur, pause)) throw new Error(`${m?.name ?? 'Мастер'} в это время занят`);
     await tx.update(s.appointments).set({ staffId: toStaffId }).where(eq(s.appointments.id, a.id));
-    return { staffId: toStaffId };
-  });
+    return { staffId: toStaffId, id: a.id };
+  }).then(async (r) => { await notifySoon(r.id, 'MOVED'); return { staffId: r.staffId }; });
 }
 
 /** Отменить неоплаченную запись */
@@ -114,6 +115,7 @@ export async function cancelAppointment(slug: string, appointmentId: string) {
   if (!a) throw new Error('Запись не найдена');
   if (a.paid) throw new Error('Запись уже оплачена — сначала отмените оплату');
   await db.update(s.appointments).set({ status: 'CANCELLED' }).where(eq(s.appointments.id, a.id));
+  await notifySoon(a.id, 'CANCELLED');
 }
 
 /** Отметки «не выйдет» на ближайшие дни — для списка в журнале */

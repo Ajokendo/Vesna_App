@@ -5,6 +5,7 @@ import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull } from '@/lib/time';
 import { formatSom } from '@/lib/pricing';
 import NewAppointment from './NewAppointment';
 import ApptCard from './ApptCard';
+import ReminderTicker from './ReminderTicker';
 import { AbsenceControl, ConflictList, type Conflict } from './Absence';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,7 @@ export default async function Journal({ params, searchParams }: {
           <p className="muted" style={{ margin: '4px 0 0' }}>{weekdayFull(date)}, {dayMonth(date)} · записей: {total}</p>
         </div>
         <nav className="row" aria-label="Дата" style={{ flexWrap: 'wrap' }}>
+          <Link className="btn" href={`/${slug}/admin/notify`}>Уведомления</Link>
           <Link className="btn" href={`/${slug}/admin/staff`}>Мастера и PIN</Link>
           <Link className="btn" href={link(addDays(date, -1))} aria-label="Предыдущий день">‹</Link>
           <Link className="btn" href={link(now.date)}>Сегодня</Link>
@@ -61,6 +63,7 @@ export default async function Journal({ params, searchParams }: {
         ))}
       </div>
 
+      <ReminderTicker />
       <NewAppointment slug={slug} date={date} catalog={catalog} />
 
       <ConflictList slug={slug} salonName={salon.name} dateLabel={`${weekdayFull(date)}, ${dayMonth(date)},`} items={columns.flatMap((c) => c.items.filter((i) => i.conflict).map((i): Conflict => ({
@@ -115,7 +118,7 @@ export default async function Journal({ params, searchParams }: {
         </div>
       </div>
       <p className="small muted" style={{ margin: 0 }}>
-        Нажмите на запись, чтобы принять оплату. Белые — ожидаются, зелёные — оплачены, кремовые — без записи.
+        Нажмите на запись, чтобы принять оплату. 🔔 — у клиента включены напоминания, «подтвердил» — подтвердил визит из уведомления. Белые — ожидаются, зелёные — оплачены, кремовые — без записи.
         Пунктир — выдержка краски: в это время мастер свободен и к нему можно записать другого клиента. Красная линия — текущее время.
       </p>
 

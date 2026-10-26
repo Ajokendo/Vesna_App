@@ -107,3 +107,11 @@ export function formatPrice(price: number, max?: number | null): string {
   if (max != null && max > price) return `${String(price).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}–${formatSom(max)}`;
   return formatSom(price);
 }
+
+/** 1 клиент, 2 клиента, 5 клиентов */
+export function plural(n: number, one: string, few: string, many: string) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
