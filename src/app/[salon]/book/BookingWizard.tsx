@@ -126,8 +126,8 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
 
   if (done && date && slot) {
     return (
-      <main className="app">
-        <div className="page" style={{ alignItems: 'center', textAlign: 'center', paddingTop: 48 }}>
+      <main className="app home">
+        <div className="page" style={{ alignItems: 'center', textAlign: 'center', paddingTop: 48, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
           <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 0 4px #fff, 0 0 0 5.5px var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
@@ -144,14 +144,15 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           <PushOptIn slug={slug} appointmentId={done.id} token={done.token} />
           <Link href={`/${slug}/my`} className="btn block">Мои записи</Link>
         </div>
-        <ClientNav slug={slug} />
+        <ClientNav slug={slug} inline />
       </main>
     );
   }
 
   return (
-    <main className="app">
-      <div className="page" style={{ paddingBottom: 12 }}>
+    // экран ровно на высоту телефона: прокручивается только список посередине, низ (итог и меню) всегда на месте
+    <main className="app home">
+      <div className="page" style={{ paddingBottom: 12, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', gap: 14 }}>
         <header className="row">
           {step === 1 ? (
             <Link href={`/${slug}`} className="btn" aria-label="Назад" style={{ width: 44, padding: 0 }}>‹</Link>
@@ -215,9 +216,9 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
               return (
               <section key={c.id} className="card stack" style={expanded ? undefined : { padding: 0 }}>
                 <button type="button" aria-expanded={expanded} onClick={() => setOpenCat(expanded ? null : c.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 0, padding: expanded ? 0 : 16, cursor: 'pointer', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 0, padding: expanded ? 0 : '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span className="grow stack" style={{ gap: 2 }}>
-                    <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 18 }}>{c.name}</span>
+                    <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 17 }}>{c.name}</span>
                     <span className="small muted">{c.note ? `${c.note} · ` : ''}{c.services.length} {c.services.length === 1 ? 'услуга' : c.services.length < 5 ? 'услуги' : 'услуг'} · от {formatSom(from)}</span>
                   </span>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6" /></svg>
@@ -377,7 +378,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           </button>
         )}
       </div>
-      <ClientNav slug={slug} />
+      <ClientNav slug={slug} inline />
     </main>
   );
 }

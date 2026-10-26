@@ -10,6 +10,7 @@ import LateButtons from './LateButtons';
 import ClaimMe from './ClaimMe';
 import InstallCard from '@/app/InstallCard';
 import ClientNav from '@/app/ClientNav';
+import { mapLink } from '@/lib/map';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Моя запись' };
@@ -29,8 +30,8 @@ export default async function Visit({ params, searchParams }: { params: Promise<
   const cancelled = a.status === 'CANCELLED';
   const wa = a.salon.whatsapp?.replace(/\D/g, '');
   return (
-    <main className="app">
-      <div className="page">
+    <main className="app home">
+      <div className="page" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         <header className="row">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {a.salon.logoUrl && <img src={a.salon.logoUrl} alt="" width={44} height={44} style={{ borderRadius: 12 }} />}
@@ -56,6 +57,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
           </div>
           <div className="row"><span className="grow muted">{a.paid ? 'Оплачено' : 'К оплате в салоне'}</span><strong>{a.paid ? formatSom(a.finalPrice ?? a.price) : formatPrice(a.price, a.priceMax)}</strong></div>
           <div className="row"><span className="grow muted">Адрес</span><strong>{[a.salon.city, a.salon.address].filter(Boolean).join(', ')}</strong></div>
+          <a className="btn" href={mapLink(a.salon)} target="_blank" rel="noreferrer" style={{ minHeight: 42 }}>📍 Как добраться (2ГИС)</a>
         </section>
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
@@ -64,7 +66,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
         {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Написать в салон в WhatsApp</a>}
       </div>
       <ClaimMe slug={slug} id={a.id} token={t} />
-      <ClientNav slug={slug} />
+      <ClientNav slug={slug} inline />
     </main>
   );
 }

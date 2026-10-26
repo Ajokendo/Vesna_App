@@ -30,6 +30,7 @@ export const SalonSettings = z.object({
   noShowMinutes: z.number().int().min(5).max(120),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   hoursText: z.string().trim().max(120).nullable(),
+  mapUrl: z.string().trim().url().max(300).nullable(),
   menHallNote: z.string().trim().max(80).nullable(),
   womenHallNote: z.string().trim().max(80).nullable(),
   /** undefined — не менять; null — убрать; строка — новый логотип (квадрат PNG, уменьшен на телефоне) */

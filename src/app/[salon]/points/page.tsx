@@ -21,8 +21,8 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
   const data = await myPoints(slug);
   const qr = data ? await qrSvg(clientQrUrl(await siteOrigin(), slug, data.id)) : null;
   return (
-    <main className="app">
-      <div className="page" style={{ gap: 16 }}>
+    <main className="app home">
+      <div className="page" style={{ gap: 16, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         <h1 style={{ fontSize: 24 }}>Мои баллы</h1>
         {!data ? <NotYou slug={slug} whatsapp={salon.whatsapp} /> : (
           <>
@@ -69,7 +69,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
           </>
         )}
       </div>
-      <ClientNav slug={slug} />
+      <ClientNav slug={slug} inline />
     </main>
   );
 }

@@ -59,6 +59,8 @@ export const salons = pgTable('salons', {
   logoData: text('logo_data'),
   /** Тексты главной страницы */
   hoursText: text('hours_text'),
+  /** Ссылка на салон в 2ГИС (кнопка «Как добраться»); пусто — поиск по адресу */
+  mapUrl: text('map_url'),
   menHallNote: text('men_hall_note'),
   womenHallNote: text('women_hall_note'),
   /** PIN администратора салона (хеш). Пусто — старый общий PIN из настроек сервера (только для первого салона) */

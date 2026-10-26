@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { getMe } from '@/server/me';
 import ClientNav from '@/app/ClientNav';
+import { mapLink } from '@/lib/map';
 import Forget from './Forget';
 import InstallCard from '@/app/InstallCard';
 
@@ -19,8 +20,8 @@ export default async function More({ params }: { params: Promise<{ salon: string
   const tel = salon.phone?.replace(/\D/g, '');
   const row = { justifyContent: 'space-between', minHeight: 52, padding: '0 16px', textDecoration: 'none', color: 'inherit' } as const;
   return (
-    <main className="app">
-      <div className="page" style={{ gap: 16 }}>
+    <main className="app home">
+      <div className="page" style={{ gap: 16, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         <h1 style={{ fontSize: 24 }}>Ещё</h1>
         {me && <span className="muted">Вы вошли как <strong style={{ color: 'var(--ink)' }}>{me.client.name}</strong>{me.client.phone ? `, ${me.client.phone}` : ''}</span>}
 
@@ -28,9 +29,13 @@ export default async function More({ params }: { params: Promise<{ salon: string
           {wa && <a className="row" style={row} href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer"><strong>WhatsApp</strong><span className="muted">{salon.whatsapp}</span></a>}
           {tel && <a className="row" style={{ ...row, borderTop: '1px solid var(--line)' }} href={`tel:+${tel}`}><strong>Позвонить</strong><span className="muted">{salon.phone}</span></a>}
           {salon.instagram && <a className="row" style={{ ...row, borderTop: '1px solid var(--line)' }} href={`https://instagram.com/${salon.instagram.replace(/^@/, '')}`} target="_blank" rel="noreferrer"><strong>Instagram</strong><span className="muted">@{salon.instagram.replace(/^@/, '')}</span></a>}
-          <div className="row" style={{ ...row, borderTop: '1px solid var(--line)', minHeight: 'auto', padding: '12px 16px', alignItems: 'flex-start', gap: 12 }}>
-            <strong>Адрес</strong><span className="muted" style={{ textAlign: 'right' }}>{[salon.city, salon.address].filter(Boolean).join(', ')}{salon.hoursText ? <><br />{salon.hoursText}</> : null}</span>
-          </div>
+          <a className="row" style={{ ...row, borderTop: '1px solid var(--line)', minHeight: 'auto', padding: '12px 16px', alignItems: 'center', gap: 12 }} href={mapLink(salon)} target="_blank" rel="noreferrer">
+            <span className="stack" style={{ gap: 2 }}>
+              <strong>Как добраться</strong>
+              <span className="small muted">{[salon.city, salon.address].filter(Boolean).join(', ')}{salon.hoursText ? ` · ${salon.hoursText}` : ''}</span>
+            </span>
+            <span className="btn" style={{ minHeight: 38, fontSize: 13, padding: '0 12px', flex: '0 0 auto' }}>📍 2ГИС</span>
+          </a>
         </section>
 
         <InstallCard bonus={me?.client.welcomeBonusAt ? 0 : salon.welcomeBonus} />
@@ -45,7 +50,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
           </span>
         </div>
       </div>
-      <ClientNav slug={slug} />
+      <ClientNav slug={slug} inline />
     </main>
   );
 }

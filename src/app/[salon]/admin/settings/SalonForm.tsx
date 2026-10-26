@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Msg, inputSt, useSave } from './ui';
 
 type Salon = {
-  accentColor: string; logoUrl: string | null; hoursText: string | null; menHallNote: string | null; womenHallNote: string | null;
+  accentColor: string; logoUrl: string | null; hoursText: string | null; mapUrl: string | null; menHallNote: string | null; womenHallNote: string | null;
   name: string; tagline: string | null; city: string | null; address: string | null; phone: string | null; whatsapp: string | null; instagram: string | null;
   bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
 };
@@ -13,6 +13,7 @@ const TEXT: { key: keyof Salon; label: string }[] = [
   { key: 'name', label: 'Название' }, { key: 'tagline', label: 'Подпись (например, «Салон красоты»)' }, { key: 'city', label: 'Город' },
   { key: 'address', label: 'Адрес' }, { key: 'phone', label: 'Телефон' }, { key: 'whatsapp', label: 'WhatsApp' }, { key: 'instagram', label: 'Instagram' },
   { key: 'hoursText', label: 'Часы работы (на главной)' },
+  { key: 'mapUrl', label: 'Ссылка на салон в 2ГИС («Поделиться» в 2ГИС)' },
   { key: 'menHallNote', label: 'Подпись «Мужской зал»' }, { key: 'womenHallNote', label: 'Подпись «Женский зал»' },
 ];
 

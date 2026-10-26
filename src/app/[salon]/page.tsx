@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ClientNav from '@/app/ClientNav';
+import { mapLink } from '@/lib/map';
 import { getCatalog, getSalon } from '@/server/salon';
 
 export const dynamic = 'force-dynamic';
@@ -66,7 +67,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
 
         <section className="card row" style={{ borderColor: 'var(--gold)', gap: 12, padding: '12px 14px', flexWrap: 'wrap' }}>
           <div className="stack small" style={{ gap: 2, flex: '1 1 180px' }}>
-            <strong style={{ fontSize: 15 }}>{salon.city}, {salon.address}</strong>
+            <a href={mapLink(salon)} target="_blank" rel="noreferrer" style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>📍 {salon.city}, {salon.address}</a>
             {salon.hoursText && <span className="muted">{salon.hoursText}</span>}
           </div>
           {salon.whatsapp ? (

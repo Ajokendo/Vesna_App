@@ -19,8 +19,8 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
   const data = await myVisits(slug);
   const today = utcToZoned(new Date(), salon.timezone).date;
   return (
-    <main className="app">
-      <div className="page" style={{ gap: 16 }}>
+    <main className="app home">
+      <div className="page" style={{ gap: 16, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         <h1 style={{ fontSize: 24 }}>Мои записи</h1>
         <InstallCard bonus={salon.welcomeBonus} compact />
         {!data ? <NotYou slug={slug} whatsapp={salon.whatsapp} /> : (
@@ -67,7 +67,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
           </>
         )}
       </div>
-      <ClientNav slug={slug} />
+      <ClientNav slug={slug} inline />
     </main>
   );
 }
