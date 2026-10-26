@@ -58,6 +58,8 @@ export const salons = pgTable('salons', {
   /** Баллы за приглашённого друга (начисляются после первой оплаты друга; 0 — программа выключена) и лимит в месяц */
   referralBonus: integer('referral_bonus').notNull().default(50),
   referralMonthlyLimit: integer('referral_monthly_limit').notNull().default(10),
+  /** Баллы за отзыв в 2ГИС (начисляет администратор, проверив отзыв; 0 — не предлагать) */
+  reviewBonus: integer('review_bonus').notNull().default(50),
   /** Логотип, загруженный в настройках (квадрат PNG, data:…) — отдаётся по /api/<салон>/logo */
   logoData: text('logo_data'),
   /** Тексты главной страницы */
@@ -96,6 +98,8 @@ export const staff = pgTable('staff', {
   pinLockedUntil: timestamp('pin_locked_until', { withTimezone: true }),
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
+  /** Показывать клиентам рейтинг мастера (включает хозяйка, для каждого мастера отдельно; виден от 10 оценок) */
+  showRating: boolean('show_rating').notNull().default(false),
 }, (t) => [index('staff_salon_idx').on(t.salonId)]);
 
 export const schedules = pgTable('schedules', {
@@ -300,7 +304,7 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index('push_client_idx').on(t.clientId)]);
 
-export const notificationKindEnum = pgEnum('notification_kind', ['BOOKED', 'MORNING', 'HOUR', 'MOVED', 'CANCELLED']);
+export const notificationKindEnum = pgEnum('notification_kind', ['BOOKED', 'MORNING', 'HOUR', 'MOVED', 'CANCELLED', 'RATE']);
 
 /** Какие уведомления по записи уже отправлены — чтобы не слать повторно */
 export const appointmentNotifications = pgTable('appointment_notifications', {
@@ -394,3 +398,23 @@ export const feedback = pgTable('feedback', {
   resolved: boolean('resolved').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index('feedback_created').on(t.createdAt)]);
+
+/** Оценка визита клиентом: звёзды 1–5 и необязательный отзыв. Одна оценка на визит */
+export const reviews = pgTable('reviews', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  appointmentId: text('appointment_id').notNull().unique().references(() => appointments.id, { onDelete: 'cascade' }),
+  staffId: text('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  stars: integer('stars').notNull(),
+  text: text('text'),
+  /** Клиент перешёл оставить отзыв в 2ГИС; когда администратор, проверив, начислил баллы */
+  gisClickedAt: timestamp('gis_clicked_at', { withTimezone: true }),
+  gisRewardedAt: timestamp('gis_rewarded_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('reviews_staff').on(t.staffId)]);
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  staff: one(staff, { fields: [reviews.staffId], references: [staff.id] }),
+  client: one(clients, { fields: [reviews.clientId], references: [clients.id] }),
+  appointment: one(appointments, { fields: [reviews.appointmentId], references: [appointments.id] }),
+}));

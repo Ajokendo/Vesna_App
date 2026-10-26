@@ -8,7 +8,7 @@ import { occupiesTime } from './status';
 // Уведомления клиенту по его записи: при записи, утром в день визита (с кнопкой «Подтвердить»), за час,
 // при передаче другому мастеру и при отмене. Каждое отправляется один раз.
 
-type Kind = 'BOOKED' | 'MORNING' | 'HOUR' | 'MOVED' | 'CANCELLED';
+type Kind = 'BOOKED' | 'MORNING' | 'HOUR' | 'MOVED' | 'CANCELLED' | 'RATE';
 
 /** С какого часа (по времени салона) уходит утреннее напоминание */
 const MORNING_FROM = 8 * 60;
@@ -41,6 +41,8 @@ async function texts(a: NonNullable<Awaited<ReturnType<typeof loadAppointment>>>
       return { ...base, title: `Через час ждём вас — ${hhmm(minute)}`, body: `${who}${what}\n${place}` };
     case 'MOVED':
       return { ...base, title: 'Ваша запись изменилась', body: `${who}${when} вас примет ${a.staff.name} (${a.service.name}). Если неудобно — напишите нам.` };
+    case 'RATE':
+      return { ...base, url: `${url}&rate=1`, title: `Как вам визит к ${a.staff.name}?`, body: 'Оцените, пожалуйста, — это займёт пару секунд и поможет нам стать лучше.' };
     case 'CANCELLED':
       return { ...base, url: `/${a.salon.slug}/book`, title: 'Запись отменена', body: `${who}запись на ${when} отменена. Выберите другое время в приложении или напишите нам.` };
   }
@@ -51,7 +53,7 @@ async function texts(a: NonNullable<Awaited<ReturnType<typeof loadAppointment>>>
  * если у клиента ещё нет телефона с уведомлениями, отметка не ставится (подпишется — получит).
  */
 export async function notifyAppointment(appointmentId: string, kind: Kind): Promise<number> {
-  const once = kind === 'BOOKED' || kind === 'MORNING' || kind === 'HOUR';
+  const once = kind === 'BOOKED' || kind === 'MORNING' || kind === 'HOUR' || kind === 'RATE';
   if (once) {
     const claimed = await db.insert(s.appointmentNotifications).values({ appointmentId, kind })
       .onConflictDoNothing().returning();

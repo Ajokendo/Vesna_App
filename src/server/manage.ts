@@ -3,6 +3,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema as s } from '@/db';
 import { getSalon } from './salon';
+import { staffRatings } from './reviews';
 
 // Настройки салона без разработчика: данные салона, правила записи и баллов, услуги и цены, мастера и графики.
 
@@ -25,6 +26,7 @@ export const SalonSettings = z.object({
   pointsPercent: z.number().int().min(0).max(50),
   welcomeBonus: z.number().int().min(0).max(5000),
   minRedeem: z.number().int().min(0).max(100000),
+  reviewBonus: z.number().int().min(0).max(5000),
   referralBonus: z.number().int().min(0).max(5000),
   referralMonthlyLimit: z.number().int().min(0).max(100),
   defaultCommission: z.number().int().min(0).max(100),
@@ -139,6 +141,7 @@ export const StaffInput = z.object({
   commission: z.number().int().min(0).max(100).nullable(),
   active: z.boolean(),
   categoryIds: z.array(z.string()).max(50),
+  showRating: z.boolean().optional(),
   /** undefined — фото не менять; null — убрать; строка — новое фото (уменьшенное на телефоне) */
   photo: z.string().startsWith('data:image/').max(400_000).nullable().optional(),
   schedule: z.object({
@@ -177,6 +180,7 @@ export async function saveStaff(slug: string, input: z.infer<typeof StaffInput>)
   const base = {
     name: input.name, title: input.title || null, phone: input.phone || null, active: isOwner ? true : input.active,
     roles: [...roles], commission: isOwner ? null : input.commission,
+    ...(input.showRating === undefined ? {} : { showRating: input.showRating }),
   };
   if (existing) {
     await db.update(s.staff).set(base).where(eq(s.staff.id, existing.id));
@@ -219,6 +223,7 @@ export async function saveStaffOrder(slug: string, input: z.infer<typeof StaffOr
 /** Всё для страницы настроек: разделы и услуги (включая скрытые), мастера */
 export async function getManageData(slug: string) {
   const salon = await salonOf(slug);
+  const ratings = await staffRatings(salon.id);
   const categories = await db.query.serviceCategories.findMany({
     where: eq(s.serviceCategories.salonId, salon.id), orderBy: asc(s.serviceCategories.sortOrder),
     with: { services: { orderBy: asc(s.services.sortOrder) }, staff: true },
@@ -237,7 +242,7 @@ export async function getManageData(slug: string) {
       })),
     })),
     staff: staff.map((m) => ({
-      id: m.id, name: m.name, title: m.title, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, commission: m.commission, active: m.active,
+      id: m.id, name: m.name, title: m.title, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, showRating: m.showRating, rating: ratings.get(m.id) ?? null, commission: m.commission, active: m.active,
       categoryIds: m.categories.map((c) => c.categoryId),
       schedule: m.schedule ? {
         kind: m.schedule.kind, weekdays: m.schedule.weekdays, cycleWork: m.schedule.cycleWork, cycleOff: m.schedule.cycleOff,

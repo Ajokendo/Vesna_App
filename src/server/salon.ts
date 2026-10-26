@@ -12,6 +12,7 @@ import { resolveService, quote } from '@/lib/pricing';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { categoryGroup } from '@/lib/groups';
 import { rewardReferral } from './referral';
+import { MIN_RATINGS, staffRatings } from './reviews';
 
 /** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
 export async function getSalon(slug: string) {
@@ -22,6 +23,7 @@ export async function getSalon(slug: string) {
 
 /** Каталог для клиента: категории с услугами и доп. опциями, мастера с графиками */
 export async function getCatalog(salonId: string) {
+  const ratings = await staffRatings(salonId);
   const categories = await db.query.serviceCategories.findMany({
     where: and(eq(s.serviceCategories.salonId, salonId), eq(s.serviceCategories.active, true)),
     orderBy: asc(s.serviceCategories.sortOrder),
@@ -48,6 +50,8 @@ export async function getCatalog(salonId: string) {
     })),
     staff: staff.filter((m) => m.roles.includes('MASTER')).map((m) => ({
       id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, isOwner: m.roles.includes('OWNER'),
+      /** Рейтинг виден клиентам, только если хозяйка включила его мастеру и набралось не меньше 10 оценок */
+      rating: m.showRating && (ratings.get(m.id)?.count ?? 0) >= MIN_RATINGS ? ratings.get(m.id)! : null,
       scheduleLabel: workDaysLabel(m.schedule ?? null),
       categoryIds: m.categories.map((c) => c.categoryId),
     })),
@@ -357,6 +361,8 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
   }).then(async ({ payerId, ...p }) => {
     // первая оплата приглашённого друга — баллы тому, кто пригласил
     await rewardReferral(salon.id, payerId).catch((e) => console.error('referral', (e as Error).message));
+    // просьба оценить визит (если у клиента включены уведомления)
+    await notifySoon(input.appointmentId, 'RATE');
     return p;
   });
 }

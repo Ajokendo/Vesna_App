@@ -79,7 +79,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
   const sc = m?.schedule;
   const [f, setF] = useState({
     name: m?.name ?? '', title: m?.title ?? '', phone: m?.phone ?? '', isMaster: m ? m.roles.includes('MASTER') : true,
-    commission: m?.commission == null ? '' : String(m.commission), active: m?.active ?? true, cats: new Set(m?.categoryIds ?? []),
+    commission: m?.commission == null ? '' : String(m.commission), active: m?.active ?? true, cats: new Set(m?.categoryIds ?? []), showRating: m?.showRating ?? false,
   });
   const [s, setS] = useState({
     kind: sc?.kind ?? 'WEEKLY', weekdays: new Set(sc?.weekdays ?? [0, 1, 2, 3, 4, 5]), cycleWork: String(sc?.cycleWork ?? 2), cycleOff: String(sc?.cycleOff ?? 2),
@@ -93,7 +93,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
   async function submit() {
     const d = await save('staff', {
       id: m?.id, name: f.name.trim(), title: f.title.trim() || null, phone: f.phone.trim() || null, isMaster: f.isMaster,
-      commission: num(f.commission), active: f.active, categoryIds: [...f.cats], photo,
+      commission: num(f.commission), active: f.active, categoryIds: [...f.cats], photo, showRating: f.showRating,
       schedule: f.isMaster ? {
         kind: s.kind, weekdays: [...s.weekdays], cycleWork: num(s.cycleWork), cycleOff: num(s.cycleOff), cycleStart: s.kind === 'CYCLE' ? s.cycleStart : null,
         startMinute: fromTime(s.start), endMinute: fromTime(s.end), breakStart: fromTime(s.bStart), breakEnd: fromTime(s.bEnd),
@@ -175,6 +175,12 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
         </fieldset>
       </>)}
 
+      {f.isMaster && (
+        <div className="stack" style={{ gap: 4, background: '#fbf6ea', border: '1px solid var(--gold)', borderRadius: 12, padding: 10 }}>
+          <label className="row small" style={{ gap: 6, fontWeight: 700 }}><input type="checkbox" checked={f.showRating} onChange={(e) => setF({ ...f, showRating: e.target.checked })} /> Показывать клиентам рейтинг мастера</label>
+          <span className="small muted">{m?.rating ? `Сейчас: ★ ${m.rating.avg.toFixed(1).replace('.', ',')} · оценок: ${m.rating.count}` : 'Оценок пока нет'}. Клиенты увидят рейтинг, когда наберётся не меньше 10 оценок.</span>
+        </div>
+      )}
       {!isOwner && m && (
         <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={!f.active} onChange={(e) => setF({ ...f, active: !e.target.checked })} /> Больше не работает в салоне (скрыть из записи; история сохранится)</label>
       )}

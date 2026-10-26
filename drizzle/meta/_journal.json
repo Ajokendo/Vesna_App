@@ -120,6 +120,20 @@
       "when": 1793031766481,
       "tag": "0016_feedback",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793032200531,
+      "tag": "0017_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793032272650,
+      "tag": "0018_rate_kind",
+      "breakpoints": true
     }
   ]
 }

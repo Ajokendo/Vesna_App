@@ -5,6 +5,7 @@ import SalonForm from './SalonForm';
 import ServicesEditor from './ServicesEditor';
 import StaffEditor from './StaffEditor';
 import PinList from './PinList';
+import ReviewsList from './ReviewsList';
 import Feedback from '@/app/Feedback';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'services', name: 'Услуги' },
   { id: 'staff', name: 'Мастера' },
   { id: 'pins', name: 'PIN-коды' },
+  { id: 'reviews', name: 'Оценки' },
 ] as const;
 
 export default async function Settings({ params, searchParams }: { params: Promise<{ salon: string }>; searchParams: Promise<{ tab?: string; ok?: string; e?: string }> }) {
@@ -36,13 +38,14 @@ export default async function Settings({ params, searchParams }: { params: Promi
       <nav className="tabs" style={{ width: '100%', maxWidth: 720 }}>
         {TABS.map((x) => (
           <Link key={x.id} href={`/${slug}/admin/settings?tab=${x.id}`} aria-current={x.id === tab ? 'page' : undefined}
-            style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4px 6px', fontSize: 14, lineHeight: 1.2, borderRadius: 12, fontWeight: 800, textDecoration: 'none', color: x.id === tab ? 'var(--ink)' : 'var(--muted)', background: x.id === tab ? '#fff' : 'transparent' }}>
+            style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4px 3px', fontSize: 13, lineHeight: 1.2, borderRadius: 12, fontWeight: 800, textDecoration: 'none', color: x.id === tab ? 'var(--ink)' : 'var(--muted)', background: x.id === tab ? '#fff' : 'transparent' }}>
             {x.name}
           </Link>
         ))}
       </nav>
       {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} />}
       {tab === 'services' && <ServicesEditor slug={slug} categories={data.categories} />}
+      {tab === 'reviews' && <ReviewsList slug={slug} />}
       {tab === 'pins' && <PinList slug={slug} salonId={data.salon.id} sp={sp} />}
       {tab === 'staff' && <StaffEditor slug={slug} staff={data.staff} categories={data.categories} defaultCommission={data.salon.defaultCommission} />}
     </main>

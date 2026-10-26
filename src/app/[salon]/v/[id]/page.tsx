@@ -9,6 +9,8 @@ import ConfirmButton from './ConfirmButton';
 import LateButtons from './LateButtons';
 import ClaimMe from './ClaimMe';
 import InstallCard from '@/app/InstallCard';
+import RateVisit from './RateVisit';
+import { getReview } from '@/server/reviews';
 import ClientNav from '@/app/ClientNav';
 import { mapLink } from '@/lib/map';
 
@@ -25,6 +27,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
     with: { salon: true, staff: true, client: true, service: { with: { category: true } }, addons: { with: { addon: true } } },
   });
   if (!a || a.salon.slug !== slug) notFound();
+  const review = a.paid ? await getReview(a.id) : null;
   const { date, minute } = utcToZoned(a.startsAt, a.salon.timezone);
   const end = utcToZoned(a.endsAt, a.salon.timezone).minute;
   const cancelled = a.status === 'CANCELLED';
@@ -61,6 +64,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
         </section>
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
+        {a.paid && <RateVisit slug={slug} id={a.id} token={t} master={a.staff.name} done={review?.stars ?? null} mapUrl={a.salon.mapUrl} bonus={a.salon.reviewBonus} />}
         <InstallCard bonus={a.client.welcomeBonusAt ? 0 : a.salon.welcomeBonus} />
         {!cancelled && !a.paid && <PushOptIn slug={slug} appointmentId={a.id} token={t} compact />}
         {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Написать в салон в WhatsApp</a>}

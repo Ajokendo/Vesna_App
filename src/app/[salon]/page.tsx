@@ -63,6 +63,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
                 </div>
                 <strong>{m.name}</strong>
                 <span className="small muted" style={{ lineHeight: 1.25, fontSize: 13 }}>{m.title?.split(',')[0]}</span>
+                {m.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800, fontSize: 12 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} ({m.rating.count})</span>}
               </div>
             ))}
           </div>

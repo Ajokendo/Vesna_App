@@ -6,6 +6,7 @@ import { utcToZoned } from '@/lib/time';
 import { checkId, payerOf, signId } from './push';
 import { getSalon } from './salon';
 import { ensureReferralCode } from './referral';
+import { reviewedIds } from './reviews';
 
 // «Это мой телефон»: после записи (или открытия ссылки из уведомления) телефон запоминает клиента —
 // в подписанной cookie, без паролей и SMS. По ней клиент видит свои записи и баллы.
@@ -62,8 +63,11 @@ export async function myVisits(slug: string) {
       price: a.paid ? (a.finalPrice ?? a.price) : a.price, priceMax: a.paid ? null : a.priceMax,
       paid: a.paid, status: a.status, confirmed: !!a.confirmedAt,
       upcoming: !a.paid && a.startsAt.getTime() > soon && a.status !== 'CANCELLED' && a.status !== 'NO_SHOW',
+      canRate: false,
     };
   }));
+  const reviewed = await reviewedIds(rows.filter((r) => r.paid).map((r) => r.id));
+  for (const r of rows) r.canRate = r.paid && !reviewed.has(r.id);
   return { me: { name: me.client.name, phone: me.client.phone, welcomeGot: !!me.client.welcomeBonusAt }, upcoming: rows.filter((r) => r.upcoming).reverse(), past: rows.filter((r) => !r.upcoming) };
 }
 

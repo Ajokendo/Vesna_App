@@ -56,6 +56,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 700 }}>{dayMonthShort(v.date)} · {v.service}</div>
                       <div className="small muted">{v.staff}{v.forWhom ? ` · для: ${v.forWhom}` : ''}</div>
+                      {v.canRate && <Link href={`/${slug}/v/${v.id}?t=${v.token}`} className="small" style={{ color: '#B7860F', fontWeight: 800 }}>★ Оценить визит</Link>}
                     </div>
                     <span className="small" style={{ flex: '0 0 auto', fontWeight: 700, color: v.paid ? 'var(--ink)' : 'var(--muted)' }}>
                       {v.paid ? formatSom(v.price) : v.status === 'CANCELLED' ? 'отменена' : v.status === 'NO_SHOW' ? 'не пришли' : '—'}

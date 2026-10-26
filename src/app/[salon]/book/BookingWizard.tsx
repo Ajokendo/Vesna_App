@@ -8,7 +8,7 @@ import { refreshManifest } from '@/app/AppBonus';
 import { useEffect, useMemo, useState } from 'react';
 import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
-import { ageOn, formatPrice, formatSom, quote, resolveService } from '@/lib/pricing';
+import { ageOn, formatPrice, formatSom, quote, resolveService, plural } from '@/lib/pricing';
 import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekdayShort } from '@/lib/time';
 
 type Props = {
@@ -272,6 +272,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                   <span className="grow stack" style={{ gap: 2 }}>
                     <strong style={{ fontSize: 16 }}>{m ? m.name : 'Любой свободный мастер'}</strong>
                     <span className="small muted">{m ? m.title : 'Подберём мастера на ваше время'}</span>
+                    {m?.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} · {m.rating.count} {plural(m.rating.count, 'оценка', 'оценки', 'оценок')}</span>}
                     {m && <span className="small muted">{m.scheduleLabel}</span>}
                   </span>
                 </button>

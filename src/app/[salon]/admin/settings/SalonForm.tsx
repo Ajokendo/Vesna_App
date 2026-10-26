@@ -6,7 +6,7 @@ import { Msg, inputSt, useSave } from './ui';
 type Salon = {
   accentColor: string; logoUrl: string | null; hoursText: string | null; mapUrl: string | null; menHallNote: string | null; womenHallNote: string | null;
   name: string; tagline: string | null; city: string | null; address: string | null; phone: string | null; whatsapp: string | null; instagram: string | null;
-  bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; referralBonus: number; referralMonthlyLimit: number; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
+  bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; reviewBonus: number; referralBonus: number; referralMonthlyLimit: number; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
 };
 
 const TEXT: { key: keyof Salon; label: string }[] = [
@@ -37,6 +37,7 @@ const NUM: { key: keyof Salon; label: string; hint: string }[] = [
   { key: 'minRedeem', label: 'Тратить баллы можно от, баллов', hint: 'пока на счёте меньше — копятся; 0 — сразу' },
   { key: 'referralBonus', label: 'За приглашённого друга, баллов', hint: 'после первой оплаты друга; 0 — выключить' },
   { key: 'referralMonthlyLimit', label: 'Приглашений с баллами в месяц', hint: 'на одного клиента; защита от накруток' },
+  { key: 'reviewBonus', label: 'За отзыв 5★ в 2ГИС, баллов', hint: 'начисляете сами, проверив отзыв; 0 — не предлагать' },
   { key: 'welcomeBonus', label: 'Подарок за установку приложения, баллов', hint: 'один раз каждому клиенту; 0 — без подарка' },
   { key: 'defaultCommission', label: 'Доля мастера, %', hint: 'для мастеров без своей доли' },
   { key: 'lateCallMinutes', label: 'Опоздание: позвонить через, мин', hint: 'запись в журнале становится оранжевой' },
