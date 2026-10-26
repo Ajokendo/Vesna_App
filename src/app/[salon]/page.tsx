@@ -11,8 +11,10 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
   const { staff } = await getCatalog(salon.id);
 
   return (
-    <main className="app">
-      <div className="page">
+    // Экран фиксированной высоты: страница не «ездит» пальцем; если на маленьком телефоне что-то не влезает,
+    // прокручивается только середина, а кнопки сотрудников всегда внизу
+    <main className="app home">
+      <div className="page" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', paddingBottom: 16, justifyContent: 'space-evenly' }}>
         <header className="row">
           {salon.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -28,11 +30,11 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           <h2 style={{ fontSize: 22 }}>Запишитесь онлайн</h2>
           <p className="muted" style={{ margin: 0 }}>Выберите услугу, мастера и удобное время — без звонков.</p>
           <div className="grid2">
-            <Link href={`/${slug}/book?hall=MEN`} className="card" style={{ background: '#e4ebdd', textDecoration: 'none', color: 'inherit', minHeight: 92, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <Link href={`/${slug}/book?hall=MEN`} className="card" style={{ background: '#e4ebdd', textDecoration: 'none', color: 'inherit', minHeight: 'clamp(92px, 16dvh, 170px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
               <strong style={{ fontSize: 17 }}>Мужской зал</strong>
               <span className="small muted">Стрижки, борода, детские</span>
             </Link>
-            <Link href={`/${slug}/book?hall=WOMEN`} className="card" style={{ background: 'var(--cream)', textDecoration: 'none', color: 'inherit', minHeight: 92, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <Link href={`/${slug}/book?hall=WOMEN`} className="card" style={{ background: 'var(--cream)', textDecoration: 'none', color: 'inherit', minHeight: 'clamp(92px, 16dvh, 170px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
               <strong style={{ fontSize: 17 }}>Женский зал</strong>
               <span className="small muted">Волосы, ногти, брови, шугаринг</span>
             </Link>
@@ -44,7 +46,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
             {staff.map((m) => (
               <div key={m.id} className="card" style={{ flex: '0 0 120px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 8px' }}>
-                <div className="avatar" style={{ width: 60, height: 60 }}>
+                <div className="avatar" style={{ width: 'clamp(60px, 9dvh, 88px)', height: 'clamp(60px, 9dvh, 88px)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {m.photoUrl ? <img src={m.photoUrl} alt={m.name} /> : m.name[0]}
                 </div>
@@ -64,18 +66,18 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
             <a className="btn" style={{ minHeight: 42, padding: '0 14px', fontSize: 14 }} href={`https://wa.me/${salon.whatsapp.replace(/\D/g, '')}`}>WhatsApp</a>
           ) : null}
         </section>
-        {/* вход для сотрудников: прилипает к низу экрана, виден сразу без прокрутки */}
-        <nav aria-label="Для сотрудников" style={{
-          position: 'sticky', bottom: 0, zIndex: 10, margin: '0 -20px calc(-32px - env(safe-area-inset-bottom))',
-          padding: '10px 20px calc(10px + env(safe-area-inset-bottom))', background: 'rgba(247,248,244,.96)', borderTop: '1px solid var(--line)',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-            <Link href={`/${salon.slug}/master`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Кабинет мастера</Link>
-            <Link href={`/${salon.slug}/admin`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Администратор</Link>
-          </div>
-        </nav>
       </div>
+      {/* вход для сотрудников: всегда внизу экрана */}
+      <nav aria-label="Для сотрудников" style={{
+        flex: '0 0 auto',
+        padding: '10px max(20px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))', background: 'rgba(247,248,244,.96)', borderTop: '1px solid var(--line)',
+        backdropFilter: 'blur(6px)',
+      }}>
+        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+          <Link href={`/${salon.slug}/master`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Кабинет мастера</Link>
+          <Link href={`/${salon.slug}/admin`} className="btn" style={{ flex: 1, minHeight: 44, fontSize: 14, padding: '0 8px', whiteSpace: 'nowrap' }}>Администратор</Link>
+        </div>
+      </nav>
     </main>
   );
 }
