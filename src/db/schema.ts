@@ -55,6 +55,9 @@ export const salons = pgTable('salons', {
   welcomeBonus: integer('welcome_bonus').notNull().default(100),
   /** Баллы можно тратить, когда на счёте набралось не меньше стольких (0 — сразу) */
   minRedeem: integer('min_redeem').notNull().default(500),
+  /** Баллы за приглашённого друга (начисляются после первой оплаты друга; 0 — программа выключена) и лимит в месяц */
+  referralBonus: integer('referral_bonus').notNull().default(50),
+  referralMonthlyLimit: integer('referral_monthly_limit').notNull().default(10),
   /** Логотип, загруженный в настройках (квадрат PNG, data:…) — отдаётся по /api/<салон>/logo */
   logoData: text('logo_data'),
   /** Тексты главной страницы */
@@ -199,12 +202,17 @@ export const clients = pgTable('clients', {
   promoOptOut: boolean('promo_opt_out').notNull().default(false),
   /** Когда начислен подарок за установку приложения (один раз на клиента) */
   welcomeBonusAt: timestamp('welcome_bonus_at', { withTimezone: true }),
+  /** Код приглашения (в ссылке ?ref=…) */
+  referralCode: text('referral_code'),
+  /** Кто пригласил этого клиента и когда пригласившему начислены баллы */
+  referredById: text('referred_by_id'),
+  referralRewardedAt: timestamp('referral_rewarded_at', { withTimezone: true }),
   /** Для детей и родственников: чей это член семьи */
   guardianId: text('guardian_id'),
   /** Заметка администратора о клиенте (аллергия, любимый мастер, особенности) — клиент её не видит */
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [uniqueIndex('client_salon_phone').on(t.salonId, t.phone), index('client_salon_idx').on(t.salonId)]);
+}, (t) => [uniqueIndex('client_salon_phone').on(t.salonId, t.phone), index('client_salon_idx').on(t.salonId), uniqueIndex('client_ref_code').on(t.salonId, t.referralCode)]);
 
 export const appointments = pgTable('appointments', {
   id: id(),
@@ -371,3 +379,18 @@ export const appointmentAddonsRelations = relations(appointmentAddons, ({ one })
   appointment: one(appointments, { fields: [appointmentAddons.appointmentId], references: [appointments.id] }),
   addon: one(addons, { fields: [appointmentAddons.addonId], references: [addons.id] }),
 }));
+
+/** Сообщения разработчикам из приложения (клиенты, мастера, администраторы любого салона) */
+export const feedback = pgTable('feedback', {
+  id: id(),
+  salonSlug: text('salon_slug'),
+  /** CLIENT | MASTER | ADMIN */
+  role: text('role').notNull(),
+  text: text('text').notNull(),
+  contact: text('contact'),
+  /** Страница и сведения о телефоне (если клиент разрешил) */
+  page: text('page'),
+  device: text('device'),
+  resolved: boolean('resolved').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('feedback_created').on(t.createdAt)]);

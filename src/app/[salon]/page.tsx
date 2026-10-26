@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ClientNav from '@/app/ClientNav';
 import LogoMenu from '@/app/LogoMenu';
+import Intro from '@/app/Intro';
 import { mapLink } from '@/lib/map';
 import { getCatalog, getSalon } from '@/server/salon';
 
@@ -78,6 +79,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           ) : null}
         </section>
       </div>
+      <Intro slug={slug} salonName={salon.name} percent={salon.pointsPercent} minRedeem={salon.minRedeem} welcomeBonus={salon.welcomeBonus} referralBonus={salon.referralBonus} />
       <ClientNav slug={slug} inline />
     </main>
   );

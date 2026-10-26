@@ -22,7 +22,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
     <main className="app home">
       <div className="page" style={{ gap: 16, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         <h1 style={{ fontSize: 24 }}>Мои записи</h1>
-        <InstallCard bonus={salon.welcomeBonus} compact />
+        <InstallCard bonus={data?.me.welcomeGot ? 0 : salon.welcomeBonus} compact />
         {!data ? <NotYou slug={slug} whatsapp={salon.whatsapp} /> : (
           <>
             <section className="stack" style={{ gap: 10 }}>

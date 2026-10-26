@@ -26,6 +26,11 @@ export default function AppBonus({ slug }: { slug: string }) {
   useEffect(() => {
     let alive = true;
     (async () => {
+      const ref = sp.get('ref');
+      if (ref) {
+        await fetch(`/api/${slug}/me/ref`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: ref }) }).catch(() => {});
+        if (!sp.get('me')) router.replace(pathname);
+      }
       const me = sp.get('me');
       if (me) {
         await fetch(`/api/${slug}/me`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ me }) }).catch(() => {});

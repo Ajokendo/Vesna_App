@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import BottomBar from '@/app/BottomBar';
+import Feedback from '@/app/Feedback';
 import { notFound, redirect } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import { currentMaster, signInMaster, signOutMaster } from '@/server/master-auth';
@@ -233,6 +234,7 @@ export default async function MasterPage({ params, searchParams }: {
           Баллы — это скидка постоянным клиентам. Если клиент часть суммы оплатил баллами, доля мастера и салона считается с суммы, оплаченной деньгами:
           скидку салон и мастер делят поровну.
         </p>
+        <Feedback salon={slug} role="MASTER"><button type="button" className="small" style={{ border: 0, background: 'none', padding: 0, color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>✉ Написать разработчикам приложения</button></Feedback>
       </div>
       <BottomBar items={[
         { label: 'Главная', icon: 'home', href: `/${slug}` },

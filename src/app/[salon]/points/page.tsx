@@ -7,6 +7,7 @@ import { dayMonthShort } from '@/lib/time';
 import ClientNav from '@/app/ClientNav';
 import NotYou from '../NotYou';
 import InstallCard from '@/app/InstallCard';
+import InviteCard from '@/app/InviteCard';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Мои баллы' };
@@ -40,6 +41,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
               ) : data.minRedeem > 0 ? <div className="small" style={{ marginTop: 8, color: 'var(--accent-dark)', fontWeight: 800 }}>Баллами уже можно оплачивать — скажите администратору</div> : null}
             </section>
             {!data.welcomeGot && <InstallCard bonus={data.welcomeBonus} />}
+            {data.referralCode && <InviteCard slug={slug} salonName={salon.name} code={data.referralCode} bonus={data.referralBonus} invited={data.invited} />}
             {qr && (
               <details className="card" style={{ textAlign: 'center' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 800, listStyle: 'none' }}>Мой QR-код ▾</summary>
@@ -51,6 +53,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
               <span>• После каждого визита начисляем <strong>{data.percent}%</strong> от суммы, оплаченной деньгами.</span>
               <span>• {data.minRedeem > 0 ? `Когда на счёте ${data.minRedeem} баллов и больше, ими` : 'Баллами'} можно оплатить всю услугу или её часть — скажите администратору при оплате.</span>
               <span>• Баллы за детей копятся на вашем счёте.</span>
+              {data.referralBonus > 0 && <span>• За каждого приглашённого друга — {data.referralBonus} баллов, когда он оплатит первый визит.</span>}
             </section>
             <section className="stack" style={{ gap: 4 }}>
               <h2 style={{ fontSize: 18 }}>История</h2>

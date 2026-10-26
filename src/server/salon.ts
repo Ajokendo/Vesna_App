@@ -11,6 +11,7 @@ import { signId } from './push';
 import { resolveService, quote } from '@/lib/pricing';
 import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { categoryGroup } from '@/lib/groups';
+import { rewardReferral } from './referral';
 
 /** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
 export async function getSalon(slug: string) {
@@ -172,6 +173,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
 
     const phone = input.client.phone.replace(/[^\d+]/g, '');
     let client = phone ? await tx.query.clients.findFirst({ where: and(eq(s.clients.salonId, salon.id), eq(s.clients.phone, phone)) }) : undefined;
+    const isNewClient = !client;
     if (!client) [client] = await tx.insert(s.clients).values({ salonId: salon.id, name: input.client.name, phone: phone || null }).returning();
     let visitor = client;
     if (input.forChild) {
@@ -199,7 +201,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
       price: q.total, priceMax: q.totalMax, pointsUsed: q.pointsUsed, source: input.source ?? 'ONLINE',
     }).returning();
     for (const a of q.addons) await tx.insert(s.appointmentAddons).values({ appointmentId: appt.id, addonId: a.id, price: a.price });
-    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id };
+    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id, isNewClient };
   });
   // если у клиента уже включены уведомления — сразу подтверждение записи
   await notifySoon(created.id, 'BOOKED');
@@ -351,6 +353,10 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
       bal += p.pointsEarned;
       await tx.insert(s.pointsLedger).values({ salonId: salon.id, clientId: payer.id, appointmentId: appt.id, kind: 'EARN', delta: p.pointsEarned, balanceAfter: bal });
     }
+    return { ...p, payerId: payer.id };
+  }).then(async ({ payerId, ...p }) => {
+    // первая оплата приглашённого друга — баллы тому, кто пригласил
+    await rewardReferral(salon.id, payerId).catch((e) => console.error('referral', (e as Error).message));
     return p;
   });
 }

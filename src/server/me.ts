@@ -5,6 +5,7 @@ import { db, schema as s } from '@/db';
 import { utcToZoned } from '@/lib/time';
 import { checkId, payerOf, signId } from './push';
 import { getSalon } from './salon';
+import { ensureReferralCode } from './referral';
 
 // «Это мой телефон»: после записи (или открытия ссылки из уведомления) телефон запоминает клиента —
 // в подписанной cookie, без паролей и SMS. По ней клиент видит свои записи и баллы.
@@ -63,7 +64,7 @@ export async function myVisits(slug: string) {
       upcoming: !a.paid && a.startsAt.getTime() > soon && a.status !== 'CANCELLED' && a.status !== 'NO_SHOW',
     };
   }));
-  return { me: { name: me.client.name, phone: me.client.phone }, upcoming: rows.filter((r) => r.upcoming).reverse(), past: rows.filter((r) => !r.upcoming) };
+  return { me: { name: me.client.name, phone: me.client.phone, welcomeGot: !!me.client.welcomeBonusAt }, upcoming: rows.filter((r) => r.upcoming).reverse(), past: rows.filter((r) => !r.upcoming) };
 }
 
 /** Баллы: остаток, процент и история начислений/списаний */
@@ -81,6 +82,10 @@ export async function myPoints(slug: string) {
   return {
     id: me.client.id, name: me.client.name, balance: me.client.points, percent: me.salon.pointsPercent,
     minRedeem: me.salon.minRedeem, welcomeBonus: me.salon.welcomeBonus, welcomeGot: !!me.client.welcomeBonusAt,
+    referralBonus: me.salon.referralBonus,
+    referralCode: me.salon.referralBonus > 0 ? await ensureReferralCode(me.salon.id, me.client.id) : null,
+    invited: (await db.query.clients.findMany({ where: eq(s.clients.referredById, me.client.id), columns: { name: true, referralRewardedAt: true } }))
+      .map((f) => ({ name: f.name, came: !!f.referralRewardedAt })),
     history: ledger.map((l) => ({ ...l, date: utcToZoned(l.createdAt, me.salon.timezone).date })),
   };
 }

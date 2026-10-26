@@ -25,6 +25,8 @@ export const SalonSettings = z.object({
   pointsPercent: z.number().int().min(0).max(50),
   welcomeBonus: z.number().int().min(0).max(5000),
   minRedeem: z.number().int().min(0).max(100000),
+  referralBonus: z.number().int().min(0).max(5000),
+  referralMonthlyLimit: z.number().int().min(0).max(100),
   defaultCommission: z.number().int().min(0).max(100),
   lateCallMinutes: z.number().int().min(1).max(60),
   noShowMinutes: z.number().int().min(5).max(120),

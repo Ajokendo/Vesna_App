@@ -5,6 +5,7 @@ import SalonForm from './SalonForm';
 import ServicesEditor from './ServicesEditor';
 import StaffEditor from './StaffEditor';
 import PinList from './PinList';
+import Feedback from '@/app/Feedback';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,10 @@ export default async function Settings({ params, searchParams }: { params: Promi
       <header>
         <h1 style={{ fontSize: 26 }}>Настройки салона</h1>
         <p className="muted" style={{ margin: '6px 0 0' }}>Изменения сразу видны клиентам в онлайн-записи и в журнале.</p>
-        <Link href={`/${slug}/admin/qr`} className="btn" style={{ marginTop: 10, minHeight: 42, fontSize: 14 }}>▣ QR-табличка для ресепшена</Link>
+        <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <Link href={`/${slug}/admin/qr`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>▣ QR-табличка для ресепшена</Link>
+          <Feedback salon={slug} role="ADMIN"><button type="button" className="btn" style={{ minHeight: 42, fontSize: 14 }}>✉ Написать разработчикам</button></Feedback>
+        </div>
       </header>
       <nav className="tabs" style={{ width: '100%', maxWidth: 720 }}>
         {TABS.map((x) => (

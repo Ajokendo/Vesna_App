@@ -12,7 +12,7 @@ const Body = z.discriminatedUnion('kind', [
 ]);
 
 const LABEL: Record<string, string> = {
-  name: 'Название', accentColor: 'Цвет', hoursText: 'Часы работы', mapUrl: 'Ссылка на 2ГИС (должна начинаться с https://)', menHallNote: 'Мужской зал', womenHallNote: 'Женский зал', logo: 'Логотип', tagline: 'Описание', city: 'Город', address: 'Адрес', phone: 'Телефон', whatsapp: 'WhatsApp', instagram: 'Instagram',
+  name: 'Название', referralBonus: 'За приглашённого друга', referralMonthlyLimit: 'Приглашений в месяц', accentColor: 'Цвет', hoursText: 'Часы работы', mapUrl: 'Ссылка на 2ГИС (должна начинаться с https://)', menHallNote: 'Мужской зал', womenHallNote: 'Женский зал', logo: 'Логотип', tagline: 'Описание', city: 'Город', address: 'Адрес', phone: 'Телефон', whatsapp: 'WhatsApp', instagram: 'Instagram',
   bookingHorizonDays: 'На сколько дней вперёд запись', minLeadMinutes: 'Минимум до записи', pointsPercent: 'Процент баллов',
   defaultCommission: 'Доля мастера', lateCallMinutes: 'Звонить через', noShowMinutes: '«Не пришёл» через',
   price: 'Цена', priceMax: 'Цена «до»', durationMin: 'Длительность (от 5 до 600 мин)', dur: 'Минут', durationLabel: 'Как писать время',

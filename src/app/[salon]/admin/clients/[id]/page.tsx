@@ -6,6 +6,8 @@ import { dayMonth, dayMonthShort, hhmm, utcToZoned, weekdayShort } from '@/lib/t
 import { formatPrice, formatSom } from '@/lib/pricing';
 import { RescheduleButton } from '../../Reschedule';
 import ClientEditor from './ClientEditor';
+import Referral from './Referral';
+import { referralInfo } from '@/server/referral';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +23,7 @@ export default async function ClientCard({ params }: { params: Promise<{ salon: 
   if (!salon) notFound();
   const card = await getClientCard(slug, id);
   if (!card) notFound();
+  const ref = await referralInfo(card.guardian?.id ?? id);
   const today = utcToZoned(new Date(), salon.timezone).date;
   const { client: c } = card;
   const phone = (c.phone ?? card.guardian?.phone ?? '').replace(/\D/g, '');
@@ -64,6 +67,7 @@ export default async function ClientCard({ params }: { params: Promise<{ salon: 
       )}
 
       <ClientEditor slug={slug} c={c} child={!!card.guardian} />
+      <Referral slug={slug} clientId={card.guardian?.id ?? c.id} info={ref} canSet={!ref.rewarded} bonus={salon.referralBonus} />
 
       <section className="stack" style={{ gap: 8 }}>
         <h2 style={{ fontSize: 18 }}>Предстоящие записи</h2>

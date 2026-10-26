@@ -6,6 +6,7 @@ import ClientNav from '@/app/ClientNav';
 import { mapLink } from '@/lib/map';
 import Forget from './Forget';
 import InstallCard from '@/app/InstallCard';
+import Feedback from '@/app/Feedback';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Ещё' };
@@ -31,6 +32,14 @@ export default async function More({ params }: { params: Promise<{ salon: string
           <ContactRow href={mapLink(salon)} icon="pin" color="#2FAD4A" title="Как добраться" sub={[salon.city, salon.address].filter(Boolean).join(', ')} hint="открыть в 2ГИС и проложить маршрут" external line />
         </section>
 
+        <section className="card stack" style={{ gap: 0, padding: 0, overflow: 'hidden' }} aria-label="О приложении">
+          <ContactRow href={`/${slug}?intro=1`} icon="info" color="var(--gold)" title="Как пользоваться приложением" sub="Запись, напоминания, баллы, подарки" />
+          <ContactRow href={`/${slug}/points`} icon="gift" color="var(--accent)" title="Пригласить друга" sub={salon.referralBonus > 0 ? `${salon.referralBonus} баллов за каждого друга` : 'Поделитесь приложением'} line />
+          <Feedback salon={slug} role="CLIENT">
+            <ContactRow icon="mail" color="#6B7A8F" title="Написать разработчикам" sub="Ошибка в приложении или идея" line />
+          </Feedback>
+        </section>
+
         <InstallCard bonus={me?.client.welcomeBonusAt ? 0 : salon.welcomeBonus} />
 
         {me && <Forget slug={slug} name={me.client.name} />}
@@ -53,14 +62,17 @@ const ICON: Record<string, string> = {
   phone: 'M6.6 3.5l2.6.4 1.3 3.5-1.9 1.4a11 11 0 0 0 6.6 6.6l1.4-1.9 3.5 1.3.4 2.6a2 2 0 0 1-2 2.1A16 16 0 0 1 4.5 5.5a2 2 0 0 1 2.1-2z',
   camera: 'M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10.5H4zM12 16.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z',
   pin: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 12.3a2.3 2.3 0 1 0 0-4.6 2.3 2.3 0 0 0 0 4.6z',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v6M12 7.5h.01',
+  mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
+  gift: 'M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3.5-5-1s3 1 5 1zM12 7c1.5-3 5-3.5 5-1s-3 1-5 1z',
 };
 
 /** Строка контакта: цветной значок, название, номер/адрес и стрелка */
 function ContactRow({ href, icon, color, title, sub, hint, external, line }: {
-  href: string; icon: keyof typeof ICON; color: string; title: string; sub?: string | null; hint?: string; external?: boolean; line?: boolean;
+  href?: string; icon: keyof typeof ICON; color: string; title: string; sub?: string | null; hint?: string; external?: boolean; line?: boolean;
 }) {
   return (
-    <a href={href} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})} style={{
+    <a href={href} role={href ? undefined : 'button'} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})} style={{
       display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', minHeight: 60, textDecoration: 'none', color: 'inherit',
       borderTop: line ? '1px solid var(--line)' : undefined,
     }}>
