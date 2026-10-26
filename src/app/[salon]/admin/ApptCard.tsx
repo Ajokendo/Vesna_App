@@ -191,6 +191,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, onClose }: {
               </div>
             )}
             {(calcError || error) && <div className="error" role="alert">{calcError || error}</div>}
+            <CancelVisit a={a} slug={slug} onDone={onClose} />
             <div className="row">
               <button type="button" className="btn" onClick={onClose}>Отмена</button>
               <button type="button" className="btn primary grow" disabled={busy || !calc} onClick={() => send('pay')}>
@@ -215,4 +216,36 @@ function Line({ label, value, strong }: { label: string; value: string; strong?:
 /** Мастер закончит раньше или задержится — меняем время окончания записи */
 function EndTime({ a, slug }: { a: ApptItem; slug: string }) {
   return <EndTimeEditor key={a.end} start={a.start} end={a.end} url={`/api/${slug}/admin/appointments/${a.id}`} />;
+}
+
+/** Клиент передумал — отменить запись (время освободится, клиенту с 🔔 придёт уведомление) */
+function CancelVisit({ a, slug, onDone }: { a: ApptItem; slug: string; onDone: () => void }) {
+  const router = useRouter();
+  const [ask, setAsk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function cancel() {
+    setBusy(true); setError(null);
+    const res = await fetch(`/api/${slug}/admin/appointments/${a.id}`, { method: 'DELETE' });
+    setBusy(false);
+    if (!res.ok) { setError((await res.json().catch(() => ({}))).error ?? 'Не получилось'); return; }
+    onDone(); router.refresh();
+  }
+  return (
+    <div className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+      {ask ? (
+        <div className="row" style={{ gap: 8 }}>
+          <span className="small grow">Отменить запись {a.client} на {hhmm(a.start)}?{a.push ? ' Клиенту придёт уведомление.' : ''}</span>
+          <button type="button" className="btn" style={{ minHeight: 40 }} onClick={() => setAsk(false)}>Нет</button>
+          <button type="button" className="btn" style={{ minHeight: 40, color: 'var(--danger)', borderColor: '#e5c9cf' }} disabled={busy} onClick={cancel}>{busy ? '…' : 'Да, отменить'}</button>
+        </div>
+      ) : (
+        <button type="button" className="small" onClick={() => setAsk(true)}
+          style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--danger)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>
+          Клиент не придёт — отменить запись
+        </button>
+      )}
+      {error && <div className="error" role="alert">{error}</div>}
+    </div>
+  );
 }
