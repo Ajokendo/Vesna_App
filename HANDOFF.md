@@ -4,6 +4,10 @@
 Сайт: https://vesna-app.vercel.app/vesna — Vercel (аккаунт Ajokendo), база Neon (подключена в Vercel → Storage).
 Каждый push в main публикуется сам; миграции (`drizzle/`) применяются при сборке (`vercel-build`).
 
+## Доступы (без паролей)
+- Vercel и GitHub (аккаунт **Ajokendo**, проект vesna-app, репозиторий Ajokendo/Vesna_App) — вход через Google с почтой **ajokendo@gmail.com** («Continue with Google», не по паролю). Почта ajma0019@gmail.com с ними не связана.
+- Переменные окружения: Vercel → проект vesna-app → Settings → Environment Variables (DEV_PASSWORD, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, ADMIN_PIN, DATABASE_URL).
+
 ## Что есть
 Онлайн-запись · журнал администратора (`/vesna/admin`, PIN = переменная ADMIN_PIN в Vercel) · касса с баллами (5% с денежной части,
 доля мастера 50% с денежной части, хозяйка Сурмакан без комиссии) · кабинет мастера (`/vesna/master`, PIN выдаётся в журнале
