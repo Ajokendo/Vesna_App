@@ -13,6 +13,8 @@ import RateVisit from './RateVisit';
 import { getReview } from '@/server/reviews';
 import ClientNav from '@/app/ClientNav';
 import { mapLink } from '@/lib/map';
+import { RescheduleButton } from '../../admin/Reschedule';
+import { CLIENT_MOVE_HOURS } from '@/server/clients';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Моя запись' };
@@ -32,6 +34,10 @@ export default async function Visit({ params, searchParams }: { params: Promise<
   const end = utcToZoned(a.endsAt, a.salon.timezone).minute;
   const cancelled = a.status === 'CANCELLED';
   const wa = a.salon.whatsapp?.replace(/\D/g, '');
+  const open = !cancelled && !a.paid && a.status !== 'NO_SHOW';
+  // перенести самому можно не позже чем за 2 часа до начала
+  const canMove = open && a.startsAt.getTime() - Date.now() >= CLIENT_MOVE_HOURS * 3600e3;
+  const today = utcToZoned(new Date(), a.salon.timezone).date;
   return (
     <main className="app home">
       <div className="page" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
@@ -63,6 +69,13 @@ export default async function Visit({ params, searchParams }: { params: Promise<
           <a className="btn" href={mapLink(a.salon)} target="_blank" rel="noreferrer" style={{ minHeight: 42 }}>📍 Как добраться (2ГИС)</a>
         </section>
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
+        {canMove && (
+          <RescheduleButton slug={slug} id={a.id} title={`${a.service.name} · ${a.staff.name}`} date={date} today={today}
+            client={{ token: t, days: a.salon.bookingHorizonDays }} label="↔ Перенести на другое время" style={{ minHeight: 46, fontSize: 15 }} />
+        )}
+        {open && !canMove && a.startsAt.getTime() > Date.now() && (
+          <span className="small muted">Перенести запись за {CLIENT_MOVE_HOURS} часа до начала можно только через салон — напишите или позвоните.</span>
+        )}
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
         {a.paid && <RateVisit slug={slug} id={a.id} token={t} master={a.staff.name} done={review?.stars ?? null} mapUrl={a.salon.mapUrl} bonus={a.salon.reviewBonus} />}
         <InstallCard bonus={a.client.welcomeBonusAt ? 0 : a.salon.welcomeBonus} />

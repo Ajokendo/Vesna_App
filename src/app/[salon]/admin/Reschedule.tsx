@@ -11,22 +11,27 @@ type Options = {
 };
 
 /** Кнопка «Перенести» + окно выбора нового дня и времени */
-export function RescheduleButton({ slug, id, title, date, today, style, onMoved }: {
+export function RescheduleButton({ slug, id, title, date, today, style, onMoved, client, label = '↔ Перенести' }: {
   slug: string; id: string; title: string; date: string; today: string; style?: React.CSSProperties; onMoved?: () => void;
+  /** Перенос самим клиентом: ключ из ссылки на запись и сколько дней вперёд открыта запись */
+  client?: { token: string; days: number }; label?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="btn" style={{ minHeight: 40, fontSize: 14, ...style }} onClick={() => setOpen(true)}>↔ Перенести</button>
-      {open && <RescheduleDialog slug={slug} id={id} title={title} startDate={date < today ? today : date} today={today}
+      <button type="button" className="btn" style={{ minHeight: 40, fontSize: 14, ...style }} onClick={() => setOpen(true)}>{label}</button>
+      {open && <RescheduleDialog slug={slug} id={id} title={title} startDate={date < today ? today : date} today={today} client={client}
         onClose={() => setOpen(false)} onMoved={() => { setOpen(false); onMoved?.(); }} />}
     </>
   );
 }
 
-function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved }: {
-  slug: string; id: string; title: string; startDate: string; today: string; onClose: () => void; onMoved: () => void;
+function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved, client }: {
+  slug: string; id: string; title: string; startDate: string; today: string; onClose: () => void; onMoved: () => void; client?: { token: string; days: number };
 }) {
+  // администратор — свой адрес; клиент — адрес записи с ключом из ссылки
+  const api = client ? `/api/${slug}/visits/${id}/reschedule` : `/api/${slug}/admin/appointments/${id}/reschedule`;
+  const q = client ? `t=${encodeURIComponent(client.token)}&` : '';
   const router = useRouter();
   const [date, setDate] = useState(startDate);
   const [opts, setOpts] = useState<Options | null>(null);
@@ -35,24 +40,24 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved 
   const [others, setOthers] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const days = Array.from({ length: 21 }, (_, i) => addDays(today, i));
+  const days = Array.from({ length: client ? Math.min(client.days, 30) : 21 }, (_, i) => addDays(today, i));
 
   useEffect(() => {
     let alive = true;
     setLoading(true); setPick(null); setError(null);
-    fetch(`/api/${slug}/admin/appointments/${id}/reschedule?date=${date}`).then(async (r) => {
+    fetch(`${api}?${q}date=${date}`).then(async (r) => {
       const d = await r.json().catch(() => ({}));
       if (!alive) return;
       if (!r.ok) setError(d.error ?? 'Не получилось загрузить время'); else setOpts(d);
       setLoading(false);
     });
     return () => { alive = false; };
-  }, [slug, id, date]);
+  }, [api, q, date]);
 
   async function save() {
     if (!pick) return;
     setBusy(true); setError(null);
-    const r = await fetch(`/api/${slug}/admin/appointments/${id}/reschedule`, {
+    const r = await fetch(`${api}${client ? `?${q.slice(0, -1)}` : ''}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ staffId: pick.staffId, date, minute: pick.minute }),
     });
     const d = await r.json().catch(() => ({}));
@@ -97,7 +102,7 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved 
         paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
       }}>
         <div>
-          <strong style={{ fontSize: 18 }}>Перенести запись</strong>
+          <strong style={{ fontSize: 18 }}>{client ? 'Перенести на другое время' : 'Перенести запись'}</strong>
           <div className="small muted">{title}</div>
           {opts && <div className="small muted">Сейчас: {weekdayShort(opts.current.date)}, {dayMonth(opts.current.date)}, {hhmm(opts.current.minute)}{opts.durationMin ? ` · ${opts.durationMin} мин` : ''}</div>}
         </div>
@@ -142,7 +147,7 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved 
             {busy ? 'Переносим…' : pick ? `Перенести на ${weekdayShort(date)} ${Number(date.slice(8))}, ${hhmm(pick.minute)}${same && pick.staffId !== same.id ? ` · ${pick.name}` : ''}` : 'Выберите время'}
           </button>
         </div>
-        <span className="small muted">Клиенту с включёнными уведомлениями сразу придёт сообщение о новом времени, напоминания придут заново.</span>
+        <span className="small muted">{client ? 'Салон сразу увидит новое время в журнале. Напоминание о визите придёт к новому времени.' : 'Клиенту с включёнными уведомлениями сразу придёт сообщение о новом времени, напоминания придут заново.'}</span>
       </div>
     </div>
   );

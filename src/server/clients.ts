@@ -169,13 +169,18 @@ async function staffBusy(staffIds: string[], date: DateStr, tz: string, exceptId
   }));
 }
 
-/** Свободное время для переноса на выбранный день: сначала у того же мастера, затем у других, кто делает эту услугу */
-export async function rescheduleOptions(slug: string, appointmentId: string, date: DateStr) {
+/** Клиент может сам перенести запись не позже чем за столько часов до начала (дальше — звонок в салон) */
+export const CLIENT_MOVE_HOURS = 2;
+
+/** Свободное время для переноса на выбранный день: сначала у того же мастера, затем у других, кто делает эту услугу.
+ *  Для клиента — как в онлайн-записи: не раньше чем через «не позже чем за N минут» и не дальше горизонта записи */
+export async function rescheduleOptions(slug: string, appointmentId: string, date: DateStr, by: 'ADMIN' | 'CLIENT' = 'ADMIN') {
   const salon = await salonOf(slug);
   const { a, eligible, dur, pause } = await loadForMove(salon.id, appointmentId);
   const now = utcToZoned(new Date(), salon.timezone);
   const current = utcToZoned(a.startsAt, salon.timezone);
-  if (date < now.date) return { date, current: { date: current.date, minute: current.minute, staffId: a.staffId }, masters: [] };
+  const tooFar = by === 'CLIENT' && date > addDays(now.date, salon.bookingHorizonDays - 1);
+  if (date < now.date || tooFar) return { date, current: { date: current.date, minute: current.minute, staffId: a.staffId }, masters: [] };
   const ids = [a.staffId, ...eligible.filter((id) => id !== a.staffId)];
   const members = await staffBusy(ids, date, salon.timezone, a.id);
   members.sort((x, y) => (x.id === a.staffId ? -1 : y.id === a.staffId ? 1 : 0));
@@ -187,17 +192,24 @@ export async function rescheduleOptions(slug: string, appointmentId: string, dat
       hours: m.day ? { start: m.day.start, end: m.day.end } : null,
       starts: m.day ? availableStarts({
         day: m.day, durationMin: dur, pause, busy: m.busy, stepMin: salon.slotStepMinutes, displayStepMin: salon.displayStepMinutes,
-        earliestMin: date === now.date ? now.minute : undefined,
+        earliestMin: date === now.date ? now.minute + (by === 'CLIENT' ? salon.minLeadMinutes : 0) : undefined,
       }).filter((t) => !(date === current.date && t === current.minute && m.id === a.staffId)) : [],
     })),
   };
 }
 
 /** Перенести запись: новое время и (необязательно) другой мастер. Клиент получает уведомление «Ваша запись изменилась» */
-export async function rescheduleAppointment(slug: string, appointmentId: string, to: { staffId: string; date: DateStr; minute: number }) {
+export async function rescheduleAppointment(slug: string, appointmentId: string, to: { staffId: string; date: DateStr; minute: number }, by: 'ADMIN' | 'CLIENT' = 'ADMIN') {
   const salon = await salonOf(slug);
   const moved = await db.transaction(async (tx) => {
     const { a, eligible, dur, pause } = await loadForMove(salon.id, appointmentId);
+    if (by === 'CLIENT') {
+      if (a.status === 'NO_SHOW') throw new Error('Запись закрыта');
+      if (a.startsAt.getTime() - Date.now() < CLIENT_MOVE_HOURS * 3600e3) throw new Error(`Перенести самостоятельно можно не позже чем за ${CLIENT_MOVE_HOURS} часа — позвоните в салон`);
+      const nowZ = utcToZoned(new Date(), salon.timezone);
+      if (to.date > addDays(nowZ.date, salon.bookingHorizonDays - 1)) throw new Error('На этот день запись ещё не открыта');
+      if (to.date === nowZ.date && to.minute < nowZ.minute + salon.minLeadMinutes) throw new Error('Это время уже слишком близко — выберите позже');
+    }
     if (to.staffId !== a.staffId && !eligible.includes(to.staffId)) throw new Error('Этот мастер не делает эту услугу');
     await tx.select({ id: s.staff.id }).from(s.staff).where(inArray(s.staff.id, [a.staffId, to.staffId])).for('update');
     const now = utcToZoned(new Date(), salon.timezone);
@@ -218,7 +230,8 @@ export async function rescheduleAppointment(slug: string, appointmentId: string,
     ));
     return { id: a.id, staffId: to.staffId, date: to.date, minute: to.minute, old: { salonId: a.salonId, startsAt: a.startsAt } };
   });
-  await notifySoon(moved.id, 'MOVED');
+  // клиент перенёс сам — уведомлять его об этом не нужно
+  if (by === 'ADMIN') await notifySoon(moved.id, 'MOVED');
   // на прежнем месте освободилось время — вдруг его кто-то ждёт
   await checkWaitlistFor(moved.old);
   return moved;
