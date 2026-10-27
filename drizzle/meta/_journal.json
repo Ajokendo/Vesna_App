@@ -162,6 +162,13 @@
       "when": 1793074178392,
       "tag": "0022_waitlist",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793074990747,
+      "tag": "0023_vesna_contacts",
+      "breakpoints": true
     }
   ]
 }

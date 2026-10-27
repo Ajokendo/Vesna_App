@@ -178,7 +178,7 @@ async function main() {
   await db.delete(s.salons).where(eq(s.salons.slug, 'vesna'));
   const [salon] = await db.insert(s.salons).values({
     slug: 'vesna', name: 'Весна', tagline: 'Салон красоты', city: 'Бишкек', address: '5 мкр, дом 44',
-    whatsapp: '+996 702 81-45-55', phone: '+996 997 81-45-55', instagram: 'vesna_salon.kg', logoUrl: '/logo.jpg',
+    whatsapp: '+996 704 81-45-55', phone: '+996 997 81-45-55', instagram: 'vesna_salon.kg', logoUrl: '/logo.jpg',
     accentColor: '#4E6B45', bookingHorizonDays: 30, minLeadMinutes: 60, defaultCommission: 50,
   }).returning();
 
