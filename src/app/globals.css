@@ -79,3 +79,10 @@ html:has(.app.home), html:has(.app.home) body { overflow: hidden; overscroll-beh
 /* отклик на нажатие: карточка чуть «утапливается» под пальцем */
 .press { transition: transform .12s ease, box-shadow .12s ease; -webkit-tap-highlight-color: transparent; }
 .press:active { transform: scale(.96); }
+/* заставка при запуске установленного приложения (см. [salon]/layout.tsx) */
+#splash { display: none; }
+.splash-on #splash { display: flex; position: fixed; inset: 0; z-index: 1000; background: var(--ground); flex-direction: column; align-items: center; justify-content: center; gap: 14px; transition: opacity .35s ease; }
+.splash-on #splash img { width: min(78vw, 46dvh, 380px); height: auto; border-radius: 50%; animation: splashIn .5s ease both; }
+.splash-on #splash span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.splash-out #splash { opacity: 0; pointer-events: none; }
+@keyframes splashIn { from { transform: scale(.86); opacity: .4; } to { transform: none; opacity: 1; } }

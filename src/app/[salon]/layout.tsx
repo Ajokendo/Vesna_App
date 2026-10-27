@@ -48,7 +48,29 @@ export default async function SalonLayout({ children, params }: { children: Reac
       <style>{css}</style>
       {/* use-credentials: манифест получает cookie, чтобы установленное приложение узнало клиента */}
       <link rel="manifest" href={`/api/manifest?s=${slug}`} crossOrigin="use-credentials" />
+      {salon && <Splash logo={salon.logoData ? `/api/${salon.slug}/logo?v=${salon.logoUrl?.split('v=')[1] ?? '1'}` : (salon.logoUrl ?? '/icon-512.png?v=2')} name={salon.name} />}
       {children}
+    </>
+  );
+}
+
+/**
+ * Заставка при запуске приложения со значка: крупный логотип на полсекунды, затем плавно исчезает.
+ * Показывается только в установленном приложении и один раз за запуск (не при переходах по страницам).
+ * Скрипт срабатывает до первой отрисовки страницы, поэтому главная не «мигает» перед заставкой.
+ */
+function Splash({ logo, name }: { logo: string; name: string }) {
+  const script = `(function(){try{var d=document.documentElement;var st=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+if(!st||sessionStorage.getItem('splash'))return;sessionStorage.setItem('splash','1');d.classList.add('splash-on');
+setTimeout(function(){d.classList.add('splash-out');setTimeout(function(){d.classList.remove('splash-on','splash-out')},380)},750);}catch(e){}})();`;
+  return (
+    <>
+      <div id="splash" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logo} alt="" />
+        <span>{name}</span>
+      </div>
+      <script dangerouslySetInnerHTML={{ __html: script }} />
     </>
   );
 }
