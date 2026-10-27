@@ -129,13 +129,13 @@ const H = (h: number, m = 0) => h * 60 + m;
 
 const STAFF: StaffDef[] = [
   { name: 'Сурмакан', title: 'Маникюр, педикюр, наращивание ногтей', photo: '/masters/v2/surmakan.jpg', roles: ['OWNER', 'MASTER'],
-    cats: ['mani', 'ext', 'pedi'], schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 3, 4], start: H(9), end: H(15) } },
+    cats: ['mani', 'ext', 'pedi'], schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 3, 4], start: H(9, 30), end: H(15) } },
   { name: 'Анастасия', title: 'Мужские и женские стрижки, сложные стрижки и окрашивание', photo: '/masters/v2/anastasia.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [2, 3, 5, 6], start: H(9, 30), end: H(19) } },
   { name: 'Диана', title: 'Мужские и женские стрижки, окрашивание в один тон, укладки', photo: '/masters/v2/diana.jpg', roles: ['MASTER'],
     cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [0, 1, 2, 5, 6], start: H(9, 30), end: H(20) } },
   { name: 'Керемет', title: 'Универсал: стрижки, укладки, окрашивание', photo: '/masters/v2/keremet.jpg', roles: ['MASTER'],
-    cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [1, 2, 3, 4], start: H(9), end: H(15) } },
+    cats: HAIR_ALL, schedule: { kind: 'WEEKLY', weekdays: [1, 2, 3, 4], start: H(9, 30), end: H(15) } },
   { name: 'Жаннат', title: 'Мужские стрижки', photo: '/masters/v2/zhannat.jpg', roles: ['MASTER'],
     cats: ['mcut', 'beard', 'mcolor', 'kids'], schedule: { kind: 'WEEKLY', weekdays: [0, 3, 4, 5, 6], start: H(9, 30), end: H(20) } },
   // Выходной дни у графиков «6 через 1» уточняются у салона; дата отсчёта — предположение.

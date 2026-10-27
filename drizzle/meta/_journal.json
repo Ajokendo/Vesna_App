@@ -169,6 +169,13 @@
       "when": 1793074990747,
       "tag": "0023_vesna_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793076125413,
+      "tag": "0024_vesna_start_930",
+      "breakpoints": true
     }
   ]
 }
