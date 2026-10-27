@@ -53,7 +53,7 @@ export const salons = pgTable('salons', {
   pointsPercent: integer('points_percent').notNull().default(5),
   /** День рождения клиента: поздравлять ли (push утром в день рождения) и сколько баллов дарить (0 — только поздравление) */
   birthdayGreet: boolean('birthday_greet').notNull().default(true),
-  birthdayBonus: integer('birthday_bonus').notNull().default(200),
+  birthdayBonus: integer('birthday_bonus').notNull().default(100),
   /** Подарочные баллы за первую установку приложения на телефон (0 — не дарить) */
   welcomeBonus: integer('welcome_bonus').notNull().default(100),
   /** Баллы можно тратить, когда на счёте набралось не меньше стольких (0 — сразу) */
