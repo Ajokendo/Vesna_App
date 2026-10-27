@@ -66,7 +66,17 @@ export default async function Cash({ params, searchParams }: { params: Promise<{
         {cash.methods.length > 0 && (
           <p className="small muted" style={{ margin: 0 }}>Деньгами: {cash.methods.map((m) => `${m.method.toLowerCase()} ${formatSom(m.amount)}`).join(' · ')}</p>
         )}
+        {cash.total.cert > 0 && (
+          <p className="small muted" style={{ margin: 0 }}>Оплачено подарочными сертификатами: {formatSom(cash.total.cert)} — эти деньги салон получил при продаже сертификатов; доля мастера с них считается.</p>
+        )}
       </section>
+      {cash.certificates.count > 0 && (
+        <section className="card stack" style={{ gap: 6, borderColor: 'var(--gold)' }}>
+          <strong>🎁 Продано сертификатов: {cash.certificates.count} на {formatSom(cash.certificates.amount)}</strong>
+          <span className="small muted">{cash.certificates.methods.map((m) => `${m.method.toLowerCase()} ${formatSom(m.amount)}`).join(' · ')}</span>
+          {cash.certificates.items.map((c) => <span key={c.code} className="small">{c.code} · {formatSom(c.amount)}{c.toName ? ` · для ${c.toName}` : ''}</span>)}
+        </section>
+      )}
     </main>
   );
 }

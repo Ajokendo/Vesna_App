@@ -10,6 +10,7 @@ import DroppedList from './DroppedList';
 import DayStrip from './DayStrip';
 import WaitList from './WaitList';
 import { dayWaitlist } from '@/server/waitlist';
+import { hasActiveCertificates } from '@/server/certificates';
 import { GROUPS } from '@/lib/groups';
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,7 @@ export default async function Journal({ params, searchParams }: {
   const now = utcToZoned(new Date(), salon.timezone);
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : now.date;
 
-  const [{ columns, dropped }, catalog, waiting] = await Promise.all([getJournal(slug, date), getCatalog(salon.id), dayWaitlist(salon.id, date)]);
+  const [{ columns, dropped }, catalog, waiting, certsActive] = await Promise.all([getJournal(slug, date), getCatalog(salon.id), dayWaitlist(salon.id, date), salon.certificatesEnabled ? Promise.resolve(true) : hasActiveCertificates(salon.id)]);
   // вкладки — только те разделы, где есть мастера (у салона без ногтевого сервиса не будет «Ногтей»)
   const groups = GROUPS.filter((g) => columns.some((c) => c.groups.includes(g.id)));
   const group = groups.find((g) => g.id === sp.group)?.id ?? groups[0]?.id ?? 'hair';
@@ -143,7 +144,7 @@ export default async function Journal({ params, searchParams }: {
               {c.day && c.day.end < END && <div style={{ position: 'absolute', left: 0, right: 0, top: (c.day.end - START) * PX, bottom: 0, background: '#f3f4f0' }} />}
               {c.items.map((a) => (
                 <ApptCard key={a.id} a={a} top={(a.start - START) * PX} px={PX} slug={slug} earnPercent={salon.pointsPercent} masterPercent={c.masterPercent}
-                  rules={{ welcomeBonus: salon.welcomeBonus, minRedeem: salon.minRedeem, today: now.date, nowMinute: date === now.date ? now.minute : date < now.date ? 24 * 60 : null, callAfter: salon.lateCallMinutes, noShowAfter: salon.noShowMinutes, salonName: salon.name }} />
+                  rules={{ certificates: certsActive, welcomeBonus: salon.welcomeBonus, minRedeem: salon.minRedeem, today: now.date, nowMinute: date === now.date ? now.minute : date < now.date ? 24 * 60 : null, callAfter: salon.lateCallMinutes, noShowAfter: salon.noShowMinutes, salonName: salon.name }} />
               ))}
               {date === now.date && now.minute >= START && now.minute <= END && (
                 <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: (now.minute - START) * PX, borderTop: '2px dashed #b23a5a' }} />

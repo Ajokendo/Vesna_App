@@ -43,6 +43,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
 
         <section className="card stack" style={{ gap: 0, padding: 0, overflow: 'hidden' }} aria-label="О приложении">
           <ContactRow href={`/${slug}?intro=1`} icon="info" color="var(--gold)" title="Как пользоваться приложением" sub="Запись, напоминания, баллы, подарки" />
+          {salon.certificatesEnabled && <ContactRow href={`/${slug}/gift`} icon="gift" color="#C9A24A" title="Подарочный сертификат" sub="Подарить или проверить свой" line />}
           <ContactRow href={`/${slug}/points`} icon="gift" color="var(--accent)" title="Пригласить друга" sub={salon.referralBonus > 0 ? `${salon.referralBonus} баллов за каждого друга` : 'Поделитесь приложением'} line />
           <Feedback salon={slug} role="CLIENT">
             <ContactRow icon="mail" color="#6B7A8F" title="Написать разработчикам" sub="Ошибка в приложении или идея" line />

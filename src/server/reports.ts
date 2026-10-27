@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db, schema as s } from '@/db';
 import { getSalon, PAYMENT_METHODS, type PaymentMethod } from './salon';
 import { staffRatings } from './reviews';
+import { certificateSales } from './certificates';
 import { makePeriod, previousPeriod, type Period, type PeriodKind } from '@/lib/period';
 import { utcToZoned, zonedToUtc } from '@/lib/time';
 
@@ -36,14 +37,17 @@ type Row = Awaited<ReturnType<typeof paidIn>>[number];
 function shareOf(r: Row, defaultCommission: number) {
   if (r.masterShare != null) return r.masterShare;
   const pct = r.masterPercent ?? (r.staff.roles.includes('OWNER') ? 0 : (r.staff.commission ?? defaultCommission));
-  return Math.round(((r.cashPaid ?? 0) * pct) / 100);
+  return Math.round((((r.cashPaid ?? 0) + r.certPaid) * pct) / 100);
 }
 
+/** Итоги по визитам. cash — оплачено деньгами, включая подарочный сертификат (с этой суммы доля мастера);
+ *  cert — из них сертификатом (эти деньги салон получил раньше, при продаже сертификата) */
 function totals(rows: Row[], defaultCommission: number) {
-  const cash = rows.reduce((n, r) => n + (r.cashPaid ?? 0), 0);
+  const cash = rows.reduce((n, r) => n + (r.cashPaid ?? 0) + r.certPaid, 0);
+  const cert = rows.reduce((n, r) => n + r.certPaid, 0);
   const master = rows.reduce((n, r) => n + shareOf(r, defaultCommission), 0);
   return {
-    visits: rows.length, cash, master, salon: cash - master,
+    visits: rows.length, cash, cert, master, salon: cash - master,
     price: rows.reduce((n, r) => n + (r.finalPrice ?? r.price), 0),
     points: rows.reduce((n, r) => n + r.pointsUsed, 0),
     avgCheck: rows.length ? Math.round(cash / rows.length) : 0,
@@ -65,12 +69,25 @@ export async function ownerReport(slug: string, kind: PeriodKind, at: string) {
   const [rows, prevRows, costs, prevCosts] = await Promise.all([paidIn(salon, p), paidIn(salon, pp), expensesIn(salon.id, p), expensesIn(salon.id, pp)]);
   const fromUtc = zonedToUtc(p.from, 0, salon.timezone);
   const toUtc = zonedToUtc(p.to, 0, salon.timezone);
-  const t = totals(rows, salon.defaultCommission);
-  const tp = totals(prevRows, salon.defaultCommission);
+  // проданные подарочные сертификаты: деньги пришли в день продажи
+  const [sold, prevSold] = await Promise.all([
+    certificateSales(salon.id, zonedToUtc(p.from, 0, salon.timezone), zonedToUtc(p.to, 0, salon.timezone)),
+    certificateSales(salon.id, zonedToUtc(pp.from, 0, salon.timezone), zonedToUtc(pp.to, 0, salon.timezone)),
+  ]);
+  const certSold = sold.reduce((n, c) => n + c.amount, 0);
+  const prevCertSold = prevSold.reduce((n, c) => n + c.amount, 0);
+  const withCerts = <T extends { cash: number; cert: number; master: number; visits: number }>(x: T, soldSum: number) => {
+    // деньги, полученные за период: за визиты (без оплаты сертификатом) + проданные сертификаты
+    const received = x.cash - x.cert + soldSum;
+    return { ...x, cash: received, salon: received - x.master, avgCheck: x.visits ? Math.round((x.cash) / x.visits) : 0 };
+  };
+  const t = withCerts(totals(rows, salon.defaultCommission), certSold);
+  const tp = withCerts(totals(prevRows, salon.defaultCommission), prevCertSold);
 
   // по способам оплаты
   const methods: Record<string, number> = {};
   for (const r of rows) if (r.cashPaid) methods[r.paymentMethod ?? 'CASH'] = (methods[r.paymentMethod ?? 'CASH'] ?? 0) + r.cashPaid;
+  if (certSold) methods.CERT_SOLD = certSold;
 
   // график
   const series = p.buckets.map((b) => {
@@ -113,7 +130,7 @@ export async function ownerReport(slug: string, kind: PeriodKind, at: string) {
       /** визиты по дням — для ведомости */
       lines: mine.map((r) => ({
         date: utcToZoned(r.startsAt, salon.timezone).date, service: r.service.name, price: r.finalPrice ?? r.price,
-        points: r.pointsUsed, cash: r.cashPaid ?? 0, share: shareOf(r, salon.defaultCommission),
+        points: r.pointsUsed, cash: (r.cashPaid ?? 0) + r.certPaid, share: shareOf(r, salon.defaultCommission),
       })),
     };
   });
@@ -123,7 +140,7 @@ export async function ownerReport(slug: string, kind: PeriodKind, at: string) {
   for (const r of rows) {
     const k = r.serviceId;
     const v = svc.get(k) ?? { name: r.service.name, category: r.service.category?.name ?? '', count: 0, cash: 0 };
-    v.count += 1; v.cash += r.cashPaid ?? 0;
+    v.count += 1; v.cash += (r.cashPaid ?? 0) + r.certPaid;
     svc.set(k, v);
   }
   const services = [...svc.values()].sort((a, b) => b.cash - a.cash);
@@ -138,7 +155,7 @@ export async function ownerReport(slug: string, kind: PeriodKind, at: string) {
 
   return {
     salon, period: p, prevPeriod: pp,
-    revenue: { ...t, methods: Object.entries(methods).map(([k, v]) => ({ method: PAYMENT_METHODS[k as PaymentMethod] ?? k, amount: v })).sort((a, b) => b.amount - a.amount), series, newClients, returning: clientIds.length - newClients, clients: clientIds.length, noShows, cancelled },
+    revenue: { ...t, methods: Object.entries(methods).map(([k, v]) => ({ method: k === 'CERT_SOLD' ? `Продано сертификатов (${sold.length})` : PAYMENT_METHODS[k as PaymentMethod] ?? k, amount: v })).sort((a, b) => b.amount - a.amount), series, newClients, returning: clientIds.length - newClients, clients: clientIds.length, noShows, cancelled },
     prev: tp,
     masters, services,
     costs: { items: costs, total: costTotal, byCategory, prevTotal: prevCostTotal },

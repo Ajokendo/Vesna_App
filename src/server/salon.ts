@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import type { HairLength } from '@/db/schema';
 import { workingHours, workDaysLabel } from '@/lib/schedule';
@@ -14,6 +14,7 @@ import { categoryGroup } from '@/lib/groups';
 import { rewardReferral } from './referral';
 import { MIN_RATINGS, staffRatings } from './reviews';
 import { closeWaitlistOnBooking } from './waitlist';
+import { certificateSales, certStatus, CERT_STATUS, normalizeCode } from './certificates';
 
 /** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
 export async function getSalon(slug: string) {
@@ -298,7 +299,7 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           payer: (a.client.guardian ?? a.client).name,
           payment: a.paid ? {
             finalPrice: a.finalPrice ?? a.price, pointsUsed: a.pointsUsed, cash: a.cashPaid ?? 0, pointsEarned: a.pointsEarned,
-            method: a.paymentMethod, masterShare: a.masterShare ?? 0,
+            method: a.paymentMethod, masterShare: a.masterShare ?? 0, cert: a.certPaid,
           } : null,
           /** Мастер не выйдет в это время — запись нужно передать, перенести или отменить */
           conflict: conflict && !a.paid,
@@ -323,11 +324,11 @@ export async function getJournal(salonSlug: string, date: DateStr) {
   };
 }
 
-export const PAYMENT_METHODS = { CASH: 'Наличные', CARD: 'Карта', QR: 'QR / банк', POINTS: 'Только баллы' } as const;
+export const PAYMENT_METHODS = { CASH: 'Наличные', CARD: 'Карта', QR: 'QR / банк', POINTS: 'Только баллы', CERT: 'Сертификат' } as const;
 export type PaymentMethod = keyof typeof PAYMENT_METHODS;
 
 /** Оплата на кассе: списание баллов, начисление % от денежной части, доля мастера */
-export async function payAppointment(salonSlug: string, input: { appointmentId: string; price: number; points: number; method: PaymentMethod }) {
+export async function payAppointment(salonSlug: string, input: { appointmentId: string; price: number; points: number; method: PaymentMethod; certCode?: string | null; cert?: number }) {
   const salon = await getSalon(salonSlug);
   if (!salon) throw new Error('Салон не найден');
   return db.transaction(async (tx) => {
@@ -341,13 +342,28 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
     const master = await tx.query.staff.findFirst({ where: eq(s.staff.id, appt.staffId) });
     const masterPercent = master?.roles.includes('OWNER') ? 0 : (master?.commission ?? salon.defaultCommission);
 
-    const p = calcPayment({ price: input.price, points: input.points, balance: payer.points, earnPercent: salon.pointsPercent, masterPercent, minRedeem: salon.minRedeem });
-    if (p.cash === 0 && input.method !== 'POINTS') input.method = 'POINTS';
-    if (p.cash > 0 && input.method === 'POINTS') throw new Error('Выберите, как оплачен остаток');
+    // подарочный сертификат: проверяем код, срок и остаток
+    let cert: typeof s.certificates.$inferSelect | undefined;
+    if (input.cert && input.cert > 0) {
+      if (!input.certCode) throw new Error('Укажите код сертификата');
+      [cert] = await tx.select().from(s.certificates)
+        .where(and(eq(s.certificates.salonId, salon.id), eq(s.certificates.code, normalizeCode(input.certCode)))).for('update');
+      if (!cert) throw new Error('Сертификат с таким кодом не найден');
+      const st = certStatus(cert);
+      if (st !== 'ACTIVE') throw new Error(`Сертификат: ${CERT_STATUS[st].toLowerCase()}`);
+    }
+    const p = calcPayment({
+      price: input.price, points: input.points, balance: payer.points, earnPercent: salon.pointsPercent, masterPercent, minRedeem: salon.minRedeem,
+      cert: cert ? input.cert : 0, certBalance: cert?.balance ?? 0,
+    });
+    if (p.cash === 0) input.method = p.cert > 0 ? 'CERT' : 'POINTS';
+    if (p.cash > 0 && (input.method === 'POINTS' || input.method === 'CERT')) throw new Error('Выберите, как оплачен остаток');
+    if (cert && p.cert > 0) await tx.update(s.certificates).set({ balance: cert.balance - p.cert }).where(eq(s.certificates.id, cert.id));
 
     await tx.update(s.appointments).set({
       paid: true, status: 'DONE', paidAt: new Date(), paymentMethod: input.method,
       finalPrice: p.price, pointsUsed: p.pointsUsed, cashPaid: p.cash, pointsEarned: p.pointsEarned,
+      certPaid: p.cert, certificateId: p.cert > 0 ? cert!.id : null,
       masterPercent: p.masterPercent, masterShare: p.masterShare,
     }).where(eq(s.appointments.id, appt.id));
     await tx.update(s.clients).set({ points: p.balanceAfter }).where(eq(s.clients.id, payer.id));
@@ -383,13 +399,17 @@ export async function cancelPayment(salonSlug: string, appointmentId: string) {
     const balance = payer.points + appt.pointsUsed - appt.pointsEarned;
     if (balance < 0) throw new Error('Начисленные за этот визит баллы уже потрачены — отменить оплату нельзя');
     await tx.update(s.clients).set({ points: balance }).where(eq(s.clients.id, payer.id));
+    // вернуть сумму на подарочный сертификат
+    if (appt.certPaid && appt.certificateId) {
+      await tx.update(s.certificates).set({ balance: sql`${s.certificates.balance} + ${appt.certPaid}` }).where(eq(s.certificates.id, appt.certificateId));
+    }
     await tx.insert(s.pointsLedger).values({
       salonId: salon.id, clientId: payer.id, appointmentId: appt.id, kind: 'ADJUST',
       delta: appt.pointsUsed - appt.pointsEarned, balanceAfter: balance, note: 'Отмена оплаты',
     });
     await tx.update(s.appointments).set({
       paid: false, status: 'BOOKED', paidAt: null, paymentMethod: null, finalPrice: null,
-      pointsUsed: 0, cashPaid: null, pointsEarned: 0, masterPercent: null, masterShare: null,
+      pointsUsed: 0, cashPaid: null, pointsEarned: 0, masterPercent: null, masterShare: null, certPaid: 0, certificateId: null,
     }).where(eq(s.appointments.id, appt.id));
   });
 }
@@ -404,22 +424,31 @@ export async function getCashReport(salonSlug: string, date: DateStr) {
     where: and(eq(s.appointments.salonId, salon.id), eq(s.appointments.paid, true), gte(s.appointments.startsAt, from), lt(s.appointments.startsAt, to)),
     with: { staff: true },
   });
-  const byMaster = new Map<string, { name: string; isOwner: boolean; visits: number; price: number; points: number; cash: number; master: number; salon: number }>();
+  const byMaster = new Map<string, { name: string; isOwner: boolean; visits: number; price: number; points: number; cash: number; cert: number; master: number; salon: number }>();
   const methods: Record<string, number> = {};
   for (const r of rows) {
-    const m = byMaster.get(r.staffId) ?? { name: r.staff.name, isOwner: r.staff.roles.includes('OWNER'), visits: 0, price: 0, points: 0, cash: 0, master: 0, salon: 0 };
+    const m = byMaster.get(r.staffId) ?? { name: r.staff.name, isOwner: r.staff.roles.includes('OWNER'), visits: 0, price: 0, points: 0, cash: 0, cert: 0, master: 0, salon: 0 };
     const cash = r.cashPaid ?? 0;
-    m.visits += 1; m.price += r.finalPrice ?? r.price; m.points += r.pointsUsed; m.cash += cash;
-    m.master += r.masterShare ?? 0; m.salon += cash - (r.masterShare ?? 0);
+    m.visits += 1; m.price += r.finalPrice ?? r.price; m.points += r.pointsUsed; m.cash += cash; m.cert += r.certPaid;
+    m.master += r.masterShare ?? 0; m.salon += cash + r.certPaid - (r.masterShare ?? 0);
     byMaster.set(r.staffId, m);
     if (cash) methods[r.paymentMethod ?? 'CASH'] = (methods[r.paymentMethod ?? 'CASH'] ?? 0) + cash;
   }
   const masters = [...byMaster.values()].sort((a, b) => b.cash - a.cash);
-  const sum = (k: 'visits' | 'price' | 'points' | 'cash' | 'master' | 'salon') => masters.reduce((n, m) => n + m[k], 0);
+  const sum = (k: 'visits' | 'price' | 'points' | 'cash' | 'cert' | 'master' | 'salon') => masters.reduce((n, m) => n + m[k], 0);
+  // проданные в этот день подарочные сертификаты — деньги в кассу сегодня, услуги по ним — потом
+  const sold = await certificateSales(salon.id, from, to);
+  const certMethods: Record<string, number> = {};
+  for (const c of sold) certMethods[c.soldMethod] = (certMethods[c.soldMethod] ?? 0) + c.amount;
   return {
     masters,
-    total: { visits: sum('visits'), price: sum('price'), points: sum('points'), cash: sum('cash'), master: sum('master'), salon: sum('salon') },
+    total: { visits: sum('visits'), price: sum('price'), points: sum('points'), cash: sum('cash'), cert: sum('cert'), master: sum('master'), salon: sum('salon') },
     methods: Object.entries(methods).map(([k, v]) => ({ method: PAYMENT_METHODS[k as PaymentMethod] ?? k, amount: v })),
+    certificates: {
+      count: sold.length, amount: sold.reduce((n, c) => n + c.amount, 0),
+      methods: Object.entries(certMethods).map(([k, v]) => ({ method: PAYMENT_METHODS[k as PaymentMethod] ?? k, amount: v })),
+      items: sold.map((c) => ({ code: c.code, amount: c.amount, toName: c.toName })),
+    },
   };
 }
 
