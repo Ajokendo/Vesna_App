@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 /** Зарплатная ведомость за период в Excel: лист «Итого» и по листу на каждого мастера */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ salon: string }> }) {
   const { salon: slug } = await ctx.params;
-  if (!(await isOwner(slug))) return NextResponse.json({ error: 'Нужен вход хозяйки' }, { status: 401 });
+  if (!(await isOwner(slug))) return NextResponse.json({ error: 'Нужен вход директора' }, { status: 401 });
   const salon = await getSalon(slug);
   if (!salon) return NextResponse.json({ error: 'Салон не найден' }, { status: 404 });
   const sp = req.nextUrl.searchParams;
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ salon: stri
   h.font = { bold: true };
   const ms = r.masters.filter((m) => m.visits > 0 || m.active);
   for (const m of ms) {
-    sum.addRow([m.isOwner ? `${m.name} (хозяйка)` : m.name, m.visits, m.price, m.points, m.cash, m.isOwner ? 0 : m.percent, m.isOwner ? 0 : m.master]);
+    sum.addRow([m.isOwner ? `${m.name} (директор)` : m.name, m.visits, m.price, m.points, m.cash, m.isOwner ? 0 : m.percent, m.isOwner ? 0 : m.master]);
   }
   const tot = sum.addRow(['Итого', ms.reduce((n, m) => n + m.visits, 0), ms.reduce((n, m) => n + m.price, 0), ms.reduce((n, m) => n + m.points, 0),
     ms.reduce((n, m) => n + m.cash, 0), '', ms.reduce((n, m) => n + (m.isOwner ? 0 : m.master), 0)]);

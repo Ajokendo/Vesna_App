@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatSom } from '@/lib/pricing';
 import { inputSt } from './ui';
+import Hints from '@/app/Hints';
 
 type Row = {
   id: string; code: string; amount: number; balance: number; toName: string | null; fromName: string | null; buyerPhone: string | null;
@@ -56,7 +57,10 @@ export default function Certificates({ slug, salonName, enabled, months, rows, o
       <section className="card stack" style={{ gap: 10, borderColor: 'var(--gold)' }}>
         <label className="row" style={{ gap: 10, cursor: 'pointer' }}>
           <input type="checkbox" checked={on} disabled={busy} onChange={(e) => saveSettings(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} />
-          <span><b>Подарочные сертификаты</b><br /><span className="small muted">Включите, когда захотите продавать сертификаты: клиенты увидят раздел в «Ещё», здесь появится выпуск. Выключение не гасит уже проданные — их можно принять в оплату до конца срока.</span></span>
+          <span><b>Подарочные сертификаты</b><br /><Hints style={{ marginTop: 4 }} items={[
+            ['✅', 'Включено: клиенты видят раздел в «Ещё», здесь появляется выпуск'],
+            ['⏸', 'Выключено: проданные сертификаты всё равно принимаются до конца срока'],
+          ]} /></span>
         </label>
         <label className="field" style={{ maxWidth: 260 }}>Срок действия новых, месяцев
           <input inputMode="numeric" value={m} onChange={(e) => setM(e.target.value.replace(/\D/g, ''))} onBlur={() => on && Number(m) !== months && saveSettings(true)} style={inputSt} />
@@ -67,7 +71,7 @@ export default function Certificates({ slug, salonName, enabled, months, rows, o
       {on && (
         <section className="card stack" style={{ gap: 10 }}>
           <strong style={{ fontSize: 17 }}>🎁 Выпустить сертификат</strong>
-          <span className="small muted">Сначала примите оплату, затем выпустите сертификат — он появится в «Кассе» за сегодня.</span>
+          <Hints items={[['1️⃣', 'Примите оплату'], ['2️⃣', 'Выпустите сертификат — он появится в «Кассе» за сегодня']]} />
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             {AMOUNTS.map((a) => (
               <button key={a} type="button" className="btn" aria-pressed={f.amount === String(a)} onClick={() => setF({ ...f, amount: String(a) })}

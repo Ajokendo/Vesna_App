@@ -11,6 +11,7 @@ import { formatPrice, formatSom } from '@/lib/pricing';
 import EndToggle from './EndToggle';
 import VisitButtons from './VisitButtons';
 import { lateState } from '@/lib/late';
+import Hints from '@/app/Hints';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Кабинет мастера' };
@@ -191,7 +192,7 @@ export default async function MasterPage({ params, searchParams }: {
         {/* заработок за день */}
         <section className="card stack" style={{ gap: 10 }} aria-labelledby="earn">
           <h2 id="earn" style={{ fontSize: 18 }}>Мой заработок за {date === now.date ? 'сегодня' : dayMonthShort(date)}</h2>
-          {isOwner ? <p className="small muted" style={{ margin: 0 }}>Вы хозяйка салона — комиссия не начисляется, вся выручка идёт салону.</p> : null}
+          {isOwner ? <Hints items={[['🏠', 'Вы директор и работаете в своём салоне — доля мастера вам не выделяется'], ['💰', 'Вся сумма за ваши услуги идёт в выручку салона, то есть вам же — без деления 50/50']]} /> : null}
           {day.totals.visits === 0 ? (
             <p className="muted" style={{ margin: 0 }}>Оплаченных визитов пока нет{day.totals.waiting ? ` (ожидается: ${day.totals.waiting})` : ''}.</p>
           ) : (
@@ -233,10 +234,11 @@ export default async function MasterPage({ params, searchParams }: {
           <Row label="Моя доля" value={formatSom(month.share)} strong />
         </section>
 
-        <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-          Баллы — это скидка постоянным клиентам. Если клиент часть суммы оплатил баллами, доля мастера и салона считается с суммы, оплаченной деньгами:
-          скидку салон и мастер делят поровну.
-        </p>
+        <Hints items={[
+          ['⭐', 'Баллы — это скидка постоянным клиентам'],
+          ['💵', 'Ваша доля считается с суммы, оплаченной деньгами'],
+          ['🤝', 'Скидку баллами салон и мастер делят поровну'],
+        ]} />
         <div className="card"><PasskeyToggle slug={slug} role="MASTER" sub={me.id} /></div>
         <Feedback salon={slug} role="MASTER"><button type="button" className="small" style={{ border: 0, background: 'none', padding: 0, color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>✉ Написать разработчикам приложения</button></Feedback>
       </div>

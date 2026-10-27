@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Msg, inputSt, useSave } from './ui';
+import Hints from '@/app/Hints';
 
 type Salon = {
   accentColor: string; logoUrl: string | null; hoursText: string | null; mapUrl: string | null; menHallNote: string | null; womenHallNote: string | null;
@@ -102,12 +103,19 @@ export default function SalonForm({ slug, salon, waReady }: { slug: string; salo
       </div>
       <label className="row" style={{ gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={greet} onChange={(e) => setGreet(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} />
-        <span><b>Поздравлять клиентов с днём рождения</b><br /><span className="small muted">Утром в день рождения — уведомление от салона и подарочные баллы (если указаны выше). День рождения клиент указывает в «Баллах», администратор — в карточке клиента.</span></span>
+        <span><b>Поздравлять клиентов с днём рождения</b><br /><Hints style={{ marginTop: 4 }} items={[
+          ['🎂', 'Утром в день рождения — поздравление и подарочные баллы (если указаны выше)'],
+          ['✍', 'Дату клиент указывает в «Баллах», администратор — в карточке клиента'],
+        ]} /></span>
       </label>
       <label className="row" style={{ gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={wa} onChange={(e) => setWa(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} />
         <span><b>Уведомления в WhatsApp</b> {waReady ? <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>· номер подключён</span> : <span className="small muted">· номер салона ещё не подключён к WhatsApp Business API</span>}<br />
-          <span className="small muted">Клиентам без уведомлений в приложении: подтверждение записи, напоминание утром в день визита, перенос и отмена, «освободилось время». Сообщения платные (тариф Meta).</span></span>
+          <Hints style={{ marginTop: 4 }} items={[
+            ['📱', 'Для клиентов без уведомлений в приложении'],
+            ['✉', 'Подтверждение записи, напоминание утром, перенос и отмена, «освободилось время»'],
+            ['💳', 'Сообщения платные (тариф Meta)'],
+          ]} /></span>
       </label>
       <div className="row"><button type="button" className="btn primary" disabled={busy} onClick={submit}>{busy ? 'Сохраняем…' : 'Сохранить'}</button><Msg msg={msg} /></div>
     </section>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { ManageData } from '@/server/manage';
 import { Msg, inputSt, num, useSave } from './ui';
+import Hints from '@/app/Hints';
 
 type Staff = ManageData['staff'][number];
 type Cat = ManageData['categories'][number];
@@ -32,10 +33,12 @@ export default function StaffEditor({ slug, staff, categories, defaultCommission
   }
   return (
     <div className="stack" style={{ gap: 12 }}>
-      <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-        Здесь — кто работает, какие услуги делает и по какому графику. Разовые изменения (заболела, вышла в выходной) отмечайте в журнале кнопкой «Не выйдет / Выйдет».
-        Стрелками ▲▼ задаётся порядок мастеров на главной, в записи и в журнале. PIN для кабинета мастера — на вкладке <Link href={`/${slug}/admin/settings?tab=pins`}>«PIN-коды»</Link>.
-      </p>
+      <Hints items={[
+        ['👩', 'Здесь — кто работает, какие услуги делает и по какому графику'],
+        ['📅', 'Разовое (заболела, вышла в выходной) — в журнале кнопкой «Не выйдет / Выйдет»'],
+        ['↕', 'Стрелки ▲▼ — порядок мастеров на главной, в записи и в журнале'],
+        ['🔑', <>PIN для кабинета мастера — на вкладке <Link href={`/${slug}/admin/settings?tab=pins`}>«PIN-коды»</Link></>],
+      ]} />
       {staff.map((m, i) => (
         <div key={m.id} className="row" style={{ gap: 6, alignItems: 'stretch' }}>
           <div className="stack" style={{ gap: 4, justifyContent: 'center' }}>

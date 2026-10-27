@@ -153,11 +153,51 @@ export default async function Journal({ params, searchParams }: {
           ))}
         </div>
       </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Цвет полоски над мастером: зелёный — работает, оранжевый — сегодня другие часы, золотой — вышел в свой выходной, серый — выходной, красный — не выйдет. Нажмите на запись, чтобы принять оплату. 🔔 — у клиента включены напоминания, «подтвердил» — подтвердил визит из уведомления, ⏱ — время окончания изменено (золотая рамка — отметил сам мастер). Журнал обновляется сам каждую минуту. Белые — ожидаются, зелёные — оплачены, кремовые — без записи.
-        Пунктир — выдержка краски: в это время мастер свободен и к нему можно записать другого клиента. Красная линия — текущее время.
-      </p>
+      <Legend />
 
     </main>
+  );
+}
+
+/** Пояснения к журналу: цветные ярлычки вместо сплошного текста */
+function Legend() {
+  const chip = (bg: string, border: string, text: string) => (
+    <span key={text} className="row" style={{ gap: 6, fontSize: 13 }}>
+      <span aria-hidden style={{ width: 22, height: 14, borderRadius: 4, background: bg, border, flex: '0 0 auto', boxSizing: 'border-box' }} />{text}
+    </span>
+  );
+  const bar = (color: string, text: string) => (
+    <span key={text} className="row" style={{ gap: 6, fontSize: 13 }}>
+      <span aria-hidden style={{ width: 22, height: 5, borderRadius: 3, background: color, flex: '0 0 auto' }} />{text}
+    </span>
+  );
+  const group = (title: string, items: React.ReactNode[]) => (
+    <div className="stack" style={{ gap: 6 }}>
+      <strong className="small" style={{ color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>{title}</strong>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px' }}>{items}</div>
+    </div>
+  );
+  const icon = (sym: React.ReactNode, text: string) => (
+    <span key={text} className="row" style={{ gap: 6, fontSize: 13 }}>
+      <span aria-hidden style={{ minWidth: 22, textAlign: 'center', fontWeight: 800 }}>{sym}</span>{text}
+    </span>
+  );
+  return (
+    <section className="card stack" style={{ gap: 12, padding: '12px 14px' }} aria-label="Пояснения к журналу">
+      {group('Мастер сегодня — полоска над колонкой', [
+        bar(STATE.work.bar, 'работает'), bar(STATE.changed.bar, 'сегодня другие часы'), bar(STATE.extra.bar, 'вышел в выходной'),
+        bar(STATE.off.bar, 'выходной'), bar(STATE.absent.bar, 'не выйдет'),
+      ])}
+      {group('Записи', [
+        chip('#fff', '1px solid #b9c7bc', 'ожидается'), chip('var(--accent-soft)', '1px solid #a9bc9c', 'оплачено'), chip('var(--cream)', '1px solid var(--gold)', 'без записи'),
+        chip('#fdf1e2', '2px solid #d98a2b', 'опаздывает — позвонить'), chip('#fbebeb', '2px solid var(--danger)', 'не пришёл?'), chip('#fff', '2px solid var(--gold)', 'время изменил мастер'),
+      ])}
+      {group('Значки', [
+        icon('🔔', 'у клиента включены напоминания'), icon('✓', '«подтвердил» — подтвердил визит'), icon('⏱', 'время окончания изменено'),
+        icon(<span style={{ display: 'inline-block', width: 22, borderTop: '2px dashed #9aa79c', verticalAlign: 'middle' }} />, 'выдержка краски — мастер свободен'),
+        icon(<span style={{ display: 'inline-block', width: 22, borderTop: '2px dashed #b23a5a', verticalAlign: 'middle' }} />, 'сейчас'),
+      ])}
+      <span className="small muted">Нажмите на запись, чтобы принять оплату, перенести или отменить. Журнал обновляется сам каждую минуту.</span>
+    </section>
   );
 }

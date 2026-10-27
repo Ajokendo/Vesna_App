@@ -4,6 +4,7 @@ import { ownerReport } from '@/server/reports';
 import { formatSom, plural } from '@/lib/pricing';
 import { dayMonthShort, utcToZoned } from '@/lib/time';
 import { PeriodBar, readPeriod } from '../ui';
+import Hints from '@/app/Hints';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,14 +32,18 @@ export default async function Payroll({ params, searchParams }: { params: Promis
           {ms.map((m) => (
             <div key={m.id} className="row" style={{ justifyContent: 'space-between', gap: 10, borderTop: '1px solid var(--line)', padding: '9px 0' }}>
               <div className="stack" style={{ gap: 1, minWidth: 0 }}>
-                <b>{m.name}{m.isOwner && <span className="small muted" style={{ fontWeight: 400 }}> · хозяйка</span>}{!m.active && <span className="small muted" style={{ fontWeight: 400 }}> · не работает</span>}</b>
+                <b>{m.name}{m.isOwner && <span className="small muted" style={{ fontWeight: 400 }}> · директор</span>}{!m.active && <span className="small muted" style={{ fontWeight: 400 }}> · не работает</span>}</b>
                 <span className="small muted">{m.visits} {plural(m.visits, 'визит', 'визита', 'визитов')} · получено {formatSom(m.cash)}{m.isOwner ? '' : ` · ${m.percent}%`}</span>
               </div>
               <b style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{m.isOwner ? <span className="small muted">всё салону</span> : formatSom(m.master)}</b>
             </div>
           ))}
         </div>
-        <span className="small muted" style={{ lineHeight: 1.45 }}>Доля считается с суммы, оплаченной деньгами: если клиент платил баллами, скидку делят салон и мастер поровну. Процент мастера меняется в «Настройках» → «Мастера».</span>
+        <Hints items={[
+          ['💵', 'Доля считается с суммы, оплаченной деньгами'],
+          ['⭐', 'Платил баллами — скидку делят салон и мастер поровну'],
+          ['⚙', 'Процент мастера меняется в «Настройках» → «Мастера»'],
+        ]} />
       </section>
 
       {ms.filter((m) => m.lines.length).map((m) => (

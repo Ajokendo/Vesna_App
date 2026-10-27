@@ -8,9 +8,9 @@ import OwnerNav from './OwnerNav';
 import { OwnerLogin, OwnerSetup } from './OwnerLogin';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Кабинет хозяйки' };
+export const metadata = { title: 'Кабинет директора' };
 
-/** Кабинет хозяйки: вход по отдельному PIN хозяйки (PIN администратора сюда не пускает) */
+/** Кабинет директора: вход по отдельному PIN директора (PIN администратора сюда не пускает) */
 export default async function OwnerLayout({ children, params }: { children: React.ReactNode; params: Promise<{ salon: string }> }) {
   const { salon } = await params;
   if (await isOwner(salon)) {
@@ -44,8 +44,8 @@ export default async function OwnerLayout({ children, params }: { children: Reac
     <main className="app">
       {!missing ? <OwnerLogin action={login} slug={salon} /> : admin ? <OwnerSetup action={setup} /> : (
         <div className="page" style={{ justifyContent: 'center', maxWidth: 380, margin: '0 auto', width: '100%' }}>
-          <h1 style={{ fontSize: 24 }}>Кабинет хозяйки</h1>
-          <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>PIN хозяйки ещё не задан. Чтобы задать его, сначала войдите как администратор, затем откройте «Настройки» → «Кабинет хозяйки».</p>
+          <h1 style={{ fontSize: 24 }}>Кабинет директора</h1>
+          <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>PIN директора ещё не задан. Чтобы задать его, сначала войдите как администратор, затем откройте «Настройки» → «Кабинет директора».</p>
           <Link href={`/${salon}/admin`} className="btn primary block">Войти как администратор</Link>
         </div>
       )}

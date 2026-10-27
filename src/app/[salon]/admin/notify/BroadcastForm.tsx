@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { plural } from '@/lib/pricing';
+import Hints from '@/app/Hints';
 
 type AType = 'ALL' | 'DATE' | 'WOMEN' | 'MEN' | 'MASTER';
 
@@ -90,11 +91,11 @@ export default function BroadcastForm({ slug, salonName, today, masters }: { slu
         <textarea value={body} maxLength={300} onChange={(e) => setBody(e.target.value)} rows={3}
           style={{ borderRadius: 12, border: '1px solid #dde5de', padding: '10px 14px', fontSize: 16, fontFamily: 'inherit', resize: 'vertical' }} />
       </label>
-      <p className="small muted" style={{ margin: 0, lineHeight: 1.45 }}>
-        Получат: <strong style={{ color: 'var(--ink)' }}>{count ?? '…'}</strong> {plural(count ?? 0, 'клиент', 'клиента', 'клиентов')} с включёнными уведомлениями.
-        {kind === 'PROMO' ? ' Отписавшиеся от поздравлений и акций не получат.' : ' Важное получат все выбранные.'}
-        {' '}Мужчин и женщин приложение различает по залу, куда клиент записывался.
-      </p>
+      <Hints items={[
+        ['👥', <>Получат: <strong style={{ color: 'var(--ink)' }}>{count ?? '…'}</strong> {plural(count ?? 0, 'клиент', 'клиента', 'клиентов')} с включёнными уведомлениями</>],
+        [kind === 'PROMO' ? '🚫' : '❗', kind === 'PROMO' ? 'Отписавшиеся от поздравлений и акций не получат' : 'Важное получат все выбранные'],
+        ['💇', 'Мужчин и женщин приложение различает по залу, куда клиент записывался'],
+      ]} />
       {error && <div className="error" role="alert">{error}</div>}
       {result && <div className="note">{result}</div>}
       {confirm ? (

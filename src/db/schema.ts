@@ -76,7 +76,7 @@ export const salons = pgTable('salons', {
   /** Код первичной настройки (хеш): с ним владелец нового салона задаёт PIN администратора */
   setupCodeHash: text('setup_code_hash'),
   adminPinFailed: integer('admin_pin_failed').notNull().default(0),
-  /** PIN хозяйки (хеш) — вход в кабинет с отчётами о выручке, зарплатах и прибыли; администратор его не знает */
+  /** PIN директора (хеш) — вход в кабинет с отчётами о выручке, зарплатах и прибыли; администратор его не знает */
   ownerPinHash: text('owner_pin_hash'),
   ownerPinFailed: integer('owner_pin_failed').notNull().default(0),
   ownerPinLockedUntil: timestamp('owner_pin_locked_until', { withTimezone: true }),
@@ -113,7 +113,7 @@ export const staff = pgTable('staff', {
   pinLockedUntil: timestamp('pin_locked_until', { withTimezone: true }),
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
-  /** Показывать клиентам рейтинг мастера (включает хозяйка, для каждого мастера отдельно; виден от 10 оценок) */
+  /** Показывать клиентам рейтинг мастера (включает директор, для каждого мастера отдельно; виден от 10 оценок) */
   showRating: boolean('show_rating').notNull().default(false),
 }, (t) => [index('staff_salon_idx').on(t.salonId)]);
 
@@ -439,7 +439,7 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   appointment: one(appointments, { fields: [reviews.appointmentId], references: [appointments.id] }),
 }));
 
-/** Расходы салона (вносит хозяйка): аренда, материалы, свет и т. п. — для расчёта прибыли */
+/** Расходы салона (вносит директор): аренда, материалы, свет и т. п. — для расчёта прибыли */
 export const expenses = pgTable('expenses', {
   id: id(),
   salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
@@ -480,7 +480,7 @@ export const passkeys = pgTable('passkeys', {
   salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
   /** ADMIN | OWNER | MASTER | CLIENT */
   role: text('role').notNull(),
-  /** Мастер или клиент (для администратора и хозяйки — пусто) */
+  /** Мастер или клиент (для администратора и директора — пусто) */
   subjectId: text('subject_id'),
   credentialId: text('credential_id').notNull().unique(),
   publicKey: text('public_key').notNull(),

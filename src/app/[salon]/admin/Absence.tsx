@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { hhmm } from '@/lib/time';
+import Hints from '@/app/Hints';
 
 const toMin = (v: string) => { const [h, m] = v.split(':').map(Number); return h * 60 + m; };
 const toTime = (m: number) => hhmm(m);
@@ -111,9 +112,11 @@ function AbsenceDialog({ slug, staffId, name, date, normal, onClose }: {
         <label className="field">Причина (видят только сотрудники)
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="заболела, семейные обстоятельства…" maxLength={200} />
         </label>
-        <p className="small muted" style={{ margin: 0, lineHeight: 1.45 }}>
-          Онлайн-запись к мастеру на это время сразу закроется. Клиенты, которые уже записаны, появятся в журнале списком — их можно передать другому мастеру, предупредить в WhatsApp или отменить запись.
-        </p>
+        <Hints items={[
+          ['🔒', 'Онлайн-запись к мастеру на это время закроется сразу'],
+          ['📋', 'Уже записанные клиенты появятся в журнале списком'],
+          ['↪', 'Их можно передать другому мастеру, предупредить в WhatsApp или отменить запись'],
+        ]} />
         {error && <div className="error" role="alert">{error}</div>}
         <div className="row">
           <button type="button" className="btn" onClick={onClose}>Отмена</button>
@@ -159,9 +162,10 @@ function ExtraDayDialog({ slug, staffId, name, date, usual, onClose }: {
         <label className="field">Причина (видят только сотрудники)
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="подменяет коллегу, поменялись выходными…" maxLength={200} />
         </label>
-        <p className="small muted" style={{ margin: 0, lineHeight: 1.45 }}>
-          В этот день к мастеру сразу откроется онлайн-запись. Если мастера поменялись выходными, отметьте у второго мастера «Не выйдет» на этот день.
-        </p>
+        <Hints items={[
+          ['🔓', 'Онлайн-запись к мастеру на этот день откроется сразу'],
+          ['🔁', 'Поменялись выходными? Отметьте у второго мастера «Не выйдет»'],
+        ]} />
         {error && <div className="error" role="alert">{error}</div>}
         <div className="row">
           <button type="button" className="btn" onClick={onClose}>Отмена</button>

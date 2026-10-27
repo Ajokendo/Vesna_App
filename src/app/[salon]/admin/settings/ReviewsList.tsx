@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { isAdmin } from '@/server/admin-auth';
 import { listReviews, rewardGisReview, MIN_RATINGS } from '@/server/reviews';
 import { dayMonthShort, utcToZoned } from '@/lib/time';
+import Hints from '@/app/Hints';
 
 /** Вкладка «Оценки»: все оценки визитов. Низкие (1–3) — только для салона; 2ГИС — начислить баллы после проверки */
 export default async function ReviewsList({ slug }: { slug: string }) {
@@ -17,11 +18,12 @@ export default async function ReviewsList({ slug }: { slug: string }) {
   const gisWaiting = rows.filter((r) => r.stars === 5 && r.gisClickedAt && !r.gisRewardedAt).length;
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-        После оплаченного визита клиент получает просьбу оценить мастера (1–5 звёзд). Оценки 1–3 видит только салон — позвоните клиенту и исправьте ситуацию.
-        Рейтинг мастера клиенты увидят, только если вы включите его в «Мастера» и наберётся {MIN_RATINGS} оценок.
-        {salon.reviewBonus > 0 ? ` После 5 звёзд клиенту предлагается отзыв в 2ГИС: проверьте отзыв на карте и нажмите «Начислить ${salon.reviewBonus} баллов».` : ''}
-      </p>
+      <Hints items={[
+        ['⭐', 'После оплаченного визита клиента просят оценить мастера (1–5 звёзд)'],
+        ['📞', 'Оценки 1–3 видит только салон — позвоните клиенту и исправьте ситуацию'],
+        ['👁', `Рейтинг мастера клиенты увидят, если включить его в «Мастера» и наберётся ${MIN_RATINGS} оценок`],
+        ['🗺', salon.reviewBonus > 0 && `После 5 звёзд клиенту предлагают отзыв в 2ГИС: проверьте его на карте и нажмите «Начислить ${salon.reviewBonus} баллов»`],
+      ]} />
       <div className="row small" style={{ gap: 14, flexWrap: 'wrap' }}>
         <span>Всего оценок: <b>{rows.length}</b></span>
         {low > 0 && <span style={{ color: 'var(--danger)', fontWeight: 700 }}>Низких: {low}</span>}

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { isAdmin, setAdminPin } from '@/server/admin-auth';
 import { setMasterPin } from '@/server/master-auth';
 import { getMastersForLogin } from '@/server/master';
+import Hints from '@/app/Hints';
 
 /** Вкладка настроек «PIN-коды»: администратор выдаёт мастерам PIN для входа в кабинет */
 export default async function PinList({ slug, salonId, sp }: { slug: string; salonId: string; sp: { ok?: string; e?: string } }) {
@@ -47,11 +48,12 @@ export default async function PinList({ slug, salonId, sp }: { slug: string; sal
         </div>
         {sp.ok === 'admin' && <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>✓ PIN администратора изменён</span>}
       </form>
-        <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-          Каждый мастер входит в свой кабинет по ссылке <strong>{`/${slug}/master`}</strong> со своим PIN-кодом (4–6 цифр).
-          В кабинете — его записи и его заработок. Чужие записи и деньги мастер не видит.
-          PIN хранится в зашифрованном виде: если мастер забыл его — задайте новый. После 5 неверных попыток вход блокируется на 15 минут.
-        </p>
+        <Hints items={[
+          ['🔑', <>Мастер входит в свой кабинет по ссылке <strong>{`/${slug}/master`}</strong> со своим PIN (4–6 цифр)</>],
+          ['👁', 'В кабинете — только его записи и заработок, чужого он не видит'],
+          ['❓', 'Забыл PIN — задайте новый (старый узнать нельзя, он зашифрован)'],
+          ['⛔', 'После 5 неверных попыток вход блокируется на 15 минут'],
+        ]} />
       {sp.e && <div className="error" role="alert">{sp.e}</div>}
       <div className="stack">
         {masters.map((m) => (

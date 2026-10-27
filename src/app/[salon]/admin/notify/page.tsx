@@ -5,6 +5,7 @@ import { getMastersForLogin } from '@/server/master';
 import { utcToZoned } from '@/lib/time';
 import BroadcastForm from './BroadcastForm';
 import { plural } from '@/lib/pricing';
+import Hints from '@/app/Hints';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +19,11 @@ export default async function NotifyPage({ params }: { params: Promise<{ salon: 
     <main className="safe" style={{ padding: '24px 28px 40px', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <header>
         <h1 style={{ fontSize: 26 }}>Уведомления</h1>
-        <p className="muted" style={{ margin: '6px 0 0', lineHeight: 1.5 }}>
-          Уведомления {plural(stats.clients, 'включил', 'включили', 'включили')} <strong style={{ color: 'var(--ink)' }}>{stats.clients}</strong> {plural(stats.clients, 'клиент', 'клиента', 'клиентов')}. Напоминания о записях (при записи, утром в день визита и за час)
-          уходят сами. Здесь — рассылки от салона: важное о работе или поздравления и акции.
-        </p>
+        <Hints style={{ marginTop: 8 }} items={[
+          ['👥', <>Уведомления {plural(stats.clients, 'включил', 'включили', 'включили')} <strong style={{ color: 'var(--ink)' }}>{stats.clients}</strong> {plural(stats.clients, 'клиент', 'клиента', 'клиентов')}</>],
+          ['⏰', 'Напоминания о записях уходят сами: при записи, утром в день визита и за час'],
+          ['📣', 'Здесь — рассылки от салона: важное о работе, поздравления и акции'],
+        ]} />
       </header>
       <BroadcastForm slug={slug} salonName={salon.name} today={today} masters={masters.map((m) => ({ id: m.id, name: m.name }))} />
       <section className="card stack" style={{ gap: 0 }}>

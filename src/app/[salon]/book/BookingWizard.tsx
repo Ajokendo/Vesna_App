@@ -10,6 +10,7 @@ import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
 import { ageOn, formatPrice, formatSom, quote, resolveService, plural } from '@/lib/pricing';
 import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekdayShort } from '@/lib/time';
+import Hints from '@/app/Hints';
 
 type Props = {
   welcomeBonus?: number;
@@ -468,7 +469,7 @@ function WaitOffer({ slug, payload, client, setClient, who, prominent }: {
   return (
     <div className="card stack" style={{ gap: 8, borderColor: 'var(--gold)' }}>
       <strong>🔔 Лист ожидания — {weekdayShort(payload.date)}, {dayMonth(payload.date)}</strong>
-      <span className="small muted" style={{ lineHeight: 1.45 }}>Если кто-то отменит запись и время {who} освободится, мы сразу пришлём уведомление. Администратор тоже увидит заявку.</span>
+      <Hints items={[['🔔', `Освободится время ${who} — сразу пришлём уведомление`], ['👀', 'Администратор тоже увидит заявку']]} />
       <label className="field">Имя<input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} autoComplete="name" /></label>
       <label className="field">Телефон (WhatsApp)<input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} autoComplete="tel" /></label>
       {err && <div className="error" role="alert">{err}</div>}

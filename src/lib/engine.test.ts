@@ -177,7 +177,7 @@ describe('оплата баллами и доля мастера', () => {
     expect(() => calcPayment({ ...base, price: 600, points: 0, balance: 0, cert: 800, certBalance: 1000 })).toThrow();
     expect(() => calcPayment({ ...base, price: 600, points: 0, balance: 0, cert: 500, certBalance: 300 })).toThrow();
   });
-  it('хозяйка-мастер: комиссии нет, всё салону', () => {
+  it('директор-мастер: комиссии нет, всё салону', () => {
     expect(calcPayment({ ...base, masterPercent: 0, price: 800, points: 0, balance: 0 })).toMatchObject({ masterShare: 0, salonShare: 800 });
   });
   it('нельзя списать больше, чем есть или чем стоит услуга', () => {

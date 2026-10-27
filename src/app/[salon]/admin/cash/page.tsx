@@ -41,7 +41,7 @@ export default async function Cash({ params, searchParams }: { params: Promise<{
               <tbody>
                 {cash.masters.map((m) => (
                   <tr key={m.name} style={{ textAlign: 'right', borderTop: '1px solid var(--line)' }}>
-                    <td style={{ textAlign: 'left', padding: '8px', fontWeight: 700 }}>{m.name}{m.isOwner ? <span className="small muted"> · хозяйка</span> : null}</td>
+                    <td style={{ textAlign: 'left', padding: '8px', fontWeight: 700 }}>{m.name}{m.isOwner ? <span className="small muted"> · директор</span> : null}</td>
                     <td style={{ padding: '8px' }}>{m.visits}</td>
                     <td style={{ padding: '8px' }}>{formatSom(m.price)}</td>
                     <td style={{ padding: '8px' }}>{m.points ? `−${m.points}` : '—'}</td>

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Hints from '@/app/Hints';
 import { revalidatePath } from 'next/cache';
 import { getSalon } from '@/server/salon';
 import { isOwner } from '@/server/owner-auth';
@@ -9,7 +10,7 @@ import { PeriodBar, Stat, grid, readPeriod } from '../ui';
 
 export const dynamic = 'force-dynamic';
 
-/** Расходы и прибыль: хозяйка вносит расходы, приложение считает прибыль = выручка − мастерам − расходы */
+/** Расходы и прибыль: директор вносит расходы, приложение считает прибыль = выручка − мастерам − расходы */
 export default async function Costs({ params, searchParams }: { params: Promise<{ salon: string }>; searchParams: Promise<{ p?: string; at?: string; e?: string }> }) {
   const { salon: slug } = await params;
   const sp = await searchParams;
@@ -48,7 +49,7 @@ export default async function Costs({ params, searchParams }: { params: Promise<
         <Stat label="Расходы" now={r.costs.total} before={r.costs.prevTotal} invert />
         <Stat label="Прибыль" now={r.profit} before={r.prevProfit} />
       </div>
-      <p className="small muted" style={{ margin: 0, lineHeight: 1.45 }}>Прибыль = выручка − доли мастеров − расходы. Работа хозяйки как мастера целиком остаётся салону.</p>
+      <Hints items={[['🧮', 'Прибыль = выручка − доли мастеров − расходы'], ['🏠', 'Если директор сам работает мастером, доля мастера за его услуги не выделяется — вся сумма остаётся салону']]} />
 
       <form action={add} className="card stack" style={{ gap: 10 }}>
         <strong>Добавить расход</strong>

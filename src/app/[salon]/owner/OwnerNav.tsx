@@ -11,14 +11,14 @@ const ITEMS = [
   { path: 'ADMIN', label: 'Журнал', icon: 'M4 5h16M4 10h16M4 15h10M4 20h7' },
 ];
 
-/** Нижняя панель кабинета хозяйки; выбранный период сохраняется при переходе между разделами */
+/** Нижняя панель кабинета директора; выбранный период сохраняется при переходе между разделами */
 export default function OwnerNav({ slug }: { slug: string }) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const base = `/${slug}/owner`;
   const q = sp.get('p') ? `?p=${sp.get('p')}${sp.get('at') ? `&at=${sp.get('at')}` : ''}` : '';
   return (
-    <nav aria-label="Разделы кабинета хозяйки" style={{
+    <nav aria-label="Разделы кабинета директора" style={{
       position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, background: 'rgba(255,255,255,.97)', borderTop: '1px solid var(--line)',
       boxShadow: '0 -4px 16px rgba(30,40,30,.06)', paddingBottom: 'env(safe-area-inset-bottom)',
       paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)',

@@ -3,7 +3,7 @@ import { setOwnerPin, signOutOwner } from '@/server/owner-auth';
 import PinChange from './PinChange';
 import { PasskeyToggle } from '@/app/Passkey';
 
-/** Внизу кабинета хозяйки: сменить PIN хозяйки и выйти (например, если открывала на чужом телефоне) */
+/** Внизу кабинета директора: сменить PIN директора и выйти (например, если открывали на чужом телефоне) */
 export default function OwnerAccount({ slug }: { slug: string }) {
   async function change(_prev: string | null, fd: FormData): Promise<string | null> {
     'use server';
@@ -23,7 +23,7 @@ export default function OwnerAccount({ slug }: { slug: string }) {
       <div className="stack" style={{ gap: 12, marginTop: 10 }}>
         <PasskeyToggle slug={slug} role="OWNER" />
         <PinChange action={change} />
-        <form action={out}><button type="submit" className="btn" style={{ minHeight: 42 }}>Выйти из кабинета хозяйки</button></form>
+        <form action={out}><button type="submit" className="btn" style={{ minHeight: 42 }}>Выйти из кабинета директора</button></form>
       </div>
     </details>
   );

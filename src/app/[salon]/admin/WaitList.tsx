@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { isAdmin } from '@/server/admin-auth';
 import { closeWaitlist } from '@/server/waitlist';
+import Hints from '@/app/Hints';
 
 type Item = { id: string; client: string; clientId: string; phone: string | null; title: string; notified: boolean };
 
@@ -17,9 +18,11 @@ export default function WaitList({ slug, items, dateLabel, salonName }: { slug: 
   return (
     <details className="card" style={{ borderColor: 'var(--gold)', background: '#fffdf6' }}>
       <summary style={{ cursor: 'pointer', fontWeight: 800 }}>⏳ Лист ожидания на этот день: {items.length}</summary>
-      <p className="small muted" style={{ margin: '6px 0 8px', lineHeight: 1.45 }}>
-        Эти клиенты ждут, что освободится время. Когда запись отменяют, приложение само сообщает им (если у них включены уведомления). Можно и написать самим.
-      </p>
+      <Hints style={{ margin: '6px 0 8px' }} items={[
+        ['⏳', 'Эти клиенты ждут, что освободится время'],
+        ['🔔', 'Когда запись отменяют, приложение само им сообщит (если включены уведомления)'],
+        ['💬', 'Можно и написать самим'],
+      ]} />
       <div className="stack" style={{ gap: 0 }}>
         {items.map((w) => {
           const phone = w.phone?.replace(/\D/g, '') ?? '';

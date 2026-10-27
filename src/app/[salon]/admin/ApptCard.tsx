@@ -222,7 +222,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
                 <Line label="К оплате деньгами" value={formatSom(calc.cash)} strong />
                 <Line label={`Начислим баллов (${earnPercent}% от ${calc.cash + calc.cert})`} value={`+${calc.pointsEarned}`} />
                 <Line label="Останется на счёте" value={String(calc.balanceAfter)} />
-                <Line label={masterPercent ? `Мастеру (${masterPercent}%)` : 'Мастеру (хозяйка, без комиссии)'} value={formatSom(calc.masterShare)} />
+                <Line label={masterPercent ? `Мастеру (${masterPercent}%)` : 'Мастеру — директор, вся сумма салону'} value={formatSom(calc.masterShare)} />
               </div>
             )}
             {(calcError || error) && <div className="error" role="alert">{calcError || error}</div>}

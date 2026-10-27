@@ -52,7 +52,7 @@ export async function getCatalog(salonId: string) {
     })),
     staff: staff.filter((m) => m.roles.includes('MASTER')).map((m) => ({
       id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, isOwner: m.roles.includes('OWNER'),
-      /** Рейтинг виден клиентам, только если хозяйка включила его мастеру и набралось не меньше 10 оценок */
+      /** Рейтинг виден клиентам, только если директор включил его мастеру и набралось не меньше 10 оценок */
       rating: m.showRating && (ratings.get(m.id)?.count ?? 0) >= MIN_RATINGS ? ratings.get(m.id)! : null,
       scheduleLabel: workDaysLabel(m.schedule ?? null),
       categoryIds: m.categories.map((c) => c.categoryId),

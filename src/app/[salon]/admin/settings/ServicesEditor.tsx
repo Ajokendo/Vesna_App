@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ManageData } from '@/server/manage';
 import { Msg, inputSt, num, useSave } from './ui';
 import { GROUPS, categoryGroup } from '@/lib/groups';
+import Hints from '@/app/Hints';
 
 type Cat = ManageData['categories'][number];
 type Svc = Cat['services'][number];
@@ -18,10 +19,11 @@ export default function ServicesEditor({ slug, categories }: { slug: string; cat
   const [newCat, setNewCat] = useState(false);
   return (
     <div className="stack" style={{ gap: 12 }}>
-      <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-        Длительность — сколько минут занимает услуга (по ней считается свободное время). «Выдержка» — для окрашивания: через сколько минут от начала
-        начинается выдержка и сколько она длится; в это время мастер свободен. Скрытые услуги и разделы клиенты не видят, история записей сохраняется.
-      </p>
+      <Hints items={[
+        ['⏱', 'Длительность — сколько минут идёт услуга; по ней считается свободное время'],
+        ['🎨', '«Выдержка» — для окрашивания: когда начинается и сколько длится. В это время мастер свободен'],
+        ['🙈', 'Скрытые услуги и разделы клиенты не видят, история записей сохраняется'],
+      ]} />
       {categories.map((c) => <CategoryCard key={c.id} slug={slug} c={c} />)}
       {newCat ? <CategoryForm slug={slug} onDone={() => setNewCat(false)} /> : (
         <button type="button" className="btn" style={{ alignSelf: 'flex-start' }} onClick={() => setNewCat(true)}>+ Новый раздел услуг</button>

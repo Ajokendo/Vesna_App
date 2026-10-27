@@ -6,10 +6,10 @@ import { checkId, signId } from './push';
 import { hashPin, matchPin, validPin } from './master-auth';
 import { isAdmin } from './admin-auth';
 
-// Вход хозяйки в кабинет с отчётами (выручка, зарплаты мастерам, расходы и прибыль).
+// Вход директора в кабинет с отчётами (выручка, зарплаты мастерам, расходы и прибыль).
 // Свой PIN и своя cookie — PIN администратора туда не пускает.
-// Первый раз PIN хозяйки задаётся из уже открытого кабинета администратора; потом сменить его можно,
-// только зная текущий PIN хозяйки (если забыла — сбрасывает разработчик).
+// Первый раз PIN директора задаётся из уже открытого кабинета администратора; потом сменить его можно,
+// только зная текущий PIN директора (если забыл — сбрасывает разработчик).
 
 const MAX_FAILS = 5;
 const LOCK_MIN = 15;
@@ -28,7 +28,7 @@ export async function isOwner(slug: string): Promise<boolean> {
   return !!raw && checkId(fingerprint(salon.id, salon.ownerPinHash), raw);
 }
 
-/** PIN хозяйки ещё не задан */
+/** PIN директора ещё не задан */
 export async function ownerPinMissing(slug: string) {
   const salon = await salonBySlug(slug);
   return !!salon && !salon.ownerPinHash;
@@ -36,7 +36,7 @@ export async function ownerPinMissing(slug: string) {
 
 export async function signInOwner(slug: string, pin: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const salon = await salonBySlug(slug);
-  if (!salon?.ownerPinHash) return { ok: false, error: 'PIN хозяйки ещё не задан' };
+  if (!salon?.ownerPinHash) return { ok: false, error: 'PIN директора ещё не задан' };
   if (salon.ownerPinLockedUntil && salon.ownerPinLockedUntil > new Date()) {
     const left = Math.ceil((salon.ownerPinLockedUntil.getTime() - Date.now()) / 60000);
     return { ok: false, error: `Слишком много попыток. Попробуйте через ${left} мин.` };
@@ -54,16 +54,16 @@ export async function signInOwner(slug: string, pin: string): Promise<{ ok: true
 }
 
 /**
- * Задать PIN хозяйки. Первый раз — из открытого кабинета администратора; дальше — только из кабинета хозяйки.
- * PIN хозяйки не может совпадать с PIN администратора.
+ * Задать PIN директора. Первый раз — из открытого кабинета администратора; дальше — только из кабинета директора.
+ * PIN директора не может совпадать с PIN администратора.
  */
 export async function setOwnerPin(slug: string, pin: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const salon = await salonBySlug(slug);
   if (!salon) return { ok: false, error: 'Салон не найден' };
   const allowed = salon.ownerPinHash ? await isOwner(slug) : await isAdmin(slug);
-  if (!allowed) return { ok: false, error: salon.ownerPinHash ? 'Войдите как хозяйка' : 'Сначала войдите как администратор' };
+  if (!allowed) return { ok: false, error: salon.ownerPinHash ? 'Войдите как директор' : 'Сначала войдите как администратор' };
   if (!validPin(pin)) return { ok: false, error: 'PIN — от 4 до 6 цифр' };
-  if (salon.adminPinHash && matchPin(pin, salon.adminPinHash)) return { ok: false, error: 'PIN хозяйки должен отличаться от PIN администратора' };
+  if (salon.adminPinHash && matchPin(pin, salon.adminPinHash)) return { ok: false, error: 'PIN директора должен отличаться от PIN администратора' };
   const hash = hashPin(pin);
   await db.update(s.salons).set({ ownerPinHash: hash, ownerPinFailed: 0, ownerPinLockedUntil: null }).where(eq(s.salons.id, salon.id));
   (await cookies()).set(cookieName(slug), await signId(fingerprint(salon.id, hash)), COOKIE);
@@ -74,9 +74,9 @@ export async function signOutOwner(slug: string) {
   (await cookies()).delete(cookieName(slug));
 }
 
-/** Вход хозяйки подтверждён отпечатком / Face ID */
+/** Вход директора подтверждён отпечатком / Face ID */
 export async function startOwnerSession(slug: string) {
   const salon = await salonBySlug(slug);
-  if (!salon?.ownerPinHash) throw new Error('PIN хозяйки ещё не задан');
+  if (!salon?.ownerPinHash) throw new Error('PIN директора ещё не задан');
   (await cookies()).set(cookieName(slug), await signId(fingerprint(salon.id, salon.ownerPinHash)), COOKIE);
 }
