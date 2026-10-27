@@ -73,6 +73,10 @@ export const salons = pgTable('salons', {
   /** Код первичной настройки (хеш): с ним владелец нового салона задаёт PIN администратора */
   setupCodeHash: text('setup_code_hash'),
   adminPinFailed: integer('admin_pin_failed').notNull().default(0),
+  /** PIN хозяйки (хеш) — вход в кабинет с отчётами о выручке, зарплатах и прибыли; администратор его не знает */
+  ownerPinHash: text('owner_pin_hash'),
+  ownerPinFailed: integer('owner_pin_failed').notNull().default(0),
+  ownerPinLockedUntil: timestamp('owner_pin_locked_until', { withTimezone: true }),
   adminPinLockedUntil: timestamp('admin_pin_locked_until', { withTimezone: true }),
   /** Демо-доступ: после этого момента приложение салона закрыто (пусто — без ограничения) */
   demoUntil: timestamp('demo_until', { withTimezone: true }),
@@ -418,3 +422,15 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   client: one(clients, { fields: [reviews.clientId], references: [clients.id] }),
   appointment: one(appointments, { fields: [reviews.appointmentId], references: [appointments.id] }),
 }));
+
+/** Расходы салона (вносит хозяйка): аренда, материалы, свет и т. п. — для расчёта прибыли */
+export const expenses = pgTable('expenses', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  /** День расхода, YYYY-MM-DD по времени салона */
+  date: date('date', { mode: 'string' }).notNull(),
+  category: text('category').notNull(),
+  amount: integer('amount').notNull(),
+  note: text('note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('expenses_salon_date').on(t.salonId, t.date)]);

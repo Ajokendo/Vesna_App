@@ -31,6 +31,7 @@ export default async function Settings({ params, searchParams }: { params: Promi
         <h1 style={{ fontSize: 26 }}>Настройки салона</h1>
         <p className="muted" style={{ margin: '6px 0 0' }}>Изменения сразу видны клиентам в онлайн-записи и в журнале.</p>
         <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <Link href={`/${slug}/owner`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>📊 Кабинет хозяйки</Link>
           <Link href={`/${slug}/admin/qr`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>▣ QR-табличка для ресепшена</Link>
           <Feedback salon={slug} role="ADMIN"><button type="button" className="btn" style={{ minHeight: 42, fontSize: 14 }}>✉ Написать разработчикам</button></Feedback>
         </div>

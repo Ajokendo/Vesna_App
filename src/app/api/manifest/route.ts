@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     shortcuts: [
       { name: 'Кабинет мастера', short_name: 'Мастер', url: `/${slug}/master`, icons: [{ src: '/shortcut-master.png', sizes: '192x192', type: 'image/png' }] },
       { name: 'Администратор', short_name: 'Админ', url: `/${slug}/admin`, icons: [{ src: '/shortcut-admin.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Кабинет хозяйки', short_name: 'Хозяйка', url: `/${slug}/owner`, icons: [{ src: '/shortcut-admin.png', sizes: '192x192', type: 'image/png' }] },
     ],
   };
   return new NextResponse(JSON.stringify(manifest), {
