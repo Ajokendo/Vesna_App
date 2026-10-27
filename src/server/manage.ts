@@ -145,6 +145,8 @@ export const StaffInput = z.object({
   active: z.boolean(),
   categoryIds: z.array(z.string()).max(50),
   showRating: z.boolean().optional(),
+  tempo: z.number().int().min(50).max(200).optional(),
+  bufferMin: z.number().int().min(0).max(60).optional(),
   /** undefined — фото не менять; null — убрать; строка — новое фото (уменьшенное на телефоне) */
   photo: z.string().startsWith('data:image/').max(400_000).nullable().optional(),
   schedule: z.object({
@@ -184,6 +186,8 @@ export async function saveStaff(slug: string, input: z.infer<typeof StaffInput>)
     name: input.name, title: input.title || null, phone: input.phone || null, active: isOwner ? true : input.active,
     roles: [...roles], commission: isOwner ? null : input.commission,
     ...(input.showRating === undefined ? {} : { showRating: input.showRating }),
+    ...(input.tempo === undefined ? {} : { tempo: input.tempo }),
+    ...(input.bufferMin === undefined ? {} : { bufferMin: input.bufferMin }),
   };
   if (existing) {
     await db.update(s.staff).set(base).where(eq(s.staff.id, existing.id));
@@ -245,7 +249,7 @@ export async function getManageData(slug: string) {
       })),
     })),
     staff: staff.map((m) => ({
-      id: m.id, name: m.name, title: m.title, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, showRating: m.showRating, rating: ratings.get(m.id) ?? null, commission: m.commission, active: m.active,
+      id: m.id, name: m.name, title: m.title, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, showRating: m.showRating, rating: ratings.get(m.id) ?? null, commission: m.commission, active: m.active, tempo: m.tempo, bufferMin: m.bufferMin,
       categoryIds: m.categories.map((c) => c.categoryId),
       schedule: m.schedule ? {
         kind: m.schedule.kind, weekdays: m.schedule.weekdays, cycleWork: m.schedule.cycleWork, cycleOff: m.schedule.cycleOff,

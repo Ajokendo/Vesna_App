@@ -35,7 +35,7 @@ async function current(slug: string, role: PasskeyRole) {
   const salon = await getSalon(slug);
   if (!salon) throw new Error('Салон не найден');
   if (role === 'ADMIN') return (await isAdmin(slug)) ? { salon, subjectId: null as string | null, label: `Администратор «${salon.name}»` } : null;
-  if (role === 'OWNER') return (await isOwner(slug)) ? { salon, subjectId: null, label: `Хозяйка «${salon.name}»` } : null;
+  if (role === 'OWNER') return (await isOwner(slug)) ? { salon, subjectId: null, label: `Директор «${salon.name}»` } : null;
   if (role === 'MASTER') { const m = await currentMaster(salon.id); return m ? { salon, subjectId: m.id, label: `${m.name} · «${salon.name}»` } : null; }
   const me = await getMe(slug);
   return me ? { salon, subjectId: me.client.id, label: `${me.client.name} · «${salon.name}»` } : null;

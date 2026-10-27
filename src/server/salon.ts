@@ -3,7 +3,7 @@ import { and, asc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import type { HairLength } from '@/db/schema';
 import { workingHours, workDaysLabel } from '@/lib/schedule';
-import { availableStarts, busyParts, fits } from '@/lib/slots';
+import { masterDuration, availableStarts, busyParts, fits } from '@/lib/slots';
 import { calcPayment } from '@/lib/payment';
 import { notifySoon } from './notify';
 import { occupiesTime } from './status';
@@ -98,10 +98,11 @@ async function staffDay(staffIds: string[], date: DateStr, tz: string) {
     )),
   ]);
   return members.map((m) => ({
-    id: m.id, name: m.name,
+    id: m.id, name: m.name, tempo: m.tempo, buffer: m.bufferMin,
     day: workingHours(m.schedule ?? null, m.exceptions.map((e) => ({ ...e, date: String(e.date) })), date),
+    // запас после клиента: время мастера занято ещё buffer минут после окончания записи
     busy: appts.filter((a) => a.staffId === m.id).flatMap((a) => busyParts(
-      utcToZoned(a.startsAt, tz).minute, utcToZoned(a.endsAt, tz).minute,
+      utcToZoned(a.startsAt, tz).minute, utcToZoned(a.endsAt, tz).minute + m.bufferMin,
       a.pauseStart != null && a.pauseMin ? { after: a.pauseStart, min: a.pauseMin } : null,
     )),
   }));
@@ -124,7 +125,7 @@ export async function getSlots(salonSlug: string, b: Booking & { staffId: string
   const byMinute = new Map<number, string>();
   for (const m of await staffDay(ids, b.date, salon.timezone)) {
     if (!m.day) continue;
-    for (const t of availableStarts({ day: m.day, durationMin, pause: resolved.pause, busy: m.busy, stepMin: salon.slotStepMinutes, displayStepMin: salon.displayStepMinutes, earliestMin: earliest })) {
+    for (const t of availableStarts({ day: m.day, durationMin: masterDuration(durationMin, m.tempo) + m.buffer, pause: resolved.pause, busy: m.busy, stepMin: salon.slotStepMinutes, displayStepMin: salon.displayStepMinutes, earliestMin: earliest })) {
       if (!byMinute.has(t)) byMinute.set(t, m.id); // для «любого мастера» — первый свободный по порядку
     }
   }
@@ -164,15 +165,16 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
 
     const isAdmin = input.source === 'ADMIN' || input.source === 'WALK_IN';
     let staffId: string | null = null;
+    let tempo = 100;
     for (const m of await staffDay(candidates, input.date, salon.timezone)) {
       if (!m.day && !isAdmin) continue;
       const pause = resolved.pause;
       // администратор может записать и вне графика (например, мастер задержится), но не поверх другой записи
       const ok = isAdmin
-        ? fits({ start: 0, end: 24 * 60, breaks: [] }, m.busy, input.minute, durationMin, pause)
-        : !!m.day && fits(m.day, m.busy, input.minute, durationMin, pause);
+        ? fits({ start: 0, end: 24 * 60, breaks: [] }, m.busy, input.minute, masterDuration(durationMin, m.tempo) + (isAdmin ? 0 : m.buffer), pause)
+        : !!m.day && fits(m.day, m.busy, input.minute, masterDuration(durationMin, m.tempo) + m.buffer, pause);
       if (ok) {
-        staffId = m.id; break;
+        staffId = m.id; tempo = m.tempo; break;
       }
     }
     if (!staffId) throw new Error('Это время уже занято, выберите другое');
@@ -202,7 +204,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
     const startsAt = zonedToUtc(input.date, input.minute, salon.timezone);
     const [appt] = await tx.insert(s.appointments).values({
       salonId: salon.id, staffId, clientId: visitor.id, serviceId: svc.id, hairLength: input.length ?? null,
-      startsAt, endsAt: new Date(startsAt.getTime() + q.durationMin * 60000),
+      startsAt, endsAt: new Date(startsAt.getTime() + masterDuration(q.durationMin, tempo) * 60000),
       pauseStart: resolved.pause?.after ?? null, pauseMin: resolved.pause?.min ?? null,
       price: q.total, priceMax: q.totalMax, pointsUsed: q.pointsUsed, source: input.source ?? 'ONLINE',
     }).returning();

@@ -115,6 +115,10 @@ export const staff = pgTable('staff', {
   sortOrder: integer('sort_order').notNull().default(0),
   /** Показывать клиентам рейтинг мастера (включает директор, для каждого мастера отдельно; виден от 10 оценок) */
   showRating: boolean('show_rating').notNull().default(false),
+  /** Темп мастера, %: 100 — как в прайсе; 120 — делает на 20% дольше (время записи к нему удлиняется) */
+  tempo: integer('tempo').notNull().default(100),
+  /** Запас после каждого клиента, мин (уборка, подготовка): следующего клиента онлайн-запись поставит не раньше */
+  bufferMin: integer('buffer_min').notNull().default(0),
 }, (t) => [index('staff_salon_idx').on(t.salonId)]);
 
 export const schedules = pgTable('schedules', {

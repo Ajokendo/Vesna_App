@@ -57,3 +57,8 @@ export function availableStarts(q: SlotQuery): number[] {
     .filter((t) => t >= earliest && fits(q.day, q.busy, t, dur, q.pause))
     .sort((a, b) => a - b);
 }
+
+/** Время услуги у конкретного мастера: с учётом его темпа, округлено вверх до 5 минут */
+export function masterDuration(durationMin: number, tempo = 100) {
+  return tempo === 100 ? durationMin : Math.ceil((durationMin * tempo) / 100 / 5) * 5;
+}

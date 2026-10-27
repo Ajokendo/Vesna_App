@@ -59,7 +59,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
             Для сотрудников:
             <Link href={`/${slug}/master`} className="muted">Кабинет мастера</Link>·
             <Link href={`/${slug}/admin`} className="muted">Администратор</Link>·
-            <Link href={`/${slug}/owner`} className="muted">Хозяйка</Link>
+            <Link href={`/${slug}/owner`} className="muted">Директор</Link>
           </span>
         </div>
       </div>

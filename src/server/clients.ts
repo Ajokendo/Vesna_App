@@ -160,10 +160,10 @@ async function staffBusy(staffIds: string[], date: DateStr, tz: string, exceptId
     )),
   ]);
   return members.sort((x, y) => x.sortOrder - y.sortOrder).map((m) => ({
-    id: m.id, name: m.name, photoUrl: m.photoUrl,
+    id: m.id, name: m.name, photoUrl: m.photoUrl, buffer: m.bufferMin,
     day: workingHours(m.schedule ?? null, m.exceptions.map((e) => ({ ...e, date: String(e.date) })), date),
     busy: appts.filter((x) => x.staffId === m.id).flatMap((x) => busyParts(
-      utcToZoned(x.startsAt, tz).minute, utcToZoned(x.endsAt, tz).minute,
+      utcToZoned(x.startsAt, tz).minute, utcToZoned(x.endsAt, tz).minute + m.bufferMin,
       x.pauseStart != null && x.pauseMin ? { after: x.pauseStart, min: x.pauseMin } : null,
     )),
   }));
@@ -191,7 +191,7 @@ export async function rescheduleOptions(slug: string, appointmentId: string, dat
       id: m.id, name: m.name, photoUrl: m.photoUrl, same: m.id === a.staffId,
       hours: m.day ? { start: m.day.start, end: m.day.end } : null,
       starts: m.day ? availableStarts({
-        day: m.day, durationMin: dur, pause, busy: m.busy, stepMin: salon.slotStepMinutes, displayStepMin: salon.displayStepMinutes,
+        day: m.day, durationMin: dur + m.buffer, pause, busy: m.busy, stepMin: salon.slotStepMinutes, displayStepMin: salon.displayStepMinutes,
         earliestMin: date === now.date ? now.minute + (by === 'CLIENT' ? salon.minLeadMinutes : 0) : undefined,
       }).filter((t) => !(date === current.date && t === current.minute && m.id === a.staffId)) : [],
     })),

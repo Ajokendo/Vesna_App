@@ -83,6 +83,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
   const [f, setF] = useState({
     name: m?.name ?? '', title: m?.title ?? '', phone: m?.phone ?? '', isMaster: m ? m.roles.includes('MASTER') : true,
     commission: m?.commission == null ? '' : String(m.commission), active: m?.active ?? true, cats: new Set(m?.categoryIds ?? []), showRating: m?.showRating ?? false,
+    tempo: String(m?.tempo ?? 100), bufferMin: String(m?.bufferMin ?? 0),
   });
   const [s, setS] = useState({
     kind: sc?.kind ?? 'WEEKLY', weekdays: new Set(sc?.weekdays ?? [0, 1, 2, 3, 4, 5]), cycleWork: String(sc?.cycleWork ?? 2), cycleOff: String(sc?.cycleOff ?? 2),
@@ -97,6 +98,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
     const d = await save('staff', {
       id: m?.id, name: f.name.trim(), title: f.title.trim() || null, phone: f.phone.trim() || null, isMaster: f.isMaster,
       commission: num(f.commission), active: f.active, categoryIds: [...f.cats], photo, showRating: f.showRating,
+      tempo: Math.min(200, Math.max(50, Number(f.tempo) || 100)), bufferMin: Math.min(60, Number(f.bufferMin) || 0),
       schedule: f.isMaster ? {
         kind: s.kind, weekdays: [...s.weekdays], cycleWork: num(s.cycleWork), cycleOff: num(s.cycleOff), cycleStart: s.kind === 'CYCLE' ? s.cycleStart : null,
         startMinute: fromTime(s.start), endMinute: fromTime(s.end), breakStart: fromTime(s.bStart), breakEnd: fromTime(s.bEnd),
@@ -129,10 +131,31 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
           </label>
         )}
       </div>
-      {isOwner && <p className="small muted" style={{ margin: 0 }}>Хозяйка салона: доля мастера не начисляется, весь доход — салону.</p>}
+      {isOwner && <p className="small muted" style={{ margin: 0 }}>Директор салона: доля мастера не выделяется — вся сумма за его услуги идёт в выручку салона.</p>}
       <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={f.isMaster} onChange={(e) => setF({ ...f, isMaster: e.target.checked })} /> Принимает клиентов (мастер)</label>
 
       {f.isMaster && (<>
+        <div className="grid2">
+          <label className="field">Темп работы
+            <select value={f.tempo} onChange={(e) => setF({ ...f, tempo: e.target.value })} style={inputSt}>
+              <option value="90">Быстрее прайса (−10%)</option>
+              <option value="100">Как в прайсе</option>
+              <option value="115">Дольше на 15%</option>
+              <option value="130">Дольше на 30%</option>
+              <option value="150">Дольше на 50%</option>
+              {!['90', '100', '115', '130', '150'].includes(f.tempo) && <option value={f.tempo}>{f.tempo}%</option>}
+            </select>
+          </label>
+          <label className="field">Запас после клиента
+            <select value={f.bufferMin} onChange={(e) => setF({ ...f, bufferMin: e.target.value })} style={inputSt}>
+              {['0', '5', '10', '15', '20', '30'].map((v) => <option key={v} value={v}>{v === '0' ? 'без запаса' : `${v} мин`}</option>)}
+            </select>
+          </label>
+        </div>
+        <Hints items={[
+          ['⏱', 'Темп: если мастер работает медленнее прайса, онлайн-запись даёт ему больше времени на каждую услугу'],
+          ['🧹', 'Запас: свободные минуты после каждого клиента — следующего запишут не раньше'],
+        ]} />
         <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className="small" style={{ fontWeight: 800, marginBottom: 6 }}>Какие услуги делает</legend>
           <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
