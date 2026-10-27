@@ -20,7 +20,7 @@ export default function BirthdayCard({ slug, bonus }: { slug: string; bonus: num
     <section className="card stack" style={{ gap: 8, borderColor: 'var(--gold)' }}>
       <strong>🎂 Когда у вас день рождения?</strong>
       <span className="small muted" style={{ lineHeight: 1.45 }}>
-        {bonus > 0 ? <>В этот день салон поздравит вас и подарит <b style={{ color: 'var(--accent-dark)' }}>{bonus} баллов</b>.</> : 'В этот день салон вас поздравит.'} Указать можно один раз.
+        {bonus > 0 ? <>В этот день салон поздравит вас и подарит <b style={{ color: 'var(--accent-dark)' }}>{bonus} баллов</b> — если вы были у нас за последний год.</> : 'В этот день салон вас поздравит.'} Указать можно один раз.
       </span>
       <div className="row" style={{ gap: 8 }}>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Дата рождения"

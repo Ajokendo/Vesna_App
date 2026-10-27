@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, isNotNull, or, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull, or, isNull, ne, sql } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import { sendToClients } from './push';
 import { utcToZoned } from '@/lib/time';
@@ -8,6 +8,8 @@ import { getMe } from './me';
 // Поздравление с днём рождения: утром (с 09:00 по времени салона) клиенту приходит push,
 // и, если салон дарит баллы, они начисляются на счёт. Детей поздравляем через родителя — баллы родителю.
 // Родившихся 29 февраля в невисокосный год поздравляем 28-го. Каждого — один раз в год.
+// Баллы дарим только тем, кто был в салоне (оплаченный визит — сам или его ребёнок) за последние 12 месяцев:
+// иначе можно годами копить подарки, не приходя, и прийти «бесплатно». Остальным — поздравление и приглашение.
 
 const FROM_MINUTE = 9 * 60;
 
@@ -40,21 +42,27 @@ export async function runBirthdays(now = new Date()) {
       if (!mark) continue;
       const payerId = c.guardianId ?? c.id;
       const child = !!c.guardianId;
-      if (salon.birthdayBonus > 0) {
+      // был ли в салоне за последний год (сам плательщик или кто-то из его семьи)
+      const family = (await db.select({ id: s.clients.id }).from(s.clients).where(or(eq(s.clients.id, payerId), eq(s.clients.guardianId, payerId)))).map((x) => x.id);
+      const yearAgo = new Date(now.getTime() - 365 * 864e5);
+      const [visit] = await db.select({ id: s.appointments.id }).from(s.appointments)
+        .where(and(inArray(s.appointments.clientId, family), eq(s.appointments.paid, true), gte(s.appointments.startsAt, yearAgo))).limit(1);
+      const gift = salon.birthdayBonus > 0 && !!visit ? salon.birthdayBonus : 0;
+      if (gift > 0) {
         await db.transaction(async (tx) => {
-          const [p] = await tx.update(s.clients).set({ points: sql`${s.clients.points} + ${salon.birthdayBonus}` }).where(eq(s.clients.id, payerId)).returning({ points: s.clients.points });
+          const [p] = await tx.update(s.clients).set({ points: sql`${s.clients.points} + ${gift}` }).where(eq(s.clients.id, payerId)).returning({ points: s.clients.points });
           await tx.insert(s.pointsLedger).values({
-            salonId: salon.id, clientId: payerId, kind: 'ADJUST', delta: salon.birthdayBonus, balanceAfter: p.points,
+            salonId: salon.id, clientId: payerId, kind: 'ADJUST', delta: gift, balanceAfter: p.points,
             note: child ? `Подарок на день рождения: ${c.name}` : 'Подарок на день рождения',
           });
         });
       }
       const payer = child ? await db.query.clients.findFirst({ where: eq(s.clients.id, payerId) }) : c;
       if (payer?.promoOptOut) { greeted++; continue; }
-      const gift = salon.birthdayBonus > 0 ? ` Дарим ${salon.birthdayBonus} баллов — 1 балл = 1 сом.` : '';
+      const giftText = gift > 0 ? ` Дарим ${gift} баллов — 1 балл = 1 сом.` : '';
       await sendToClients([payerId], {
         title: child ? `🎂 ${c.name} — с днём рождения!` : `🎂 ${c.name.split(' ')[0]}, с днём рождения!`,
-        body: `Салон «${salon.name}» поздравляет${child ? ` ${c.name}` : ' вас'}!${gift} Ждём в гости.`,
+        body: `Салон «${salon.name}» поздравляет${child ? ` ${c.name}` : ' вас'}!${giftText} Ждём в гости.`,
         url: `/${salon.slug}/points`,
         tag: `birthday-${c.id}-${year}`,
       }).catch((e) => console.error('birthday push', (e as Error).message));
