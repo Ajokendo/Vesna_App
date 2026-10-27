@@ -7,6 +7,7 @@ import { addDays, daysBetween, utcToZoned, zonedToUtc, type DateStr } from '@/li
 import { getSalon } from './salon';
 import { notifySoon } from './notify';
 import { occupiesTime } from './status';
+import { checkWaitlistFor } from './waitlist';
 
 // Мастер не выйдет (заболел, семейные дела): отметка в графике на день, несколько дней или часть дня.
 // Онлайн-запись на это время сразу закрывается; уже записанных клиентов администратор
@@ -104,8 +105,8 @@ export async function reassignAppointment(slug: string, appointmentId: string, t
     ));
     if (!fits(day, busy, minute, dur, pause)) throw new Error(`${m?.name ?? 'Мастер'} в это время занят`);
     await tx.update(s.appointments).set({ staffId: toStaffId }).where(eq(s.appointments.id, a.id));
-    return { staffId: toStaffId, id: a.id };
-  }).then(async (r) => { await notifySoon(r.id, 'MOVED'); return { staffId: r.staffId }; });
+    return { staffId: toStaffId, id: a.id, a };
+  }).then(async (r) => { await notifySoon(r.id, 'MOVED'); await checkWaitlistFor(r.a); return { staffId: r.staffId }; });
 }
 
 /** Отменить неоплаченную запись */
@@ -117,6 +118,7 @@ export async function cancelAppointment(slug: string, appointmentId: string) {
   if (a.paid) throw new Error('Запись уже оплачена — сначала отмените оплату');
   await db.update(s.appointments).set({ status: 'CANCELLED', cancelledBy: 'ADMIN' }).where(eq(s.appointments.id, a.id));
   await notifySoon(a.id, 'CANCELLED');
+  await checkWaitlistFor(a);
 }
 
 /** Отметки «не выйдет» на ближайшие дни — для списка в журнале */
@@ -187,6 +189,7 @@ export async function markNoShow(slug: string, appointmentId: string, by: { role
   if (a.paid) throw new Error('Запись уже оплачена');
   if (a.startsAt.getTime() > Date.now()) throw new Error('Время записи ещё не наступило');
   await db.update(s.appointments).set({ status: 'NO_SHOW' }).where(eq(s.appointments.id, a.id));
+  await checkWaitlistFor(a);
 }
 
 /** Отметили «не пришёл» по ошибке — клиент всё-таки пришёл (если его время ещё свободно) */
@@ -231,4 +234,5 @@ export async function clientCancels(appointmentId: string) {
   const a = await db.query.appointments.findFirst({ where: eq(s.appointments.id, appointmentId) });
   if (!a || a.status === 'CANCELLED' || a.status === 'NO_SHOW' || a.paid) throw new Error('Запись не найдена или уже закрыта');
   await db.update(s.appointments).set({ status: 'CANCELLED', cancelledBy: 'CLIENT' }).where(eq(s.appointments.id, a.id));
+  await checkWaitlistFor(a);
 }

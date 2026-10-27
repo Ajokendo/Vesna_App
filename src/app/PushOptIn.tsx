@@ -11,7 +11,7 @@ function urlBase64ToUint8Array(base64: string) {
 }
 
 /** Кнопка «Получать напоминания»: подписывает телефон на push по записи клиента */
-export default function PushOptIn({ slug, appointmentId, token, compact }: { slug: string; appointmentId: string; token: string; compact?: boolean }) {
+export default function PushOptIn({ slug, appointmentId, token, compact }: { slug: string; appointmentId?: string; token?: string; compact?: boolean }) {
   const [state, setState] = useState<State>('checking');
 
   useEffect(() => {

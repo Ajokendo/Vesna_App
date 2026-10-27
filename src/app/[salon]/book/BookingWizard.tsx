@@ -17,6 +17,10 @@ type Props = {
   initialHall: 'MEN' | 'WOMEN'; catalog: Catalog;
   /** Запись к мастеру, выбранному на главной: шаг «Выберите мастера» пропускается */
   presetStaffId?: string | null;
+  /** Открыто по ссылке из листа ожидания: услуга и день уже выбраны (шаг «Дата и время») */
+  preset?: { serviceId: string; date: string; any: boolean; length: HairLength | null; addonIds: string[] } | null;
+  /** Телефон уже знает клиента — имя и номер подставляются */
+  me?: { name: string; phone: string } | null;
 };
 
 const LENGTHS: { id: HairLength; name: string; cm: string }[] = [
@@ -28,24 +32,24 @@ const LENGTHS: { id: HairLength; name: string; cm: string }[] = [
 
 const TITLES = ['', 'Выберите услугу', 'Выберите мастера', 'Дата и время', 'Подтверждение'];
 
-export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0, presetStaffId = null }: Props) {
+export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0, presetStaffId = null, preset = null, me = null }: Props) {
   const [fixed, setFixed] = useState<string | null>(presetStaffId);
   const fixedMaster = fixed ? catalog.staff.find((m) => m.id === fixed) ?? null : null;
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(preset && (presetStaffId || preset.any) ? 3 : 1);
   const [hall, setHall] = useState<'MEN' | 'WOMEN'>(initialHall);
   const [forChild, setForChild] = useState(false);
   const [child, setChild] = useState({ name: '', birthDate: '' });
-  const [length, setLength] = useState<HairLength>('MEDIUM');
-  const [serviceId, setServiceId] = useState<string | null>(null);
+  const [length, setLength] = useState<HairLength>(preset?.length ?? 'MEDIUM');
+  const [serviceId, setServiceId] = useState<string | null>(preset?.serviceId ?? null);
   const [openCat, setOpenCat] = useState<string | null>(null);
-  const [addonIds, setAddonIds] = useState<string[]>([]);
-  const [staffId, setStaffId] = useState<string | null>(presetStaffId);
-  const [weekStart, setWeekStart] = useState(today);
+  const [addonIds, setAddonIds] = useState<string[]>(preset?.addonIds ?? []);
+  const [staffId, setStaffId] = useState<string | null>(presetStaffId ?? (preset?.any ? 'any' : null));
+  const [weekStart, setWeekStart] = useState(preset ? addDays(today, Math.floor(daysBetween(today, preset.date) / 7) * 7) : today);
   const [week, setWeek] = useState<{ date: string; available: boolean }[] | null>(null);
-  const [date, setDate] = useState<string | null>(null);
+  const [date, setDate] = useState<string | null>(preset?.date ?? null);
   const [slots, setSlots] = useState<{ minute: number; staffId: string }[] | null>(null);
   const [slot, setSlot] = useState<{ minute: number; staffId: string } | null>(null);
-  const [client, setClient] = useState({ name: '', phone: '+996 ' });
+  const [client, setClient] = useState(me ? { name: me.name, phone: me.phone || '+996 ' } : { name: '', phone: '+996 ' });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<null | { total: number; totalMax: number | null; staffName: string; id: string; token: string }>(null);
@@ -322,7 +326,8 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
             <div className="grid7">
               {(week ?? Array.from({ length: 7 }, (_, i) => ({ date: addDays(weekStart, i), available: false }))).map((d) => (
                 <button key={d.date} type="button" className="choice center" style={{ minHeight: 64, padding: 0 }}
-                  disabled={!week || !d.available || daysBetween(today, d.date) >= horizonDays} aria-pressed={date === d.date}
+                  disabled={!week || d.date < today || daysBetween(today, d.date) >= horizonDays} aria-pressed={date === d.date}
+                  data-busy={week && !d.available ? '1' : undefined}
                   aria-label={`${weekdayFull(d.date)}, ${dayMonth(d.date)}${d.available ? '' : ', нет свободного времени'}`}
                   onClick={() => { setDate(d.date); setSlot(null); }}>
                   <span className="small" style={{ fontWeight: 600 }}>{weekdayShort(d.date)}</span>
@@ -330,13 +335,19 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                 </button>
               ))}
             </div>
-            <span className="small muted">Запись открыта на {horizonDays} дней вперёд. Серые дни — выходной мастера или всё занято.</span>
+            <span className="small muted">Запись открыта на {horizonDays} дней вперёд. Бледные дни — выходной мастера или всё занято: нажмите на день, чтобы встать в лист ожидания.</span>
             {!date ? (
               <div className="card muted" style={{ textAlign: 'center', borderStyle: 'dashed' }}>{week ? 'Выберите день' : 'Загружаем график…'}</div>
             ) : (
               <div className="stack">
                 <div className="row"><strong className="grow">{weekdayFull(date)}, {dayMonth(date)}</strong><span className="small muted">≈ {q?.durationMin} мин</span></div>
-                {slots == null ? <span className="muted">Загружаем свободное время…</span> : slots.length === 0 ? <span className="muted">В этот день свободного времени нет.</span> : (
+                {slots == null ? <span className="muted">Загружаем свободное время…</span> : slots.length === 0 ? (
+                  <>
+                    <span className="muted">В этот день свободного времени нет.</span>
+                    <WaitOffer slug={slug} key={date} payload={{ serviceId: serviceId!, staffId: staffId!, date, length: category?.byLength ? length : null, addonIds }} client={client} setClient={setClient} prominent
+                      who={staffId === 'any' ? 'у любого мастера' : `у мастера ${staffName(staffId ?? '')}`} />
+                  </>
+                ) : (
                   [['Утро', 0, 12 * 60], ['День', 12 * 60, 17 * 60], ['Вечер', 17 * 60, 24 * 60]].map(([label, from, to]) => {
                     const part = slots.filter((t) => t.minute >= (from as number) && t.minute < (to as number));
                     if (!part.length) return null;
@@ -354,6 +365,10 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                       </div>
                     );
                   })
+                )}
+                {slots && slots.length > 0 && (
+                  <WaitOffer slug={slug} key={`w${date}`} payload={{ serviceId: serviceId!, staffId: staffId!, date, length: category?.byLength ? length : null, addonIds }} client={client} setClient={setClient}
+                    who={staffId === 'any' ? 'у любого мастера' : `у мастера ${staffName(staffId ?? '')}`} />
                 )}
               </div>
             )}
@@ -413,3 +428,54 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
   );
 }
 
+
+type WaitPayload = { serviceId: string; staffId: string; date: string; length: HairLength | null; addonIds: string[] };
+
+/** «Сообщите, если освободится»: заявка в лист ожидания на выбранный день */
+function WaitOffer({ slug, payload, client, setClient, who, prominent }: {
+  slug: string; payload: WaitPayload; client: { name: string; phone: string };
+  setClient: (c: { name: string; phone: string }) => void; who: string; prominent?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function join() {
+    setBusy(true); setErr(null);
+    const res = await fetch(`/api/${slug}/waitlist`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, client }) });
+    setBusy(false);
+    if (!res.ok) { setErr((await res.json().catch(() => ({}))).error ?? 'Не получилось'); return; }
+    refreshManifest();
+    setDone(true);
+  }
+  if (done) {
+    return (
+      <div className="note" style={{ lineHeight: 1.45 }}>
+        ✓ Вы в листе ожидания на {weekdayShort(payload.date)}, {dayMonth(payload.date)}. Если время {who} освободится, пришлём уведомление — и администратор тоже увидит вашу заявку. Заявка — в «Моих записях».
+        <div style={{ marginTop: 8 }}><PushOptIn slug={slug} compact /></div>
+      </div>
+    );
+  }
+  if (!open) {
+    return prominent ? (
+      <button type="button" className="btn primary" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start' }}>🔔 Сообщите, если освободится</button>
+    ) : (
+      <button type="button" className="small" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--accent-dark)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>
+        Нет подходящего времени? Сообщить, если освободится другое
+      </button>
+    );
+  }
+  return (
+    <div className="card stack" style={{ gap: 8, borderColor: 'var(--gold)' }}>
+      <strong>🔔 Лист ожидания — {weekdayShort(payload.date)}, {dayMonth(payload.date)}</strong>
+      <span className="small muted" style={{ lineHeight: 1.45 }}>Если кто-то отменит запись и время {who} освободится, мы сразу пришлём уведомление. Администратор тоже увидит заявку.</span>
+      <label className="field">Имя<input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} autoComplete="name" /></label>
+      <label className="field">Телефон (WhatsApp)<input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} autoComplete="tel" /></label>
+      {err && <div className="error" role="alert">{err}</div>}
+      <div className="row">
+        <button type="button" className="btn" onClick={() => setOpen(false)}>Отмена</button>
+        <button type="button" className="btn primary grow" disabled={busy || client.name.trim().length < 2 || client.phone.replace(/\D/g, '').length < 9} onClick={join}>{busy ? '…' : 'Встать в лист ожидания'}</button>
+      </div>
+    </div>
+  );
+}

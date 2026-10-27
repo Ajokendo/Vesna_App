@@ -8,6 +8,8 @@ import ReminderTicker from './ReminderTicker';
 import { AbsenceControl, ConflictList, type Conflict } from './Absence';
 import DroppedList from './DroppedList';
 import DayStrip from './DayStrip';
+import WaitList from './WaitList';
+import { dayWaitlist } from '@/server/waitlist';
 import { GROUPS } from '@/lib/groups';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +45,7 @@ export default async function Journal({ params, searchParams }: {
   const now = utcToZoned(new Date(), salon.timezone);
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : now.date;
 
-  const [{ columns, dropped }, catalog] = await Promise.all([getJournal(slug, date), getCatalog(salon.id)]);
+  const [{ columns, dropped }, catalog, waiting] = await Promise.all([getJournal(slug, date), getCatalog(salon.id), dayWaitlist(salon.id, date)]);
   // вкладки — только те разделы, где есть мастера (у салона без ногтевого сервиса не будет «Ногтей»)
   const groups = GROUPS.filter((g) => columns.some((c) => c.groups.includes(g.id)));
   const group = groups.find((g) => g.id === sp.group)?.id ?? groups[0]?.id ?? 'hair';
@@ -78,6 +80,7 @@ export default async function Journal({ params, searchParams }: {
       <NewAppointment key={group} slug={slug} date={date} catalog={catalog} group={group} />
 
       <DroppedList slug={slug} items={dropped} />
+      <WaitList slug={slug} items={waiting} dateLabel={`${weekdayFull(date).toLowerCase()}, ${dayMonth(date)}`} salonName={salon.name} />
       <ConflictList slug={slug} salonName={salon.name} dateLabel={`${weekdayFull(date)}, ${dayMonth(date)},`} items={columns.flatMap((c) => c.items.filter((i) => i.conflict).map((i): Conflict => ({
         id: i.id, start: i.start, end: i.end, client: i.client, phone: i.phone, service: i.service, master: c.name, alternatives: i.alternatives,
       })))} />

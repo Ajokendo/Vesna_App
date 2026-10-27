@@ -7,6 +7,9 @@ import { formatPrice, formatSom } from '@/lib/pricing';
 import ClientNav from '@/app/ClientNav';
 import NotYou from '../NotYou';
 import InstallCard from '@/app/InstallCard';
+import { myWaitlist } from '@/server/waitlist';
+import WaitItem from './WaitItem';
+import PushOptIn from '@/app/PushOptIn';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Мои записи' };
@@ -16,7 +19,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
   const { salon: slug } = await params;
   const salon = await getSalon(slug);
   if (!salon) notFound();
-  const data = await myVisits(slug);
+  const [data, waiting] = await Promise.all([myVisits(slug), myWaitlist(slug)]);
   const today = utcToZoned(new Date(), salon.timezone).date;
   return (
     <main className="app home">
@@ -48,6 +51,14 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
                 </Link>
               ))}
             </section>
+            {waiting.length > 0 && (
+              <section className="stack" style={{ gap: 6 }}>
+                <h2 style={{ fontSize: 18 }}>Лист ожидания</h2>
+                <span className="small muted">Сообщим, если в этот день освободится время.</span>
+                {waiting.map((w) => <WaitItem key={w.id} slug={slug} id={w.id} title={`${weekdayFull(w.date)}, ${dayMonth(w.date)}`} sub={w.title} notified={w.notified} />)}
+                <PushOptIn slug={slug} compact />
+              </section>
+            )}
             {data.past.length > 0 && (
               <section className="stack" style={{ gap: 4 }}>
                 <h2 style={{ fontSize: 18 }}>Были у нас</h2>

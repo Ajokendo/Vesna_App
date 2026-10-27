@@ -13,6 +13,7 @@ import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { categoryGroup } from '@/lib/groups';
 import { rewardReferral } from './referral';
 import { MIN_RATINGS, staffRatings } from './reviews';
+import { closeWaitlistOnBooking } from './waitlist';
 
 /** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
 export async function getSalon(slug: string) {
@@ -205,8 +206,10 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
       price: q.total, priceMax: q.totalMax, pointsUsed: q.pointsUsed, source: input.source ?? 'ONLINE',
     }).returning();
     for (const a of q.addons) await tx.insert(s.appointmentAddons).values({ appointmentId: appt.id, addonId: a.id, price: a.price });
-    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id, isNewClient };
+    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id, isNewClient, adultId: client.id };
   });
+  // записался на этот день — заявки в листе ожидания на этот день закрываются
+  await closeWaitlistOnBooking(salon.id, [created.clientId, created.adultId], input.date).catch(() => {});
   // если у клиента уже включены уведомления — сразу подтверждение записи
   await notifySoon(created.id, 'BOOKED');
   return { ...created, visitToken: await signId(created.id) };

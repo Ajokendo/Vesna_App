@@ -439,3 +439,26 @@ export const expenses = pgTable('expenses', {
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index('expenses_salon_date').on(t.salonId, t.date)]);
+
+/** Лист ожидания: клиент просит сообщить, если в этот день освободится время (у мастера или у любого) */
+export const waitlist = pgTable('waitlist', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  serviceId: text('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
+  /** Мастер; пусто — любой свободный */
+  staffId: text('staff_id').references(() => staff.id, { onDelete: 'cascade' }),
+  date: date('date', { mode: 'string' }).notNull(),
+  hairLength: hairLengthEnum('hair_length'),
+  addonIds: jsonb('addon_ids').$type<string[]>().notNull().default([]),
+  /** Когда последний раз сообщили, что время освободилось */
+  notifiedAt: timestamp('notified_at', { withTimezone: true }),
+  /** Заявка закрыта: клиент записался, отменил заявку или администратор убрал */
+  closedAt: timestamp('closed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('waitlist_salon_date').on(t.salonId, t.date)]);
+export const waitlistRelations = relations(waitlist, ({ one }) => ({
+  client: one(clients, { fields: [waitlist.clientId], references: [clients.id] }),
+  service: one(services, { fields: [waitlist.serviceId], references: [services.id] }),
+  staff: one(staff, { fields: [waitlist.staffId], references: [staff.id] }),
+}));

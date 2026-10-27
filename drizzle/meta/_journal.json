@@ -155,6 +155,13 @@
       "when": 1793074020320,
       "tag": "0021_birthday_100",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793074178392,
+      "tag": "0022_waitlist",
+      "breakpoints": true
     }
   ]
 }

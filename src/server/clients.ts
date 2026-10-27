@@ -8,6 +8,7 @@ import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { getSalon } from './salon';
 import { notifySoon } from './notify';
 import { occupiesTime } from './status';
+import { checkWaitlistFor } from './waitlist';
 
 // База клиентов для администратора: поиск по телефону или имени, карточка с историей визитов и заметкой,
 // перенос записи на другое время (или к другому мастеру) в одно касание.
@@ -215,9 +216,11 @@ export async function rescheduleAppointment(slug: string, appointmentId: string,
     await tx.delete(s.appointmentNotifications).where(and(
       eq(s.appointmentNotifications.appointmentId, a.id), inArray(s.appointmentNotifications.kind, ['MORNING', 'HOUR']),
     ));
-    return { id: a.id, staffId: to.staffId, date: to.date, minute: to.minute };
+    return { id: a.id, staffId: to.staffId, date: to.date, minute: to.minute, old: { salonId: a.salonId, startsAt: a.startsAt } };
   });
   await notifySoon(moved.id, 'MOVED');
+  // на прежнем месте освободилось время — вдруг его кто-то ждёт
+  await checkWaitlistFor(moved.old);
   return moved;
 }
 
