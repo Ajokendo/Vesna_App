@@ -44,7 +44,7 @@ export default async function Settings({ params, searchParams }: { params: Promi
           </Link>
         ))}
       </nav>
-      {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} />}
+      {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} waReady={!!process.env.WHATSAPP_TOKEN && !!(data.salon.waPhoneId || process.env.WHATSAPP_PHONE_ID)} />}
       {tab === 'services' && <ServicesEditor slug={slug} categories={data.categories} />}
       {tab === 'reviews' && <ReviewsList slug={slug} />}
       {tab === 'pins' && <PinList slug={slug} salonId={data.salon.id} sp={sp} />}

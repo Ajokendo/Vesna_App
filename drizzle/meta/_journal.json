@@ -183,6 +183,13 @@
       "when": 1793076202848,
       "tag": "0025_passkeys",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793076876466,
+      "tag": "0026_whatsapp",
+      "breakpoints": true
     }
   ]
 }

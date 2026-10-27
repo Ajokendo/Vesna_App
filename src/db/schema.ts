@@ -81,6 +81,10 @@ export const salons = pgTable('salons', {
   ownerPinFailed: integer('owner_pin_failed').notNull().default(0),
   ownerPinLockedUntil: timestamp('owner_pin_locked_until', { withTimezone: true }),
   adminPinLockedUntil: timestamp('admin_pin_locked_until', { withTimezone: true }),
+  /** WhatsApp-уведомления клиентам (через WhatsApp Business API): включены ли и ID номера салона в Meta
+   *  (пусто — номер из настроек сервера WHATSAPP_PHONE_ID) */
+  waNotify: boolean('wa_notify').notNull().default(true),
+  waPhoneId: text('wa_phone_id'),
   /** Демо-доступ: после этого момента приложение салона закрыто (пусто — без ограничения) */
   demoUntil: timestamp('demo_until', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -479,3 +483,17 @@ export const passkeys = pgTable('passkeys', {
   lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index('passkeys_salon_role').on(t.salonId, t.role)]);
+
+/** Журнал WhatsApp-сообщений: что, кому и ушло ли (для проверки и разбора ошибок) */
+export const waMessages = pgTable('wa_messages', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  clientId: text('client_id'),
+  to: text('to').notNull(),
+  template: text('template').notNull(),
+  /** SENT — принято Meta; FAILED — ошибка (текст в error) */
+  status: text('status').notNull(),
+  waId: text('wa_id'),
+  error: text('error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('wa_salon_created').on(t.salonId, t.createdAt)]);

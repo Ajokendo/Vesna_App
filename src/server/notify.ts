@@ -4,9 +4,34 @@ import { db, schema as s } from '@/db';
 import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull, zonedToUtc } from '@/lib/time';
 import { payerOf, sendToClients, signId } from './push';
 import { occupiesTime } from './status';
+import { sendWa, waConfigured, type WaTemplate } from './whatsapp';
 
 // Уведомления клиенту по его записи: при записи, утром в день визита (с кнопкой «Подтвердить»), за час,
 // при передаче другому мастеру и при отмене. Каждое отправляется один раз.
+// Сначала push в приложение; если у клиента уведомления не включены и у салона подключён WhatsApp —
+// то же сообщение уходит в WhatsApp (кроме «через час» и «оцените визит» — чтобы не надоедать и не платить лишнее).
+
+const WA_KIND: Partial<Record<Kind, WaTemplate>> = { BOOKED: 'booked', MORNING: 'reminder', MOVED: 'moved', CANCELLED: 'cancelled' };
+
+/** То же уведомление — в WhatsApp */
+async function whatsappFor(a: NonNullable<Awaited<ReturnType<typeof loadAppointment>>>, kind: Kind) {
+  const tpl = WA_KIND[kind];
+  if (!tpl || !waConfigured(a.salon)) return 0;
+  const payer = a.client.guardianId ? await db.query.clients.findFirst({ where: eq(s.clients.id, a.client.guardianId) }) : a.client;
+  if (!payer?.phone) return 0;
+  const { date, minute } = utcToZoned(a.startsAt, a.salon.timezone);
+  const when = `${weekdayFull(date)}, ${dayMonth(date)}, ${hhmm(minute)}`;
+  const name = payer.name.split(' ')[0];
+  const what = `${a.staff.name}, ${a.service.name}${a.client.guardianId ? ` (для: ${a.client.name})` : ''}`;
+  const place = [a.salon.city, a.salon.address].filter(Boolean).join(', ');
+  const link = `${a.salon.slug}/v/${a.id}?t=${await signId(a.id)}`;
+  const params = tpl === 'booked' ? [name, a.salon.name, when, what, place]
+    : tpl === 'reminder' ? [name, hhmm(minute), a.salon.name, what]
+      : tpl === 'moved' ? [name, a.salon.name, when, what]
+        : [name, a.salon.name, when];
+  const ok = await sendWa(a.salon, { clientId: payer.id, phone: payer.phone, template: tpl, params, urlSuffix: tpl === 'cancelled' ? `${a.salon.slug}/book` : link });
+  return ok ? 1 : 0;
+}
 
 type Kind = 'BOOKED' | 'MORNING' | 'HOUR' | 'MOVED' | 'CANCELLED' | 'RATE';
 
@@ -62,7 +87,8 @@ export async function notifyAppointment(appointmentId: string, kind: Kind): Prom
   try {
     const a = await loadAppointment(appointmentId);
     if (!a) return 0;
-    const delivered = await sendToClients([await payerOf(a.clientId)], await texts(a, kind));
+    let delivered = await sendToClients([await payerOf(a.clientId)], await texts(a, kind));
+    if (!delivered) delivered = await whatsappFor(a, kind);
     if (once) {
       if (delivered) await db.update(s.appointmentNotifications).set({ delivered })
         .where(and(eq(s.appointmentNotifications.appointmentId, appointmentId), eq(s.appointmentNotifications.kind, kind)));
@@ -103,9 +129,13 @@ export async function runDueReminders(now = new Date()) {
     for (const a of appts) payers.set(a.clientId, await payerOf(a.clientId));
     const subscribed = new Set((await db.select({ c: s.pushSubscriptions.clientId }).from(s.pushSubscriptions)
       .where(inArray(s.pushSubscriptions.clientId, [...new Set(payers.values())]))).map((r) => r.c));
+    const wa = waConfigured(salon);
     for (const a of appts) {
-      if (!subscribed.has(payers.get(a.clientId)!)) continue;
+      const push = subscribed.has(payers.get(a.clientId)!);
+      // без уведомлений в приложении — только утреннее напоминание в WhatsApp (если подключён)
+      if (!push && !wa) continue;
       const minutesLeft = (a.startsAt.getTime() - now.getTime()) / 60000;
+      if (!push && minutesLeft <= 65) continue;
       if (minutesLeft <= 65) {
         // только что записался — подтверждение записи уже пришло, второе сообщение не нужно
         if (now.getTime() - a.createdAt.getTime() < 15 * 60000) continue;

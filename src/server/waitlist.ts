@@ -5,6 +5,7 @@ import { db, schema as s } from '@/db';
 import { getSalon, getSlots } from './salon';
 import { getMe } from './me';
 import { sendToClients } from './push';
+import { sendWa } from './whatsapp';
 import { addDays, dayMonth, hhmm, utcToZoned, weekdayShort, type DateStr } from '@/lib/time';
 
 // Лист ожидания. Клиент на шаге «Дата и время» просит сообщить, если в выбранный день освободится время.
@@ -111,7 +112,7 @@ export async function checkWaitlist(salonId: string, date: DateStr) {
   const rows = await db.query.waitlist.findMany({
     where: and(eq(s.waitlist.salonId, salonId), eq(s.waitlist.date, date), isNull(s.waitlist.closedAt),
       or(isNull(s.waitlist.notifiedAt), lt(s.waitlist.notifiedAt, recent))),
-    with: { service: true, staff: true }, orderBy: asc(s.waitlist.createdAt),
+    with: { service: true, staff: true, client: true }, orderBy: asc(s.waitlist.createdAt),
   });
   let sent = 0;
   for (const w of rows) {
@@ -122,12 +123,19 @@ export async function checkWaitlist(salonId: string, date: DateStr) {
     if (w.staffId) p.set('staff', w.staffId); else p.set('any', '1');
     if (w.hairLength) p.set('length', w.hairLength);
     if (w.addonIds.length) p.set('addons', w.addonIds.join(','));
-    await sendToClients([w.clientId], {
+    const pushed = await sendToClients([w.clientId], {
       title: `Освободилось время${w.staff ? ` у мастера ${w.staff.name}` : ''}`,
       body: `${weekdayShort(date)}, ${dayMonth(date)}: ${times}${slots.length > 3 ? ' и другое' : ''}. ${w.service.name} — нажмите, чтобы записаться, пока не заняли.`,
       url: `/${salon.slug}/book?${p}`,
       tag: `waitlist-${w.id}`,
-    }).catch((e) => console.error('waitlist push', (e as Error).message));
+    }).catch((e) => { console.error('waitlist push', (e as Error).message); return 0; });
+    if (!pushed) {
+      await sendWa(salon, {
+        clientId: w.clientId, phone: w.client.phone, template: 'slot',
+        params: [w.client.name.split(' ')[0], salon.name, `${weekdayShort(date)}, ${dayMonth(date)}: ${times}`, `${w.service.name}${w.staff ? `, мастер ${w.staff.name}` : ''}`],
+        urlSuffix: `${salon.slug}/book?${p}`,
+      }).catch(() => false);
+    }
     await db.update(s.waitlist).set({ notifiedAt: new Date() }).where(eq(s.waitlist.id, w.id));
     sent++;
   }

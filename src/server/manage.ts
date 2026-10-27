@@ -31,6 +31,7 @@ export const SalonSettings = z.object({
   referralMonthlyLimit: z.number().int().min(0).max(100),
   birthdayBonus: z.number().int().min(0).max(5000),
   birthdayGreet: z.boolean(),
+  waNotify: z.boolean(),
   defaultCommission: z.number().int().min(0).max(100),
   lateCallMinutes: z.number().int().min(1).max(60),
   noShowMinutes: z.number().int().min(5).max(120),
