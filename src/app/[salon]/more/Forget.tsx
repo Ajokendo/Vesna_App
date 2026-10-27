@@ -8,7 +8,7 @@ export default function Forget({ slug, name }: { slug: string; name: string }) {
   const router = useRouter();
   const [ask, setAsk] = useState(false);
   if (!ask) {
-    return <button type="button" className="small" onClick={() => setAsk(true)} style={{ border: 0, background: 'none', padding: 0, color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'flex-start' }}>Это не мой телефон / выйти</button>;
+    return <button type="button" className="small" onClick={() => setAsk(true)} style={{ border: 0, background: 'none', padding: 0, color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'center' }}>Это не мой телефон / выйти</button>;
   }
   return (
     <div className="row small" style={{ gap: 8, flexWrap: 'wrap' }}>

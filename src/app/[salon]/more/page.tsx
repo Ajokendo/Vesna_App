@@ -21,15 +21,23 @@ export default async function More({ params }: { params: Promise<{ salon: string
   const tel = salon.phone?.replace(/\D/g, '');
   return (
     <main className="app home">
-      <div className="page" style={{ gap: 16, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
-        <h1 style={{ fontSize: 24 }}>Ещё</h1>
-        {me && <span className="muted">Вы вошли как <strong style={{ color: 'var(--ink)' }}>{me.client.name}</strong>{me.client.phone ? `, ${me.client.phone}` : ''}</span>}
+      <div className="page" style={{ gap: 'clamp(8px, 1.4dvh, 16px)', flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', paddingBottom: 12 }}>
+        <div className="stack" style={{ gap: 2 }}>
+          <h1 style={{ fontSize: 24 }}>Ещё</h1>
+          {me && <span className="small muted">Вы вошли как <strong style={{ color: 'var(--ink)' }}>{me.client.name}</strong>{me.client.phone ? `, ${me.client.phone}` : ''}</span>}
+        </div>
 
-        <section className="card stack" style={{ gap: 0, padding: 0, overflow: 'hidden' }} aria-label="Связаться с салоном">
-          {wa && <ContactRow href={`https://wa.me/${wa}`} icon="chat" color="#25D366" title="WhatsApp" sub={salon.whatsapp} external />}
-          {tel && <ContactRow href={`tel:+${tel}`} icon="phone" color="var(--accent)" title="Позвонить" sub={salon.phone} line />}
-          {salon.instagram && <ContactRow href={`https://instagram.com/${salon.instagram.replace(/^@/, '')}`} icon="camera" color="linear-gradient(45deg,#f9a03f,#e1306c 55%,#8a3ab9)" title="Instagram" sub={`@${salon.instagram.replace(/^@/, '')}`} external line />}
-          <ContactRow href={mapLink(salon)} icon="pin" color="#2FAD4A" title="Как добраться" sub={[salon.city, salon.address].filter(Boolean).join(', ')} hint="открыть в 2ГИС и проложить маршрут" external line />
+        {/* связаться — плитками в один ряд, чтобы страница помещалась на экран без прокрутки */}
+        <section className="card" style={{ padding: '12px 10px 10px' }} aria-label="Связаться с салоном">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))', gap: 4 }}>
+            {wa && <Tile href={`https://wa.me/${wa}`} icon="chat" color="#25D366" title="WhatsApp" external />}
+            {tel && <Tile href={`tel:+${tel}`} icon="phone" color="var(--accent)" title="Позвонить" />}
+            {salon.instagram && <Tile href={`https://instagram.com/${salon.instagram.replace(/^@/, '')}`} icon="camera" color="linear-gradient(45deg,#f9a03f,#e1306c 55%,#8a3ab9)" title="Instagram" external />}
+            <Tile href={mapLink(salon)} icon="pin" color="#2FAD4A" title="Маршрут" external />
+          </div>
+          <a href={mapLink(salon)} target="_blank" rel="noreferrer" className="small muted" style={{ display: 'block', textAlign: 'center', marginTop: 8, textDecoration: 'none', lineHeight: 1.3 }}>
+            📍 {[salon.city, salon.address].filter(Boolean).join(', ')} · <span style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>открыть в 2ГИС</span>
+          </a>
         </section>
 
         <section className="card stack" style={{ gap: 0, padding: 0, overflow: 'hidden' }} aria-label="О приложении">
@@ -40,20 +48,31 @@ export default async function More({ params }: { params: Promise<{ salon: string
           </Feedback>
         </section>
 
-        <InstallCard bonus={me?.client.welcomeBonusAt ? 0 : salon.welcomeBonus} />
+        <InstallCard bonus={me?.client.welcomeBonusAt ? 0 : salon.welcomeBonus} compact />
 
-        {me && <Forget slug={slug} name={me.client.name} />}
-
-        <div className="stack small muted" style={{ gap: 4, marginTop: 8, textAlign: 'center' }}>
-          <span>Для сотрудников салона: подержите палец на значке приложения или на логотипе на главной — или войдите здесь:</span>
-          <span className="row" style={{ justifyContent: 'center', gap: 14 }}>
-            <Link href={`/${slug}/master`} className="muted">Кабинет мастера</Link>
+        <div className="stack small muted" style={{ gap: 6, marginTop: 'auto', alignItems: 'center', textAlign: 'center' }}>
+          {me && <Forget slug={slug} name={me.client.name} />}
+          <span className="row" style={{ justifyContent: 'center', gap: 6, flexWrap: 'wrap', fontSize: 12 }}>
+            Для сотрудников:
+            <Link href={`/${slug}/master`} className="muted">Кабинет мастера</Link>·
             <Link href={`/${slug}/admin`} className="muted">Администратор</Link>
           </span>
         </div>
       </div>
       <ClientNav slug={slug} inline />
     </main>
+  );
+}
+
+/** Плитка контакта: цветной значок и подпись под ним */
+function Tile({ href, icon, color, title, external }: { href: string; icon: keyof typeof ICON; color: string; title: string; external?: boolean }) {
+  return (
+    <a href={href} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '4px 2px', textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
+      <span aria-hidden style={{ width: 46, height: 46, borderRadius: 14, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[icon]} /></svg>
+      </span>
+      <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>{title}</span>
+    </a>
   );
 }
 
@@ -73,10 +92,10 @@ function ContactRow({ href, icon, color, title, sub, hint, external, line }: {
 }) {
   return (
     <a href={href} role={href ? undefined : 'button'} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})} style={{
-      display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', minHeight: 60, textDecoration: 'none', color: 'inherit',
+      display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', minHeight: 52, textDecoration: 'none', color: 'inherit',
       borderTop: line ? '1px solid var(--line)' : undefined,
     }}>
-      <span aria-hidden style={{ width: 38, height: 38, borderRadius: 11, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
+      <span aria-hidden style={{ width: 34, height: 34, borderRadius: 10, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[icon]} /></svg>
       </span>
       <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
