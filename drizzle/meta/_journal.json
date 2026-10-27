@@ -134,6 +134,13 @@
       "when": 1793032272650,
       "tag": "0018_rate_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793070724052,
+      "tag": "0019_certificates",
+      "breakpoints": true
     }
   ]
 }

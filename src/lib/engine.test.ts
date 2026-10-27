@@ -162,13 +162,20 @@ describe('оплата баллами и доля мастера', () => {
   });
   it('часть баллами: из 140 списали 100, услуга 600 → баллы с 500, делят 500', () => {
     expect(calcPayment({ ...base, price: 600, points: 100, balance: 140 }))
-      .toEqual({ price: 600, pointsUsed: 100, cash: 500, pointsEarned: 25, balanceAfter: 65, masterPercent: 50, masterShare: 250, salonShare: 250 });
+      .toEqual({ price: 600, pointsUsed: 100, cash: 500, cert: 0, pointsEarned: 25, balanceAfter: 65, masterPercent: 50, masterShare: 250, salonShare: 250 });
   });
   it('целиком баллами: ни мастеру, ни салону, баллы не начисляются', () => {
     expect(calcPayment({ ...base, price: 500, points: 500, balance: 520 })).toMatchObject({ cash: 0, pointsEarned: 0, masterShare: 0, salonShare: 0, balanceAfter: 20 });
   });
   it('200 баллов из 500 → делят 300', () => {
     expect(calcPayment({ ...base, price: 500, points: 200, balance: 200 })).toMatchObject({ cash: 300, masterShare: 150, salonShare: 150 });
+  });
+  it('подарочный сертификат — как деньги: с него доля мастера и баллы', () => {
+    expect(calcPayment({ ...base, price: 1000, points: 0, balance: 0, cert: 700, certBalance: 3000 }))
+      .toMatchObject({ cash: 300, cert: 700, pointsEarned: 50, masterShare: 500, salonShare: 500 });
+    expect(calcPayment({ ...base, price: 600, points: 100, balance: 600, cert: 500, certBalance: 500 })).toMatchObject({ cash: 0, cert: 500, pointsEarned: 25 });
+    expect(() => calcPayment({ ...base, price: 600, points: 0, balance: 0, cert: 800, certBalance: 1000 })).toThrow();
+    expect(() => calcPayment({ ...base, price: 600, points: 0, balance: 0, cert: 500, certBalance: 300 })).toThrow();
   });
   it('хозяйка-мастер: комиссии нет, всё салону', () => {
     expect(calcPayment({ ...base, masterPercent: 0, price: 800, points: 0, balance: 0 })).toMatchObject({ masterShare: 0, salonShare: 800 });

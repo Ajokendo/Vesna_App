@@ -74,6 +74,10 @@ export const salons = pgTable('salons', {
   setupCodeHash: text('setup_code_hash'),
   adminPinFailed: integer('admin_pin_failed').notNull().default(0),
   adminPinLockedUntil: timestamp('admin_pin_locked_until', { withTimezone: true }),
+  /** Подарочные сертификаты: включены ли (выпуск, раздел у клиентов) и срок действия, месяцев.
+   *  Выключение не гасит уже проданные — их по-прежнему можно принять в оплату */
+  certificatesEnabled: boolean('certificates_enabled').notNull().default(false),
+  certificateMonths: integer('certificate_months').notNull().default(12),
   /** Демо-доступ: после этого момента приложение салона закрыто (пусто — без ограничения) */
   demoUntil: timestamp('demo_until', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -240,6 +244,9 @@ export const appointments = pgTable('appointments', {
   /** Оплачено деньгами = finalPrice − pointsUsed; с этой суммы считаются баллы и доля мастера */
   cashPaid: integer('cash_paid'),
   pointsEarned: integer('points_earned').notNull().default(0),
+  /** Сколько оплачено подарочным сертификатом (деньги салон получил при продаже сертификата) */
+  certPaid: integer('cert_paid').notNull().default(0),
+  certificateId: text('certificate_id'),
   masterPercent: integer('master_percent'),
   masterShare: integer('master_share'),
   paidAt: timestamp('paid_at', { withTimezone: true }),
@@ -418,3 +425,23 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   client: one(clients, { fields: [reviews.clientId], references: [clients.id] }),
   appointment: one(appointments, { fields: [reviews.appointmentId], references: [appointments.id] }),
 }));
+
+/** Подарочный сертификат на любые услуги. Код — для оплаты и для страницы сертификата по ссылке */
+export const certificates = pgTable('certificates', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  code: text('code').notNull().unique(),
+  amount: integer('amount').notNull(),
+  /** Сколько ещё можно потратить */
+  balance: integer('balance').notNull(),
+  toName: text('to_name'),
+  fromName: text('from_name'),
+  /** Телефон покупателя — для связи */
+  buyerPhone: text('buyer_phone'),
+  /** Как оплачен: CASH | CARD | QR */
+  soldMethod: text('sold_method').notNull(),
+  soldAt: timestamp('sold_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  /** Аннулирован (ошибка при выпуске, деньги вернули) */
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+}, (t) => [index('cert_salon_sold').on(t.salonId, t.soldAt)]);

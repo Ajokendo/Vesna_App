@@ -16,7 +16,7 @@ export type ApptItem = {
   price: number; priceMax: number | null; source: string; paid: boolean;
   pause: { after: number; min: number } | null;
   phone: string | null; balance: number; payer: string;
-  payment: { finalPrice: number; pointsUsed: number; cash: number; pointsEarned: number; method: string | null; masterShare: number } | null;
+  payment: { finalPrice: number; pointsUsed: number; cash: number; pointsEarned: number; method: string | null; masterShare: number; cert: number } | null;
   /** Мастер не выйдет в это время */
   conflict?: boolean;
   confirmed?: boolean;
@@ -30,10 +30,10 @@ export type ApptItem = {
 const METHODS = [
   { id: 'CASH', name: 'Наличные' }, { id: 'CARD', name: 'Карта' }, { id: 'QR', name: 'QR / банк' },
 ] as const;
-const METHOD_NAME: Record<string, string> = { CASH: 'наличными', CARD: 'картой', QR: 'по QR', POINTS: 'баллами' };
+const METHOD_NAME: Record<string, string> = { CASH: 'наличными', CARD: 'картой', QR: 'по QR', POINTS: 'баллами', CERT: 'сертификатом' };
 
 /** Запись в колонке мастера. Окрашивание с выдержкой рисуется двумя частями: в выдержку мастер свободен */
-export type LateRules = { welcomeBonus?: number; minRedeem?: number; today?: string; nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
+export type LateRules = { certificates?: boolean; welcomeBonus?: number; minRedeem?: number; today?: string; nowMinute: number | null; callAfter: number; noShowAfter: number; salonName: string };
 
 export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent, rules }: {
   a: ApptItem; top: number; px: number; slug: string; earnPercent: number; masterPercent: number; rules: LateRules;
@@ -109,6 +109,8 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
   const [price, setPrice] = useState(isRange ? '' : String(a.price));
   const [points, setPoints] = useState('0');
   const [method, setMethod] = useState<'CASH' | 'CARD' | 'QR'>('CASH');
+  const [cert, setCert] = useState<CertInfo | null>(null);
+  const [certSum, setCertSum] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -117,7 +119,12 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
   let calc: ReturnType<typeof calcPayment> | null = null;
   let calcError: string | null = null;
   if (price !== '') {
-    try { calc = calcPayment({ price: priceN, points: pointsN, balance: a.balance, earnPercent, masterPercent, minRedeem: rules.minRedeem }); }
+    try {
+      calc = calcPayment({
+        price: priceN, points: pointsN, balance: a.balance, earnPercent, masterPercent, minRedeem: rules.minRedeem,
+        cert: cert ? Number(certSum || 0) : 0, certBalance: cert?.balance ?? 0,
+      });
+    }
     catch (e) { calcError = (e as Error).message; }
   }
 
@@ -126,7 +133,10 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
     const res = kind === 'pay'
       ? await fetch(`/api/${slug}/admin/payments`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appointmentId: a.id, price: priceN, points: pointsN, method: calc?.cash === 0 ? 'POINTS' : method }),
+          body: JSON.stringify({
+            appointmentId: a.id, price: priceN, points: pointsN, method: calc?.cash === 0 ? (calc.cert ? 'CERT' : 'POINTS') : method,
+            certCode: cert?.code ?? null, cert: cert ? Number(certSum || 0) : 0,
+          }),
         })
       : await fetch(`/api/${slug}/admin/payments?appointmentId=${encodeURIComponent(a.id)}`, { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
@@ -158,7 +168,8 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
             <div className="stack" style={{ gap: 6 }}>
               <Line label="Стоимость" value={formatSom(a.payment.finalPrice)} />
               {a.payment.pointsUsed > 0 && <Line label="Списано баллов" value={`−${a.payment.pointsUsed}`} />}
-              <Line label={`Оплачено ${METHOD_NAME[a.payment.method ?? 'CASH'] ?? ''}`} value={formatSom(a.payment.cash)} strong />
+              {a.payment.cert > 0 && <Line label="Подарочным сертификатом" value={formatSom(a.payment.cert)} />}
+              {(a.payment.cash > 0 || !a.payment.cert) && <Line label={`Оплачено ${METHOD_NAME[a.payment.method ?? 'CASH'] ?? ''}`} value={formatSom(a.payment.cash)} strong />}
               <Line label="Начислено баллов" value={`+${a.payment.pointsEarned}`} />
               <Line label="Мастеру" value={formatSom(a.payment.masterShare)} />
               <Line label={`Баллов у ${a.payer}`} value={String(a.balance)} />
@@ -193,6 +204,11 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
               ) : <span className="small muted">Баллов пока нет — начислим с этой оплаты.</span>}
             </div>
 
+            {rules.certificates && (
+              <CertField slug={slug} cert={cert} sum={certSum} left={Math.max(0, (priceN || 0) - pointsN)}
+                onCert={(c, sum) => { setCert(c); setCertSum(sum); }} onSum={setCertSum} />
+            )}
+
             {calc && calc.cash > 0 && (
               <div className="tabs" role="group" aria-label="Как оплачен остаток">
                 {METHODS.map((m) => <button key={m.id} type="button" aria-pressed={method === m.id} onClick={() => setMethod(m.id)}>{m.name}</button>)}
@@ -202,8 +218,9 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
             {calc && (
               <div className="stack" style={{ gap: 6, background: 'var(--ground)', borderRadius: 14, padding: 12 }}>
                 {calc.pointsUsed > 0 && <Line label="Баллами" value={`−${calc.pointsUsed}`} />}
+                {calc.cert > 0 && <Line label="Сертификатом" value={`−${formatSom(calc.cert)}`} />}
                 <Line label="К оплате деньгами" value={formatSom(calc.cash)} strong />
-                <Line label={`Начислим баллов (${earnPercent}% от ${calc.cash})`} value={`+${calc.pointsEarned}`} />
+                <Line label={`Начислим баллов (${earnPercent}% от ${calc.cash + calc.cert})`} value={`+${calc.pointsEarned}`} />
                 <Line label="Останется на счёте" value={String(calc.balanceAfter)} />
                 <Line label={masterPercent ? `Мастеру (${masterPercent}%)` : 'Мастеру (хозяйка, без комиссии)'} value={formatSom(calc.masterShare)} />
               </div>
@@ -214,12 +231,61 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
             <div className="row">
               <button type="button" className="btn" onClick={onClose}>Отмена</button>
               <button type="button" className="btn primary grow" disabled={busy || !calc} onClick={() => send('pay')}>
-                {busy ? 'Сохраняем…' : calc ? `Оплачено ${formatSom(calc.cash)}` : 'Оплачено'}
+                {busy ? 'Сохраняем…' : calc ? (calc.cash === 0 && calc.cert ? 'Оплачено сертификатом' : `Оплачено ${formatSom(calc.cash)}`) : 'Оплачено'}
               </button>
             </div>
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+type CertInfo = { code: string; balance: number; amount: number; toName: string | null; expires: string };
+
+/** Подарочный сертификат в оплате: ввести код → проверить → сколько списать (остаток останется на сертификате) */
+function CertField({ slug, cert, sum, left, onCert, onSum }: {
+  slug: string; cert: CertInfo | null; sum: string; left: number; onCert: (c: CertInfo | null, sum: string) => void; onSum: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function check() {
+    setBusy(true); setErr(null);
+    const res = await fetch(`/api/${slug}/admin/certificates?code=${encodeURIComponent(code)}`);
+    const d = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) { setErr(d.error ?? 'Не получилось'); return; }
+    onCert(d, String(Math.min(d.balance, left)));
+  }
+  if (cert) {
+    return (
+      <div className="stack" style={{ gap: 6, background: '#f7f1e3', border: '1px solid var(--gold)', borderRadius: 14, padding: 12 }}>
+        <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
+          <span className="small"><b>🎁 Сертификат {cert.code}</b>{cert.toName ? ` · ${cert.toName}` : ''}<br /><span className="muted">на счёте {formatSom(cert.balance)} · до {cert.expires}</span></span>
+          <button type="button" className="small" onClick={() => onCert(null, '')} style={{ border: 0, background: 'none', color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>убрать</button>
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          <span className="small" style={{ fontWeight: 700 }}>Списать</span>
+          <input aria-label="Сколько списать с сертификата" inputMode="numeric" value={sum} onChange={(e) => onSum(e.target.value.replace(/\D/g, ''))}
+            style={{ minHeight: 44, borderRadius: 12, border: '1px solid #dde5de', padding: '0 12px', fontSize: 16, width: 110 }} />
+          <span className="small muted">сом · останется {formatSom(Math.max(0, cert.balance - Number(sum || 0)))}</span>
+        </div>
+      </div>
+    );
+  }
+  if (!open) {
+    return <button type="button" className="small" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--accent-dark)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>🎁 Оплата подарочным сертификатом</button>;
+  }
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      <div className="row" style={{ gap: 8 }}>
+        <input aria-label="Код сертификата" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Код, напр. K7QM-4XRA" autoCapitalize="characters"
+          style={{ minHeight: 44, borderRadius: 12, border: '1px solid #dde5de', padding: '0 12px', fontSize: 16, flex: 1, minWidth: 0, letterSpacing: 1 }} />
+        <button type="button" className="btn" disabled={busy || code.replace(/[^A-Za-z0-9]/g, '').length < 8} onClick={check}>{busy ? '…' : 'Проверить'}</button>
+      </div>
+      {err && <div className="error" role="alert">{err}</div>}
     </div>
   );
 }

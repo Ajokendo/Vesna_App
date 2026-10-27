@@ -7,7 +7,9 @@ const Pay = z.object({
   appointmentId: z.string().min(1),
   price: z.number().int().min(0),
   points: z.number().int().min(0).default(0),
-  method: z.enum(['CASH', 'CARD', 'QR', 'POINTS']),
+  method: z.enum(['CASH', 'CARD', 'QR', 'POINTS', 'CERT']),
+  certCode: z.string().trim().max(20).nullable().optional(),
+  cert: z.number().int().min(0).default(0),
 });
 
 async function guard(ctx: { params: Promise<{ salon: string }> }) {
