@@ -20,5 +20,5 @@ export type SalonConfig = {
 };
 
 export const SALONS: SalonConfig[] = [
-  { slug: 'vesna', demoUntil: '2026-10-27T22:00:00+06:00' },
+  { slug: 'vesna', demoUntil: '2026-11-03T22:00:00+06:00' },
 ];
