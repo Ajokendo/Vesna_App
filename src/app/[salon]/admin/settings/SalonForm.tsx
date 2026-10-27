@@ -6,7 +6,7 @@ import { Msg, inputSt, useSave } from './ui';
 type Salon = {
   accentColor: string; logoUrl: string | null; hoursText: string | null; mapUrl: string | null; menHallNote: string | null; womenHallNote: string | null;
   name: string; tagline: string | null; city: string | null; address: string | null; phone: string | null; whatsapp: string | null; instagram: string | null;
-  bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; reviewBonus: number; referralBonus: number; referralMonthlyLimit: number; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
+  bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; reviewBonus: number; referralBonus: number; referralMonthlyLimit: number; birthdayBonus: number; birthdayGreet: boolean; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
 };
 
 const TEXT: { key: keyof Salon; label: string }[] = [
@@ -39,6 +39,7 @@ const NUM: { key: keyof Salon; label: string; hint: string }[] = [
   { key: 'referralMonthlyLimit', label: 'Приглашений с баллами в месяц', hint: 'на одного клиента; защита от накруток' },
   { key: 'reviewBonus', label: 'За отзыв 5★ в 2ГИС, баллов', hint: 'начисляете сами, проверив отзыв; 0 — не предлагать' },
   { key: 'welcomeBonus', label: 'Подарок за установку приложения, баллов', hint: 'один раз каждому клиенту; 0 — без подарка' },
+  { key: 'birthdayBonus', label: 'Подарок на день рождения, баллов', hint: 'утром в день рождения вместе с поздравлением; 0 — только поздравление' },
   { key: 'defaultCommission', label: 'Доля мастера, %', hint: 'для мастеров без своей доли' },
   { key: 'lateCallMinutes', label: 'Опоздание: позвонить через, мин', hint: 'запись в журнале становится оранжевой' },
   { key: 'noShowMinutes', label: '«Не пришёл» через, мин', hint: 'запись красная, можно отдать время другому' },
@@ -48,10 +49,11 @@ export default function SalonForm({ slug, salon }: { slug: string; salon: Salon 
   const [v, setV] = useState<Record<string, string>>(Object.fromEntries([...TEXT, ...NUM].map(({ key }) => [key, String(salon[key] ?? '')])));
   const { busy, msg, save, setMsg } = useSave(slug);
   const [color, setColor] = useState(salon.accentColor.toUpperCase());
+  const [greet, setGreet] = useState(salon.birthdayGreet);
   const [logo, setLogo] = useState<string | null | undefined>(undefined);
   const shownLogo = logo === undefined ? salon.logoUrl : logo;
   function submit() {
-    const data: Record<string, unknown> = { accentColor: color, logo };
+    const data: Record<string, unknown> = { accentColor: color, logo, birthdayGreet: greet };
     for (const { key } of TEXT) data[key] = key === 'name' ? v[key].trim() : (v[key].trim() || null);
     for (const { key } of NUM) data[key] = Number(v[key]);
     save('salon', data);
@@ -97,6 +99,10 @@ export default function SalonForm({ slug, salon }: { slug: string; salon: Salon 
           </label>
         ))}
       </div>
+      <label className="row" style={{ gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={greet} onChange={(e) => setGreet(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} />
+        <span><b>Поздравлять клиентов с днём рождения</b><br /><span className="small muted">Утром в день рождения — уведомление от салона и подарочные баллы (если указаны выше). День рождения клиент указывает в «Баллах», администратор — в карточке клиента.</span></span>
+      </label>
       <div className="row"><button type="button" className="btn primary" disabled={busy} onClick={submit}>{busy ? 'Сохраняем…' : 'Сохранить'}</button><Msg msg={msg} /></div>
     </section>
   );

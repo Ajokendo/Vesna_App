@@ -84,7 +84,7 @@ export async function myPoints(slug: string) {
     .where(and(eq(s.pointsLedger.clientId, me.client.id), eq(s.pointsLedger.salonId, me.salon.id)))
     .orderBy(desc(s.pointsLedger.createdAt)).limit(100);
   return {
-    id: me.client.id, name: me.client.name, balance: me.client.points, percent: me.salon.pointsPercent,
+    id: me.client.id, name: me.client.name, birthDate: me.client.birthDate, balance: me.client.points, percent: me.salon.pointsPercent,
     minRedeem: me.salon.minRedeem, welcomeBonus: me.salon.welcomeBonus, welcomeGot: !!me.client.welcomeBonusAt,
     referralBonus: me.salon.referralBonus,
     referralCode: me.salon.referralBonus > 0 ? await ensureReferralCode(me.salon.id, me.client.id) : null,

@@ -8,6 +8,7 @@ import ClientNav from '@/app/ClientNav';
 import NotYou from '../NotYou';
 import InstallCard from '@/app/InstallCard';
 import InviteCard from '@/app/InviteCard';
+import BirthdayCard from '@/app/BirthdayCard';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Мои баллы' };
@@ -41,6 +42,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
               ) : data.minRedeem > 0 ? <div className="small" style={{ marginTop: 8, color: 'var(--accent-dark)', fontWeight: 800 }}>Баллами уже можно оплачивать — скажите администратору</div> : null}
             </section>
             {!data.welcomeGot && <InstallCard bonus={data.welcomeBonus} />}
+            {salon.birthdayGreet && !data.birthDate && <BirthdayCard slug={slug} bonus={salon.birthdayBonus} />}
             {data.referralCode && <InviteCard slug={slug} salonName={salon.name} code={data.referralCode} bonus={data.referralBonus} invited={data.invited} />}
             {qr && (
               <details className="card" style={{ textAlign: 'center' }}>
