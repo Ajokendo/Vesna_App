@@ -14,6 +14,8 @@
     "vercel-build": "tsx src/db/migrate.ts && tsx src/db/seed.ts --if-empty --demo && tsx src/db/provision.ts && next build --turbopack"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.1.0",
+    "@simplewebauthn/server": "^13.1.1",
     "drizzle-orm": "^0.45.4",
     "exceljs": "^4.4.0",
     "jsqr": "^1.4.0",

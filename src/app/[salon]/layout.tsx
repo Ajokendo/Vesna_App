@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { eq } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import { themeVars } from '@/lib/color';
+import ClientLock from '@/app/ClientLock';
 
 // Общее для всех страниц салона: название во вкладке, цвет темы, манифест (значок, быстрые пункты),
 // и демо-доступ — после даты окончания приложение салона закрывается.
@@ -48,6 +49,7 @@ export default async function SalonLayout({ children, params }: { children: Reac
       <style>{css}</style>
       {/* use-credentials: манифест получает cookie, чтобы установленное приложение узнало клиента */}
       <link rel="manifest" href={`/api/manifest?s=${slug}`} crossOrigin="use-credentials" />
+      {salon && <Lock slug={slug} logo={salon.logoData ? `/api/${salon.slug}/logo?v=${salon.logoUrl?.split('v=')[1] ?? '1'}` : (salon.logoUrl ?? '/icon-512.png?v=2')} name={salon.name} />}
       {salon && <Splash logo={salon.logoData ? `/api/${salon.slug}/logo?v=${salon.logoUrl?.split('v=')[1] ?? '1'}` : (salon.logoUrl ?? '/icon-512.png?v=2')} name={salon.name} />}
       {children}
     </>
@@ -71,6 +73,19 @@ setTimeout(function(){d.classList.add('splash-out');setTimeout(function(){d.clas
         <span>{name}</span>
       </div>
       <script dangerouslySetInnerHTML={{ __html: script }} />
+    </>
+  );
+}
+
+/** Замок «Отпечаток / Face ID» для клиента: закрывает страницы клиента до подтверждения (у сотрудников свой вход) */
+function Lock({ slug, logo, name }: { slug: string; logo: string; name: string }) {
+  const script = `(function(){try{var p=location.pathname;if(/^\\/[^/]+\\/(admin|owner|master)(\\/|$)/.test(p))return;
+if(!localStorage.getItem('pk:${slug}:CLIENT')||sessionStorage.getItem('unlocked:${slug}'))return;
+document.documentElement.classList.add('locked');}catch(e){}})();`;
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: script }} />
+      <ClientLock slug={slug} logo={logo} name={name} />
     </>
   );
 }

@@ -82,3 +82,12 @@ export async function setMasterPin(salonId: string, staffId: string, pin: string
   if (!m) throw new Error('Мастер не найден');
   await db.update(s.staff).set({ pinHash: hashPin(pin), pinFailed: 0, pinLockedUntil: null }).where(eq(s.staff.id, m.id));
 }
+
+/** Вход мастера подтверждён отпечатком / Face ID */
+export async function startMasterSession(salonId: string, staffId: string) {
+  const m = await db.query.staff.findFirst({ where: and(eq(s.staff.id, staffId), eq(s.staff.salonId, salonId), eq(s.staff.active, true)) });
+  if (!m?.pinHash) throw new Error('Мастер не найден');
+  (await cookies()).set(COOKIE, `${m.id}.${sign(m.id, m.pinHash)}`, {
+    httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 * 24 * 60,
+  });
+}

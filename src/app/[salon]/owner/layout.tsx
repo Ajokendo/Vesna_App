@@ -42,7 +42,7 @@ export default async function OwnerLayout({ children, params }: { children: Reac
   const admin = missing && await isAdmin(salon);
   return (
     <main className="app">
-      {!missing ? <OwnerLogin action={login} /> : admin ? <OwnerSetup action={setup} /> : (
+      {!missing ? <OwnerLogin action={login} slug={salon} /> : admin ? <OwnerSetup action={setup} /> : (
         <div className="page" style={{ justifyContent: 'center', maxWidth: 380, margin: '0 auto', width: '100%' }}>
           <h1 style={{ fontSize: 24 }}>Кабинет хозяйки</h1>
           <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>PIN хозяйки ещё не задан. Чтобы задать его, сначала войдите как администратор, затем откройте «Настройки» → «Кабинет хозяйки».</p>

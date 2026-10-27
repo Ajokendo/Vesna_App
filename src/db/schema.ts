@@ -462,3 +462,20 @@ export const waitlistRelations = relations(waitlist, ({ one }) => ({
   service: one(services, { fields: [waitlist.serviceId], references: [services.id] }),
   staff: one(staff, { fields: [waitlist.staffId], references: [staff.id] }),
 }));
+
+/** Вход по отпечатку / Face ID (passkey): ключ телефона, привязанный к роли и человеку в салоне */
+export const passkeys = pgTable('passkeys', {
+  id: id(),
+  salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
+  /** ADMIN | OWNER | MASTER | CLIENT */
+  role: text('role').notNull(),
+  /** Мастер или клиент (для администратора и хозяйки — пусто) */
+  subjectId: text('subject_id'),
+  credentialId: text('credential_id').notNull().unique(),
+  publicKey: text('public_key').notNull(),
+  counter: integer('counter').notNull().default(0),
+  transports: jsonb('transports').$type<string[]>(),
+  device: text('device'),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('passkeys_salon_role').on(t.salonId, t.role)]);

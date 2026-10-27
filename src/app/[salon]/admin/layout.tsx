@@ -39,7 +39,7 @@ export default async function AdminLayout({ children, params }: { children: Reac
   const firstTime = await needsSetup(salon);
   return (
     <main className="app">
-      {firstTime ? <AdminSetup action={setup} /> : <AdminLogin action={login} />}
+      {firstTime ? <AdminSetup action={setup} /> : <AdminLogin action={login} slug={salon} />}
       <BottomBar items={[{ label: 'Главная', icon: 'home', href: `/${salon}` }]} />
     </main>
   );

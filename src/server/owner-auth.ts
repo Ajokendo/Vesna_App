@@ -73,3 +73,10 @@ export async function setOwnerPin(slug: string, pin: string): Promise<{ ok: true
 export async function signOutOwner(slug: string) {
   (await cookies()).delete(cookieName(slug));
 }
+
+/** Вход хозяйки подтверждён отпечатком / Face ID */
+export async function startOwnerSession(slug: string) {
+  const salon = await salonBySlug(slug);
+  if (!salon?.ownerPinHash) throw new Error('PIN хозяйки ещё не задан');
+  (await cookies()).set(cookieName(slug), await signId(fingerprint(salon.id, salon.ownerPinHash)), COOKIE);
+}

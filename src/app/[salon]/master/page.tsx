@@ -1,3 +1,4 @@
+import { PasskeyLogin, PasskeyToggle } from '@/app/Passkey';
 import Link from 'next/link';
 import BottomBar from '@/app/BottomBar';
 import Feedback from '@/app/Feedback';
@@ -48,6 +49,7 @@ export default async function MasterPage({ params, searchParams }: {
           </header>
           {!chosen ? (
             <section className="stack">
+              <PasskeyLogin slug={slug} role="MASTER" next={`/${slug}/master`} />
               <strong>Кто вы?</strong>
               <div className="grid2">
                 {masters.map((m) => (
@@ -73,6 +75,7 @@ export default async function MasterPage({ params, searchParams }: {
               </div>
               {chosen.hasPin ? (
                 <>
+                  <PasskeyLogin slug={slug} role="MASTER" sub={chosen.id} next={`/${slug}/master`} />
                   <label className="field">Ваш PIN-код
                     <input name="pin" type="password" inputMode="numeric" autoComplete="current-password" pattern="\d{4,6}" required autoFocus />
                   </label>
@@ -234,6 +237,7 @@ export default async function MasterPage({ params, searchParams }: {
           Баллы — это скидка постоянным клиентам. Если клиент часть суммы оплатил баллами, доля мастера и салона считается с суммы, оплаченной деньгами:
           скидку салон и мастер делят поровну.
         </p>
+        <div className="card"><PasskeyToggle slug={slug} role="MASTER" sub={me.id} /></div>
         <Feedback salon={slug} role="MASTER"><button type="button" className="small" style={{ border: 0, background: 'none', padding: 0, color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>✉ Написать разработчикам приложения</button></Feedback>
       </div>
       <BottomBar items={[

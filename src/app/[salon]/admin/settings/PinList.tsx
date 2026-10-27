@@ -1,3 +1,4 @@
+import { PasskeyToggle } from '@/app/Passkey';
 import { redirect } from 'next/navigation';
 import { isAdmin, setAdminPin } from '@/server/admin-auth';
 import { setMasterPin } from '@/server/master-auth';
@@ -35,6 +36,7 @@ export default async function PinList({ slug, salonId, sp }: { slug: string; sal
 
   return (
     <div className="stack" style={{ gap: 14 }}>
+      <div className="card"><PasskeyToggle slug={slug} role="ADMIN" hint="Входить администратором без PIN на этом телефоне" /></div>
       <form action={saveAdmin} className="card stack" style={{ gap: 10, borderColor: 'var(--gold)' }}>
         <strong>PIN администратора</strong>
         <span className="small muted" style={{ lineHeight: 1.45 }}>Им входят в журнал, кассу и настройки. После смены на других телефонах нужно будет войти заново.</span>

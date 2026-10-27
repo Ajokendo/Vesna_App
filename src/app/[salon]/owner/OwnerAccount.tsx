@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { setOwnerPin, signOutOwner } from '@/server/owner-auth';
 import PinChange from './PinChange';
+import { PasskeyToggle } from '@/app/Passkey';
 
 /** Внизу кабинета хозяйки: сменить PIN хозяйки и выйти (например, если открывала на чужом телефоне) */
 export default function OwnerAccount({ slug }: { slug: string }) {
@@ -18,8 +19,9 @@ export default function OwnerAccount({ slug }: { slug: string }) {
   }
   return (
     <details className="card">
-      <summary style={{ cursor: 'pointer', fontWeight: 700 }}>PIN хозяйки и выход</summary>
+      <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Вход: отпечаток / Face ID, PIN, выход</summary>
       <div className="stack" style={{ gap: 12, marginTop: 10 }}>
+        <PasskeyToggle slug={slug} role="OWNER" />
         <PinChange action={change} />
         <form action={out}><button type="submit" className="btn" style={{ minHeight: 42 }}>Выйти из кабинета хозяйки</button></form>
       </div>

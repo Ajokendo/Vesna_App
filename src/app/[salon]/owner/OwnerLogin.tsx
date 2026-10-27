@@ -1,16 +1,18 @@
 'use client';
 
 import { useActionState } from 'react';
+import { PasskeyLogin } from '@/app/Passkey';
 
 type Action = (prev: string | null, fd: FormData) => Promise<string | null>;
 
 /** Вход хозяйки по её PIN */
-export function OwnerLogin({ action }: { action: Action }) {
+export function OwnerLogin({ action, slug }: { action: Action; slug: string }) {
   const [error, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="page" style={{ justifyContent: 'center', maxWidth: 360, margin: '0 auto', width: '100%' }}>
       <h1 style={{ fontSize: 24 }}>Кабинет хозяйки</h1>
       <p className="muted" style={{ margin: 0 }}>Выручка, зарплата мастерам, расходы и прибыль.</p>
+      <PasskeyLogin slug={slug} role="OWNER" next={`/${slug}/owner`} />
       <label className="field">PIN хозяйки<input name="pin" type="password" inputMode="numeric" autoComplete="current-password" required autoFocus /></label>
       {error && <div className="error" role="alert">{error}</div>}
       <button type="submit" className="btn primary block" disabled={pending}>{pending ? 'Проверяем…' : 'Войти'}</button>

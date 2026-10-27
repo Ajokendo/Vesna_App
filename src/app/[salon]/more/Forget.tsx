@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { disable } from '@/app/passkey-client';
 
 /** «Это не мой телефон» — забыть клиента на этом устройстве */
 export default function Forget({ slug, name }: { slug: string; name: string }) {
@@ -14,7 +15,7 @@ export default function Forget({ slug, name }: { slug: string; name: string }) {
     <div className="row small" style={{ gap: 8, flexWrap: 'wrap' }}>
       <span>Телефон забудет {name}: записи и баллы не пропадут, просто не будут здесь видны.</span>
       <button type="button" className="btn" style={{ minHeight: 38 }} onClick={() => setAsk(false)}>Нет</button>
-      <button type="button" className="btn" style={{ minHeight: 38 }} onClick={async () => { await fetch(`/api/${slug}/me`, { method: 'DELETE' }); router.refresh(); }}>Да, выйти</button>
+      <button type="button" className="btn" style={{ minHeight: 38 }} onClick={async () => { await disable(slug, 'CLIENT').catch(() => {}); await fetch(`/api/${slug}/me`, { method: 'DELETE' }); router.refresh(); }}>Да, выйти</button>
     </div>
   );
 }

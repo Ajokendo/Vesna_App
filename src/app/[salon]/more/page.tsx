@@ -7,6 +7,7 @@ import { mapLink } from '@/lib/map';
 import Forget from './Forget';
 import InstallCard from '@/app/InstallCard';
 import Feedback from '@/app/Feedback';
+import LockToggle from './LockToggle';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Ещё' };
@@ -49,6 +50,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
         </section>
 
         <InstallCard bonus={me?.client.welcomeBonusAt ? 0 : salon.welcomeBonus} compact />
+        {me && <LockToggle slug={slug} />}
 
         <div className="stack small muted" style={{ gap: 6, marginTop: 'auto', alignItems: 'center', textAlign: 'center' }}>
           {me && <Forget slug={slug} name={me.client.name} />}

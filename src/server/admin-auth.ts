@@ -96,3 +96,12 @@ export async function completeSetup(slug: string, code: string, pin: string): Pr
   await db.update(s.salons).set({ setupCodeHash: null }).where(eq(s.salons.id, salon.id));
   return { ok: true };
 }
+
+/** Вход администратора подтверждён другим способом (отпечаток / Face ID) — открыть сессию, как после PIN */
+export async function startAdminSession(slug: string) {
+  const salon = await salonBySlug(slug);
+  if (!salon?.adminPinHash) throw new Error('PIN администратора ещё не задан');
+  (await cookies()).set(cookieName(slug), await signId(fingerprint(salon.id, salon.adminPinHash)), {
+    httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 * 24 * 30,
+  });
+}
