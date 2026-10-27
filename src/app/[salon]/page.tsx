@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import ClientNav from '@/app/ClientNav';
 import LogoMenu from '@/app/LogoMenu';
 import Intro from '@/app/Intro';
+import MasterCards, { type MasterInfo } from './MasterCards';
+import { resolveService } from '@/lib/pricing';
 import { mapLink } from '@/lib/map';
 import { getCatalog, getSalon } from '@/server/salon';
 
@@ -14,6 +16,17 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
   if (!salon) notFound();
   const { staff, categories } = await getCatalog(salon.id);
   const halls = (['MEN', 'WOMEN'] as const).filter((h) => categories.some((c) => c.hall === h));
+  // для карточки мастера: его услуги по разделам с ценой «от»
+  const masters: MasterInfo[] = staff.map((m) => ({
+    id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, scheduleLabel: m.scheduleLabel, rating: m.rating,
+    groups: categories.filter((c) => c.staffIds.includes(m.id)).map((c) => ({
+      name: c.forKids ? `${c.name} (детям)` : c.name,
+      services: c.services.filter((v) => !v.onlyStaffIds.length || v.onlyStaffIds.includes(m.id)).flatMap((v) => {
+        const r = resolveService(v, c.byLength ? 'SHORT' : null);
+        return r ? [{ name: v.name, from: r.price, ranged: !!c.byLength || (r.priceMax != null && r.priceMax > r.price) }] : [];
+      }),
+    })).filter((g) => g.services.length),
+  }));
 
   return (
     // Экран фиксированной высоты: страница не «ездит» пальцем; если на маленьком телефоне что-то не влезает,
@@ -54,19 +67,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
         {staff.length > 0 && (
         <section className="stack">
           <h2 style={{ fontSize: 18 }}>Наши мастера</h2>
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
-            {staff.map((m) => (
-              <div key={m.id} className="card" style={{ flex: '0 0 120px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 8px' }}>
-                <div className="avatar" style={{ width: 'clamp(60px, 9dvh, 88px)', height: 'clamp(60px, 9dvh, 88px)' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {m.photoUrl ? <img src={m.photoUrl} alt={m.name} /> : m.name[0]}
-                </div>
-                <strong>{m.name}</strong>
-                <span className="small muted" style={{ lineHeight: 1.25, fontSize: 13 }}>{m.title?.split(',')[0]}</span>
-                {m.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800, fontSize: 12 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} ({m.rating.count})</span>}
-              </div>
-            ))}
-          </div>
+          <MasterCards slug={slug} masters={masters} />
         </section>
         )}
 

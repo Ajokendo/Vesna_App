@@ -15,6 +15,8 @@ type Props = {
   welcomeBonus?: number;
   slug: string; salonName: string; address: string; today: string; horizonDays: number;
   initialHall: 'MEN' | 'WOMEN'; catalog: Catalog;
+  /** Запись к мастеру, выбранному на главной: шаг «Выберите мастера» пропускается */
+  presetStaffId?: string | null;
 };
 
 const LENGTHS: { id: HairLength; name: string; cm: string }[] = [
@@ -26,7 +28,9 @@ const LENGTHS: { id: HairLength; name: string; cm: string }[] = [
 
 const TITLES = ['', 'Выберите услугу', 'Выберите мастера', 'Дата и время', 'Подтверждение'];
 
-export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0 }: Props) {
+export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0, presetStaffId = null }: Props) {
+  const [fixed, setFixed] = useState<string | null>(presetStaffId);
+  const fixedMaster = fixed ? catalog.staff.find((m) => m.id === fixed) ?? null : null;
   const [step, setStep] = useState(1);
   const [hall, setHall] = useState<'MEN' | 'WOMEN'>(initialHall);
   const [forChild, setForChild] = useState(false);
@@ -35,7 +39,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [openCat, setOpenCat] = useState<string | null>(null);
   const [addonIds, setAddonIds] = useState<string[]>([]);
-  const [staffId, setStaffId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(presetStaffId);
   const [weekStart, setWeekStart] = useState(today);
   const [week, setWeek] = useState<{ date: string; available: boolean }[] | null>(null);
   const [date, setDate] = useState<string | null>(null);
@@ -48,16 +52,20 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
 
   const childAge = forChild && child.birthDate ? ageOn(child.birthDate, today) : null;
 
-  const bothHalls = catalog.categories.some((c) => c.hall === 'MEN') && catalog.categories.some((c) => c.hall === 'WOMEN');
-  const categories = useMemo(() => catalog.categories.filter((c) => c.hall === hall && (forChild ? c.forKids : !c.forKids)), [catalog, hall, forChild]);
+  // разделы, где работает выбранный мастер (или все)
+  const ofMaster = (c: Catalog['categories'][number]) => !fixed || c.staffIds.includes(fixed);
+  const bothHalls = catalog.categories.some((c) => c.hall === 'MEN' && ofMaster(c)) && catalog.categories.some((c) => c.hall === 'WOMEN' && ofMaster(c));
+  const categories = useMemo(() => catalog.categories.filter((c) => c.hall === hall && (forChild ? c.forKids : !c.forKids) && (!fixed || c.staffIds.includes(fixed))), [catalog, hall, forChild, fixed]);
+  const hasKids = catalog.categories.some((c) => c.forKids && ofMaster(c));
 
   const items = useMemo(() => categories.map((c) => ({
     ...c,
     services: c.services
       .filter((v) => v.ageMin == null || (childAge != null && childAge >= v.ageMin && childAge <= (v.ageMax ?? 99)))
+      .filter((v) => !fixed || !v.onlyStaffIds.length || v.onlyStaffIds.includes(fixed))
       .map((v) => ({ ...v, resolved: resolveService(v, c.byLength ? length : null) }))
       .filter((v) => v.resolved),
-  })).filter((c) => c.services.length), [categories, length, childAge]);
+  })).filter((c) => c.services.length), [categories, length, childAge, fixed]);
 
   const category = catalog.categories.find((c) => c.services.some((v) => v.id === serviceId));
   const service = category?.services.find((v) => v.id === serviceId);
@@ -99,12 +107,18 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
 
   const resetFrom = (level: 'service' | 'staff' | 'date') => {
     if (level === 'service') { setServiceId(null); setAddonIds([]); }
-    if (level !== 'date') setStaffId(null);
+    if (level !== 'date') setStaffId(fixed);
     setDate(null); setSlot(null); setSlots(null);
   };
 
   const childOk = !forChild || (child.name.trim().length > 1 && childAge != null && childAge >= 0);
   const canNext = (step === 1 && !!serviceId && childOk) || (step === 2 && !!staffId) || (step === 3 && !!slot);
+  // с выбранным мастером шага 2 нет: 1 → 3, назад 3 → 1
+  const next = () => setStep(fixed && step === 1 ? 3 : step + 1);
+  const back = () => setStep(fixed && step === 3 ? 1 : step - 1);
+  const total = fixed ? 3 : 4;
+  const shown = fixed && step > 2 ? step - 1 : step;
+  function dropMaster() { setFixed(null); setStaffId(null); setServiceId(null); setAddonIds([]); setDate(null); setSlot(null); setSlots(null); setStep(1); }
   const lastWeekStart = addDays(today, Math.floor((horizonDays - 1) / 7) * 7);
 
   async function submit() {
@@ -157,17 +171,31 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           {step === 1 ? (
             <Link href={`/${slug}`} className="btn" aria-label="Назад" style={{ width: 44, padding: 0 }}>‹</Link>
           ) : (
-            <button type="button" className="btn" aria-label="Назад" style={{ width: 44, padding: 0 }} onClick={() => setStep(step - 1)}>‹</button>
+            <button type="button" className="btn" aria-label="Назад" style={{ width: 44, padding: 0 }} onClick={back}>‹</button>
           )}
           <div className="grow">
-            <div className="small muted" style={{ fontWeight: 600 }}>{salonName} · шаг {step} из 4</div>
+            <div className="small muted" style={{ fontWeight: 600 }}>{salonName} · шаг {shown} из {total}</div>
             <h1 style={{ fontSize: 21 }}>{TITLES[step]}</h1>
           </div>
         </header>
-        <div className="progress">{[1, 2, 3, 4].map((n) => <span key={n} className={n <= step ? 'on' : ''} />)}</div>
+        <div className="progress">{Array.from({ length: total }, (_, i) => i + 1).map((n) => <span key={n} className={n <= shown ? 'on' : ''} />)}</div>
+        {fixedMaster && step < 4 && (
+          <div className="card row" style={{ gap: 10, padding: '8px 12px', borderColor: 'var(--gold)' }}>
+            <span className="avatar" style={{ width: 40, height: 40, fontSize: 16 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {fixedMaster.photoUrl ? <img src={fixedMaster.photoUrl} alt="" /> : fixedMaster.name[0]}
+            </span>
+            <span className="grow stack" style={{ gap: 0, minWidth: 0 }}>
+              <span className="small muted">Мастер</span>
+              <strong>{fixedMaster.name}</strong>
+            </span>
+            <button type="button" className="small" onClick={dropMaster} style={{ border: 0, background: 'none', color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>другой мастер</button>
+          </div>
+        )}
 
         {step === 1 && (
           <>
+            {(!fixed || hasKids) && (
             <div className="stack">
               <strong>Для кого</strong>
               <div className="grid2">
@@ -185,6 +213,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                 </div>
               )}
             </div>
+            )}
 
             {bothHalls && (
               <div className="tabs" role="group" aria-label="Зал">
@@ -371,7 +400,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                     : (slot && date ? `${weekdayShort(date)}, ${dayMonth(date)}, ${hhmm(slot.minute)}` : 'Выберите время')}
               </strong>
             </div>
-            <button type="button" className="btn primary" disabled={!canNext} onClick={() => setStep(step + 1)}>Далее</button>
+            <button type="button" className="btn primary" disabled={!canNext} onClick={next}>Далее</button>
           </>
         ) : (
           <button type="button" className="btn primary block" disabled={sending || client.name.trim().length < 2 || client.phone.replace(/\D/g, '').length < 9} onClick={submit}>
