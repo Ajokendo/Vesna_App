@@ -12,6 +12,7 @@ import { ageOn, formatPrice, formatSom, quote, resolveService, plural } from '@/
 import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekdayShort } from '@/lib/time';
 import Hints from '@/app/Hints';
 import { useLang, useT } from '@/app/Lang';
+import { durationIn, scheduleIn } from '@/lib/i18n';
 
 type Props = {
   welcomeBonus?: number;
@@ -155,7 +156,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           </div>
           <h1 style={{ fontSize: 26 }}>{t('Вы записаны!')}</h1>
           <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-            {category?.name}: {service?.name.toLowerCase()}<br />
+            {t(category?.name ?? '')}: {t(service?.name ?? '').toLowerCase()}<br />
             {done.staffName} · {weekdayFull(date, lang)}, {dayMonth(date, lang)}, {hhmm(slot.minute)}
           </p>
           <div className="card stack" style={{ width: '100%', textAlign: 'left' }}>
@@ -255,8 +256,8 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                 <button type="button" aria-expanded={expanded} onClick={() => setOpenCat(expanded ? null : c.id)}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 0, padding: expanded ? 0 : '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span className="grow stack" style={{ gap: 2 }}>
-                    <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 17 }}>{c.name}</span>
-                    <span className="small muted">{c.note ? `${c.note} · ` : ''}{c.services.length} {t(c.services.length === 1 ? 'услуга' : c.services.length < 5 ? 'услуги' : 'услуг')} · {t('от')} {formatSom(from)}</span>
+                    <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 17 }}>{t(c.name)}</span>
+                    <span className="small muted">{c.note ? `${t(c.note)} · ` : ''}{c.services.length} {t(c.services.length === 1 ? 'услуга' : c.services.length < 5 ? 'услуги' : 'услуг')} · {t('от')} {formatSom(from)}</span>
                   </span>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -264,8 +265,8 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                   <button key={v.id} type="button" className="choice" aria-pressed={serviceId === v.id}
                     onClick={() => { if (serviceId !== v.id) { setServiceId(v.id); setAddonIds([]); resetFrom('staff'); } }}>
                     <span className="grow stack" style={{ gap: 2 }}>
-                      <strong style={{ fontSize: 15 }}>{v.name}</strong>
-                      <span className="small muted">{v.resolved!.durationLabel ?? `≈ ${v.resolved!.durationMin} ${t('мин')}`}</span>
+                      <strong style={{ fontSize: 15 }}>{t(v.name)}</strong>
+                      <span className="small muted">{v.resolved!.durationLabel ? durationIn(lang, v.resolved!.durationLabel) : `≈ ${v.resolved!.durationMin} ${t('мин')}`}</span>
                     </span>
                     <strong style={{ whiteSpace: 'nowrap' }}>{formatPrice(v.resolved!.price, v.resolved!.priceMax)}</strong>
                   </button>
@@ -279,7 +280,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                         <label key={a.id} className="row card" style={{ padding: '10px 12px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={on} onChange={() => setAddonIds(on ? addonIds.filter((x) => x !== a.id) : [...addonIds, a.id])} style={{ width: 20, height: 20, accentColor: 'var(--accent)' }} />
                           <span className="grow stack" style={{ gap: 0 }}>
-                            <strong style={{ fontSize: 14 }}>{a.name}</strong>
+                            <strong style={{ fontSize: 14 }}>{t(a.name)}</strong>
                             {a.rule === 'FREE_IF_REPEAT' && <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>{t('Бесплатно, если прошлый раз делали у нас')}</span>}
                           </span>
                           <strong>+{formatSom(a.price)}</strong>
@@ -308,9 +309,9 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                   </span>
                   <span className="grow stack" style={{ gap: 2 }}>
                     <strong style={{ fontSize: 16 }}>{m ? m.name : t('Любой свободный мастер')}</strong>
-                    <span className="small muted">{m ? m.title : t('Подберём мастера на ваше время')}</span>
+                    <span className="small muted">{m ? t(m.title ?? '') : t('Подберём мастера на ваше время')}</span>
                     {m?.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} · {m.rating.count} {t(plural(m.rating.count, 'оценка', 'оценки', 'оценок'))}</span>}
-                    {m && <span className="small muted">{m.scheduleLabel}</span>}
+                    {m && <span className="small muted">{scheduleIn(lang, m.scheduleLabel)}</span>}
                   </span>
                 </button>
               );
@@ -382,13 +383,13 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
         {step === 4 && q && date && slot && (
           <>
             <section className="card stack">
-              <strong style={{ fontSize: 16 }}>{category?.name}: {service?.name.toLowerCase()}</strong>
+              <strong style={{ fontSize: 16 }}>{t(category?.name ?? '')}: {t(service?.name ?? '').toLowerCase()}</strong>
               <span className="muted">{staffName(slot.staffId)} · {weekdayShort(date, lang)}, {dayMonth(date, lang)}, {hhmm(slot.minute)}</span>
               {forChild && <span className="muted">{t('Для: {name}, {age} лет', { name: child.name, age: childAge ?? '' })}</span>}
               <div style={{ height: 1, background: 'var(--line)' }} />
-              <div className="row"><span className="grow muted">{service?.name}</span><strong>{formatPrice(q.base, q.baseMax)}</strong></div>
+              <div className="row"><span className="grow muted">{t(service?.name ?? '')}</span><strong>{formatPrice(q.base, q.baseMax)}</strong></div>
               {q.addons.map((a) => (
-                <div key={a.id} className="row"><span className="grow muted">{a.name}</span><strong>+{formatSom(a.price)}</strong></div>
+                <div key={a.id} className="row"><span className="grow muted">{t(a.name)}</span><strong>+{formatSom(a.price)}</strong></div>
               ))}
               <div className="row" style={{ fontSize: 18 }}><strong className="grow">{t('Итого')}</strong><strong style={{ fontFamily: 'var(--serif)' }}>{q.isRange ? t('от') + ' ' : ''}{formatSom(q.total)}</strong></div>
               {q.isRange && <div className="note">{t('Точную цену мастер назовёт после консультации.')}</div>}
@@ -411,10 +412,10 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           <>
             <div className="grow stack" style={{ gap: 0, minWidth: 0 }}>
               <span className="small muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {step === 1 ? (service ? category?.name : t('Ничего не выбрано')) : step === 2 ? service?.name : staffId === 'any' ? t('Любой мастер') : staffName(staffId ?? '')}
+                {step === 1 ? (service ? t(category?.name ?? '') : t('Ничего не выбрано')) : step === 2 ? t(service?.name ?? '') : staffId === 'any' ? t('Любой мастер') : staffName(staffId ?? '')}
               </span>
               <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {step === 1 ? (q ? `${service?.name} · ${q.isRange ? t('от') + ' ' : ''}${formatSom(q.total)}` : t('Выберите услугу'))
+                {step === 1 ? (q ? `${t(service?.name ?? '')} · ${q.isRange ? t('от') + ' ' : ''}${formatSom(q.total)}` : t('Выберите услугу'))
                   : step === 2 ? (staffId ? (staffId === 'any' ? t('Любой свободный') : staffName(staffId)) : t('Выберите мастера'))
                     : (slot && date ? `${weekdayShort(date, lang)}, ${dayMonth(date, lang)}, ${hhmm(slot.minute)}` : t('Выберите время'))}
               </strong>

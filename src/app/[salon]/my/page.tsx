@@ -45,7 +45,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
                   </span>
                   <span style={{ flex: 1, minWidth: 0 }} className="stack">
                     <strong style={{ fontSize: 17 }}>{v.date === today ? t('Сегодня') : `${weekdayFull(v.date, lang)}, ${dayMonth(v.date, lang)}`}, {hhmm(v.start)}</strong>
-                    <span className="small">{v.service} · {v.staff}</span>
+                    <span className="small">{t(v.service)} · {v.staff}</span>
                     {v.forWhom && <span className="small muted">{t('Для')}: {v.forWhom}</span>}
                     <span className="small muted">{formatPrice(v.price, v.priceMax)}{v.confirmed ? ` · ${t('вы подтвердили')}` : ''}</span>
                     <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 800 }}>{t('Подробнее, опоздаю, не смогу прийти')} ›</span>
@@ -67,7 +67,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
                 {data.past.map((v) => (
                   <div key={v.id} className="row" style={{ justifyContent: 'space-between', gap: 10, borderBottom: '1px solid var(--line)', padding: '8px 0', alignItems: 'flex-start' }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 700 }}>{dayMonthShort(v.date, lang)} · {v.service}</div>
+                      <div style={{ fontWeight: 700 }}>{dayMonthShort(v.date, lang)} · {t(v.service)}</div>
                       <div className="small muted">{v.staff}{v.forWhom ? ` · ${t('для')}: ${v.forWhom}` : ''}</div>
                       {v.canRate && <Link href={`/${slug}/v/${v.id}?t=${v.token}`} className="small" style={{ color: '#B7860F', fontWeight: 800 }}>★ {t('Оценить визит')}</Link>}
                     </div>

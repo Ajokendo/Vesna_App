@@ -23,7 +23,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
   const masters: MasterInfo[] = staff.map((m) => ({
     id: m.id, name: m.name, title: m.title, photoUrl: m.photoUrl, scheduleLabel: m.scheduleLabel, rating: m.rating,
     groups: categories.filter((c) => c.staffIds.includes(m.id)).map((c) => ({
-      name: c.forKids ? `${c.name} (${t('детям')})` : c.name,
+      name: c.forKids ? `${t(c.name)} (${t('детям')})` : t(c.name),
       services: c.services.filter((v) => !v.onlyStaffIds.length || v.onlyStaffIds.includes(m.id)).flatMap((v) => {
         const r = resolveService(v, c.byLength ? 'SHORT' : null);
         return r ? [{ name: v.name, from: r.price, ranged: !!c.byLength || (r.priceMax != null && r.priceMax > r.price) }] : [];
@@ -47,7 +47,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
           </LogoMenu>
           <div className="grow">
             <h1 style={{ fontSize: 22 }}>{salon.name}</h1>
-            <div className="muted small">{salon.tagline} · {salon.city}</div>
+            <div className="muted small">{t(salon.tagline ?? '')} · {t(salon.city ?? '')}</div>
           </div>
           <LangSwitch compact />
         </header>
@@ -62,7 +62,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
                 display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gridColumn: halls.length === 1 ? '1 / -1' : undefined,
               }}>
                 <strong style={{ fontSize: 17 }}>{t(halls.length === 1 ? 'Выбрать услугу' : h === 'MEN' ? 'Мужской зал' : 'Женский зал')}</strong>
-                <span className="small muted">{(h === 'MEN' ? salon.menHallNote : salon.womenHallNote) ?? categories.filter((c) => c.hall === h).slice(0, 3).map((c) => c.name.toLowerCase()).join(', ')}</span>
+                <span className="small muted">{t((h === 'MEN' ? salon.menHallNote : salon.womenHallNote) ?? '') || categories.filter((c) => c.hall === h).slice(0, 3).map((c) => c.name.toLowerCase()).join(', ')}</span>
               </Link>
             ))}
           </div>
@@ -78,7 +78,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
         <section className="card row" style={{ borderColor: 'var(--gold)', gap: 12, padding: '12px 14px', flexWrap: 'wrap' }}>
           <div className="stack small" style={{ gap: 2, flex: '1 1 180px' }}>
             <a href={mapLink(salon)} target="_blank" rel="noreferrer" style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>📍 {salon.city}, {salon.address}</a>
-            {salon.hoursText && <span className="muted">{salon.hoursText}</span>}
+            {salon.hoursText && <span className="muted">{t(salon.hoursText)}</span>}
           </div>
           {salon.whatsapp ? (
             <a className="btn" style={{ minHeight: 42, padding: '0 14px', fontSize: 14 }} href={`https://wa.me/${salon.whatsapp.replace(/\D/g, '')}`}>WhatsApp</a>

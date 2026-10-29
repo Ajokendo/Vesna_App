@@ -62,7 +62,7 @@ export default async function Visit({ params, searchParams }: { params: Promise<
             </span>
             <div>
               <strong>{a.staff.name}</strong>
-              <div className="small muted">{a.service.category.name}: {a.service.name}{a.addons.length ? ` + ${a.addons.map((x) => x.addon.name.toLowerCase()).join(', ')}` : ''}</div>
+              <div className="small muted">{tr(a.service.category.name)}: {tr(a.service.name)}{a.addons.length ? ` + ${a.addons.map((x) => tr(x.addon.name).toLowerCase()).join(', ')}` : ''}</div>
               {a.client.guardianId && <div className="small muted">{tr('Для')}: {a.client.name}</div>}
             </div>
           </div>

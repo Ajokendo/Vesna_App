@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { formatSom, plural } from '@/lib/pricing';
-import { useT } from '@/app/Lang';
+import { useLang, useT } from '@/app/Lang';
+import { scheduleIn } from '@/lib/i18n';
 
 export type MasterInfo = {
   id: string; name: string; title: string | null; photoUrl: string | null; scheduleLabel: string;
@@ -18,6 +19,7 @@ export type MasterInfo = {
  */
 export default function MasterCards({ slug, masters }: { slug: string; masters: MasterInfo[] }) {
   const t = useT();
+  const lang = useLang();
   const [open, setOpen] = useState<MasterInfo | null>(null);
   useEffect(() => {
     if (!open) return;
@@ -37,7 +39,7 @@ export default function MasterCards({ slug, masters }: { slug: string; masters: 
               {m.photoUrl ? <img src={m.photoUrl} alt="" /> : m.name[0]}
             </span>
             <strong>{m.name}</strong>
-            <span className="small muted" style={{ lineHeight: 1.25, fontSize: 13 }}>{m.title?.split(',')[0]}</span>
+            <span className="small muted" style={{ lineHeight: 1.25, fontSize: 13 }}>{m.title ? t(m.title).split(',')[0] : null}</span>
             {m.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800, fontSize: 12 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} ({m.rating.count})</span>}
           </button>
         ))}
@@ -56,9 +58,9 @@ export default function MasterCards({ slug, masters }: { slug: string; masters: 
                 {open.photoUrl ? <img src={open.photoUrl} alt={open.name} /> : open.name[0]}
               </span>
               <h2 style={{ fontSize: 24, margin: '6px 0 0' }}>{open.name}</h2>
-              {open.title && <span className="muted" style={{ lineHeight: 1.35 }}>{open.title}</span>}
+              {open.title && <span className="muted" style={{ lineHeight: 1.35 }}>{t(open.title)}</span>}
               {open.rating && <span style={{ color: '#B7860F', fontWeight: 800 }}>★ {open.rating.avg.toFixed(1).replace('.', ',')} · {open.rating.count} {t(plural(open.rating.count, 'оценка', 'оценки', 'оценок'))}</span>}
-              {open.scheduleLabel && <span className="small muted">{open.scheduleLabel}</span>}
+              {open.scheduleLabel && <span className="small muted">{scheduleIn(lang, open.scheduleLabel)}</span>}
             </div>
 
             <div className="stack" style={{ gap: 10, overflowY: 'auto', overscrollBehavior: 'contain', minHeight: 0, flex: '1 1 auto' }}>
@@ -67,7 +69,7 @@ export default function MasterCards({ slug, masters }: { slug: string; masters: 
                   <strong style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>{g.name}</strong>
                   {g.services.map((v) => (
                     <div key={v.name} className="row" style={{ justifyContent: 'space-between', gap: 10, fontSize: 14 }}>
-                      <span style={{ minWidth: 0 }}>{v.name}</span>
+                      <span style={{ minWidth: 0 }}>{t(v.name)}</span>
                       <span style={{ whiteSpace: 'nowrap', fontWeight: 700 }}>{v.ranged ? t('от') + ' ' : ''}{formatSom(v.from)}</span>
                     </div>
                   ))}

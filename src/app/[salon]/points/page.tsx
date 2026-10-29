@@ -66,7 +66,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
                 <div key={h.id} className="row" style={{ justifyContent: 'space-between', borderBottom: '1px solid var(--line)', padding: '8px 0', gap: 10 }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700 }}>{t(KIND[h.kind] ?? h.kind)}</div>
-                    <div className="small muted">{dayMonthShort(h.date, lang)}{h.service ? ` · ${h.service}` : ''}{h.note ? ` · ${h.note}` : ''}</div>
+                    <div className="small muted">{dayMonthShort(h.date, lang)}{h.service ? ` · ${t(h.service)}` : ''}{h.note ? ` · ${h.note}` : ''}</div>
                   </div>
                   <strong style={{ color: h.delta > 0 ? 'var(--accent-dark)' : 'var(--danger)', flex: '0 0 auto' }}>{h.delta > 0 ? `+${h.delta}` : h.delta}</strong>
                 </div>
