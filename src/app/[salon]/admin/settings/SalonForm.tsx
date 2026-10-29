@@ -114,10 +114,35 @@ export default function SalonForm({ slug, salon, waReady }: { slug: string; salo
           <Hints style={{ marginTop: 4 }} items={[
             ['📱', 'Для клиентов без уведомлений в приложении'],
             ['✉', 'Подтверждение записи, напоминание утром, перенос и отмена, «освободилось время»'],
-            ['💳', 'Сообщения платные (тариф Meta)'],
+            ['💳', 'Отправка платная — по тарифу подключённого сервиса'],
           ]} /></span>
       </label>
+      {waReady && <WaTest slug={slug} />}
       <div className="row"><button type="button" className="btn primary" disabled={busy} onClick={submit}>{busy ? 'Сохраняем…' : 'Сохранить'}</button><Msg msg={msg} /></div>
     </section>
+  );
+}
+
+/** Проверка WhatsApp: тестовое сообщение на указанный номер */
+function WaTest({ slug }: { slug: string }) {
+  const [phone, setPhone] = useState('+996 ');
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<{ ok: boolean; text: string } | null>(null);
+  async function send() {
+    setBusy(true); setRes(null);
+    const r = await fetch(`/api/${slug}/admin/wa-test`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
+    const d = await r.json().catch(() => ({}));
+    setBusy(false);
+    setRes(r.ok ? { ok: true, text: '✓ Отправлено — проверьте WhatsApp на этом номере' } : { ok: false, text: d.error ?? 'Не получилось' });
+  }
+  return (
+    <div className="stack" style={{ gap: 6, marginLeft: 32 }}>
+      <span className="small muted">Проверить: тестовое сообщение на номер</span>
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} aria-label="Номер для проверки" style={{ ...inputSt, maxWidth: 200 }} />
+        <button type="button" className="btn" disabled={busy || phone.replace(/\D/g, '').length < 9} onClick={send}>{busy ? 'Отправляем…' : 'Отправить проверку'}</button>
+      </div>
+      {res && <span className="small" style={{ color: res.ok ? 'var(--accent-dark)' : 'var(--danger)', fontWeight: 700 }}>{res.text}</span>}
+    </div>
   );
 }

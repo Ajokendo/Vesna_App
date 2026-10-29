@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, eq, gte, inArray, lt } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
-import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull, zonedToUtc } from '@/lib/time';
+import { addDays, dayMonth, hhmm, utcToZoned, weekdayFull, weekdayShort, zonedToUtc } from '@/lib/time';
 import { payerOf, sendToClients, signId } from './push';
 import { occupiesTime } from './status';
 import { sendWa, waConfigured, type WaTemplate } from './whatsapp';
@@ -20,7 +20,8 @@ async function whatsappFor(a: NonNullable<Awaited<ReturnType<typeof loadAppointm
   const payer = a.client.guardianId ? await db.query.clients.findFirst({ where: eq(s.clients.id, a.client.guardianId) }) : a.client;
   if (!payer?.phone) return 0;
   const { date, minute } = utcToZoned(a.startsAt, a.salon.timezone);
-  const when = `${weekdayFull(date)}, ${dayMonth(date)}, ${hhmm(minute)}`;
+  // «31 октября (сб), 09:30» — читается правильно в любом шаблоне («на …», «изменилась: …»)
+  const when = `${dayMonth(date)} (${weekdayShort(date)}), ${hhmm(minute)}`;
   const name = payer.name.split(' ')[0];
   const what = `${a.staff.name}, ${a.service.name}${a.client.guardianId ? ` (для: ${a.client.name})` : ''}`;
   const place = [a.salon.city, a.salon.address].filter(Boolean).join(', ');

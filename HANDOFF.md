@@ -26,7 +26,7 @@
 
 ## Открытые вопросы к салону
 Материалы (краска) — делить 50/50 или целиком салону · округление баллов вниз · длительности услуг и выдержки краски ·
-WhatsApp Business API (оформляет директор) · напоминания «за час» при закрытом журнале — внешний будильник (cron-job.org → /api/cron/notify).
+напоминания «за час» при закрытом журнале — внешний будильник (cron-job.org → /api/cron/notify).
 
 ## План дальше
 Перенос записи на другое время одной кнопкой · личный кабинет клиента (вход по коду, баллы, QR, дата рождения → 100 баллов в подарок) ·
@@ -48,3 +48,9 @@ PostgreSQL 16 на порту 5433, `.env`: DATABASE_URL, ADMIN_PIN. `npm i`, `n
 2. В `src/db/salons.config.ts` добавить `{ slug, demoUntil, create: { name, city, address, whatsapp, accentColor, hoursText, setupCodeHash, template: 'vesna' } }`.
 3. Закоммитить и запушить → при деплое салон создастся с прайсом из образца.
 4. Владелец открывает `/<slug>/admin`, вводит код настройки и придумывает PIN, затем в «Настройках»: логотип, цвет, цены, мастера с фото и графиками, PIN мастерам.
+
+## WhatsApp-уведомления (Green-API)
+Отправка через green-api.com: номер салона подключается как WhatsApp Web (QR в консоли Green-API). Переменные Vercel:
+`GREENAPI_ID` (idInstance), `GREENAPI_TOKEN` (apiTokenInstance), `GREENAPI_URL` (apiUrl из консоли). После — галочка
+«Настройки → Салон → Уведомления в WhatsApp» и кнопка «Отправить проверку». Тариф Business $12/мес за номер; Developer бесплатно, но только 3 чата.
+Запасной вариант — Meta Cloud API (WHATSAPP_TOKEN, WHATSAPP_PHONE_ID), используется, если Green-API не задан. Журнал отправок — таблица wa_messages.

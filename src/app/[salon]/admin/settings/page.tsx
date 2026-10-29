@@ -11,6 +11,7 @@ import Certificates from './Certificates';
 import { CERT_STATUS, listCertificates } from '@/server/certificates';
 import { siteOrigin } from '@/server/qr';
 import { dayMonthShort, utcToZoned } from '@/lib/time';
+import { waProviderReady } from '@/server/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,7 @@ export default async function Settings({ params, searchParams }: { params: Promi
           </Link>
         ))}
       </nav>
-      {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} waReady={!!process.env.WHATSAPP_TOKEN && !!(data.salon.waPhoneId || process.env.WHATSAPP_PHONE_ID)} />}
+      {tab === 'salon' && <SalonForm slug={slug} salon={data.salon} waReady={waProviderReady(data.salon)} />}
       {tab === 'services' && <ServicesEditor slug={slug} categories={data.categories} />}
       {tab === 'reviews' && <ReviewsList slug={slug} />}
       {tab === 'certs' && await (async () => {
