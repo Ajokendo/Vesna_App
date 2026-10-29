@@ -8,10 +8,10 @@ import Hints from '@/app/Hints';
 type AType = 'ALL' | 'DATE' | 'WOMEN' | 'MEN' | 'MASTER';
 
 const TEMPLATES = [
-  { label: 'Нет электричества', kind: 'SERVICE', audience: 'DATE', title: 'Сегодня салон не работает', body: 'Извините, в салоне нет электричества. Мы свяжемся с вами, чтобы перенести запись на удобное время.' },
-  { label: 'Задерживаемся', kind: 'SERVICE', audience: 'DATE', title: 'Салон откроется позже', body: 'Сегодня салон откроется в 11:00. Если ваша запись раньше — мы свяжемся с вами.' },
-  { label: '8 Марта', kind: 'PROMO', audience: 'WOMEN', title: 'С 8 Марта!', body: 'Дорогие наши клиентки, поздравляем вас с праздником весны! Будьте красивы и любимы. Ваша «{salon}».' },
-  { label: 'Новый год', kind: 'PROMO', audience: 'ALL', title: 'С Новым годом!', body: 'Спасибо, что были с нами в этом году! Желаем счастья и красоты в новом. Ваша «{salon}».' },
+  { icon: '⚡', who: 'Записанным сегодня', label: 'Нет света', kind: 'SERVICE', audience: 'DATE', title: 'Сегодня салон не работает', body: 'Извините, в салоне нет электричества. Мы свяжемся с вами, чтобы перенести запись на удобное время.' },
+  { icon: '⏰', who: 'Записанным сегодня', label: 'Откроемся позже', kind: 'SERVICE', audience: 'DATE', title: 'Салон откроется позже', body: 'Сегодня салон откроется в 11:00. Если ваша запись раньше — мы свяжемся с вами.' },
+  { icon: '🌷', who: 'Женщинам', label: '8 Марта', kind: 'PROMO', audience: 'WOMEN', title: 'С 8 Марта!', body: 'Дорогие наши клиентки, поздравляем вас с праздником весны! Будьте красивы и любимы. Ваша «{salon}».' },
+  { icon: '🎄', who: 'Всем клиентам', label: 'Новый год', kind: 'PROMO', audience: 'ALL', title: 'С Новым годом!', body: 'Спасибо, что были с нами в этом году! Желаем счастья и красоты в новом. Ваша «{salon}».' },
 ] as const;
 
 const field = { minHeight: 48, borderRadius: 12, border: '1px solid #dde5de', padding: '0 12px', fontSize: 15, background: '#fff' } as const;
@@ -55,13 +55,28 @@ export default function BroadcastForm({ slug, salonName, today, masters }: { slu
   return (
     <section className="card stack" style={{ gap: 14 }}>
       <h2 style={{ fontSize: 18 }}>Новая рассылка</h2>
-      <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <span className="small muted">Шаблоны:</span>
-        {TEMPLATES.map((t) => (
-          <button key={t.label} type="button" className="btn" style={{ minHeight: 36, padding: '0 12px', fontSize: 13 }} onClick={() => {
-            setKind(t.kind); setType(t.audience); setTitle(t.title); setBody(t.body.replace('{salon}', salonName));
-          }}>{t.label}</button>
-        ))}
+      <div className="stack" style={{ gap: 6 }}>
+        <span className="small muted" style={{ fontWeight: 700 }}>Начать с шаблона</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {TEMPLATES.map((t) => {
+            const on = title === t.title;
+            return (
+              <button key={t.label} type="button" aria-pressed={on} onClick={() => {
+                setKind(t.kind); setType(t.audience); setTitle(t.title); setBody(t.body.replace('{salon}', salonName));
+              }} style={{
+                display: 'grid', gridTemplateColumns: '28px 1fr', alignItems: 'center', gap: 8, textAlign: 'left', minHeight: 56, padding: '8px 10px',
+                borderRadius: 14, border: `1.5px solid ${on ? 'var(--accent)' : 'var(--line)'}`, background: on ? 'var(--accent-soft)' : '#fff',
+                cursor: 'pointer', fontFamily: 'inherit', color: 'var(--ink)',
+              }}>
+                <span aria-hidden style={{ fontSize: 22, textAlign: 'center' }}>{t.icon}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                  <b style={{ fontSize: 14, lineHeight: 1.2 }}>{t.label}</b>
+                  <span className="small muted" style={{ lineHeight: 1.2 }}>{t.who}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="tabs" role="group" aria-label="Тип рассылки">
         <button type="button" aria-pressed={kind === 'SERVICE'} onClick={() => setKind('SERVICE')}>Важное о работе салона</button>
