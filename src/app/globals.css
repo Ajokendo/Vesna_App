@@ -70,7 +70,9 @@ h1, h2, h3 { font-family: var(--serif); margin: 0; }
 
 
 /* Главная: ровно на высоту экрана, без «резиновой» прокрутки */
-.app.home { height: 100dvh; min-height: 0; overflow: hidden; }
+/* Экран фиксированной высоты: привязан к краям видимого окна (position: fixed), а не к 100dvh —
+   на Android в установленном приложении 100dvh после возврата из другого окна бывает выше экрана, и нижнее меню уходило за край */
+.app.home { position: fixed; inset: 0; width: 100%; height: auto; min-height: 0; overflow: hidden; }
 html:has(.app.home), html:has(.app.home) body { overflow: hidden; overscroll-behavior: none; height: 100%; }
 /* в прокручиваемой середине блоки не сжимаются — лишнее уходит в прокрутку */
 .app.home > .page > * { flex-shrink: 0; }
