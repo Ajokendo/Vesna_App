@@ -21,7 +21,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
   const { salon: slug } = await params;
   const salon = await getSalon(slug);
   if (!salon) notFound();
-  const { t, lang } = await getT();
+  const { t, lang } = await getT(slug);
   const data = await myPoints(slug);
   const qr = data ? await qrSvg(clientQrUrl(await siteOrigin(), slug, data.id)) : null;
   return (

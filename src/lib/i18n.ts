@@ -5,9 +5,10 @@ import { KY } from './ky';
 export type Lang = 'ru' | 'ky';
 export type T = (s: string, vars?: Record<string, string | number>) => string;
 
-export function makeT(lang: Lang): T {
+/** extra — переводы салона из настроек («Название по-кыргызски»): важнее общего словаря */
+export function makeT(lang: Lang, extra?: Record<string, string>): T {
   return (s, vars) => {
-    let r = lang === 'ky' ? (KY[s] ?? s) : s;
+    let r = lang === 'ky' ? (extra?.[s] ?? KY[s] ?? s) : s;
     if (vars) for (const [k, v] of Object.entries(vars)) r = r.split(`{${k}}`).join(String(v));
     return r;
   };

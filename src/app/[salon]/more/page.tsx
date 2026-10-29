@@ -20,7 +20,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
   const salon = await getSalon(slug);
   if (!salon) notFound();
   const me = await getMe(slug);
-  const { t } = await getT();
+  const { t } = await getT(slug);
   const wa = salon.whatsapp?.replace(/\D/g, '');
   const tel = salon.phone?.replace(/\D/g, '');
   return (

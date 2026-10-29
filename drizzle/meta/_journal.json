@@ -204,6 +204,13 @@
       "when": 1793108000011,
       "tag": "0028_master_tempo",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793278859805,
+      "tag": "0029_kyrgyz_names",
+      "breakpoints": true
     }
   ]
 }

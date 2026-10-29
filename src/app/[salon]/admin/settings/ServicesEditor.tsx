@@ -5,6 +5,7 @@ import type { ManageData } from '@/server/manage';
 import { Msg, inputSt, num, useSave } from './ui';
 import { GROUPS, categoryGroup } from '@/lib/groups';
 import Hints from '@/app/Hints';
+import { KY } from '@/lib/ky';
 
 type Cat = ManageData['categories'][number];
 type Svc = Cat['services'][number];
@@ -23,6 +24,7 @@ export default function ServicesEditor({ slug, categories }: { slug: string; cat
         ['⏱', 'Длительность — сколько минут идёт услуга; по ней считается свободное время'],
         ['🎨', '«Выдержка» — для окрашивания: когда начинается и сколько длится. В это время мастер свободен'],
         ['🙈', 'Скрытые услуги и разделы клиенты не видят, история записей сохраняется'],
+        ['🇰🇬', 'Название по-кыргызски видят клиенты с кыргызским языком. Пусто — показываем перевод, который виден серым в поле'],
       ]} />
       {categories.map((c) => <CategoryCard key={c.id} slug={slug} c={c} />)}
       {newCat ? <CategoryForm slug={slug} onDone={() => setNewCat(false)} /> : (
@@ -55,12 +57,13 @@ function CategoryCard({ slug, c }: { slug: string; c: Cat }) {
 }
 
 function CategoryForm({ slug, c, onDone }: { slug: string; c?: Cat; onDone: () => void }) {
-  const [v, setV] = useState({ journalGroup: c?.journalGroup ?? '', name: c?.name ?? '', hall: c?.hall ?? 'WOMEN', note: c?.note ?? '', byLength: c?.byLength ?? false, forKids: c?.forKids ?? false, active: c?.active ?? true });
+  const [v, setV] = useState({ journalGroup: c?.journalGroup ?? '', name: c?.name ?? '', nameKy: c?.nameKy ?? '', hall: c?.hall ?? 'WOMEN', note: c?.note ?? '', byLength: c?.byLength ?? false, forKids: c?.forKids ?? false, active: c?.active ?? true });
   const { busy, msg, save } = useSave(slug);
   return (
     <div className="stack" style={{ gap: 10, background: 'var(--ground)', borderRadius: 12, padding: 12 }}>
       <div className="grid2">
         <label className="field">Название раздела<input value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} style={inputSt} /></label>
+        <label className="field">Название по-кыргызски<input value={v.nameKy} onChange={(e) => setV({ ...v, nameKy: e.target.value })} style={inputSt} placeholder={KY[v.name.trim()] ?? 'необязательно'} /></label>
         <label className="field">Зал
           <select value={v.hall} onChange={(e) => setV({ ...v, hall: e.target.value as 'MEN' | 'WOMEN' })} style={inputSt}>
             <option value="WOMEN">Женский</option><option value="MEN">Мужской</option>
@@ -80,7 +83,7 @@ function CategoryForm({ slug, c, onDone }: { slug: string; c?: Cat; onDone: () =
         <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={!v.active} onChange={(e) => setV({ ...v, active: !e.target.checked })} /> Скрыть от клиентов</label>
       </div>
       <div className="row">
-        <button type="button" className="btn primary" style={{ minHeight: 40 }} disabled={busy} onClick={async () => { if (await save('category', { ...v, id: c?.id, note: v.note || null, journalGroup: v.journalGroup || null })) onDone(); }}>{busy ? '…' : 'Сохранить раздел'}</button>
+        <button type="button" className="btn primary" style={{ minHeight: 40 }} disabled={busy} onClick={async () => { if (await save('category', { ...v, id: c?.id, nameKy: v.nameKy.trim() || null, note: v.note || null, journalGroup: v.journalGroup || null })) onDone(); }}>{busy ? '…' : 'Сохранить раздел'}</button>
         <button type="button" className="btn" style={{ minHeight: 40 }} onClick={onDone}>Отмена</button>
         <Msg msg={msg} />
       </div>
@@ -90,7 +93,7 @@ function CategoryForm({ slug, c, onDone }: { slug: string; c?: Cat; onDone: () =
 
 function ServiceRow({ slug, c, v, onDone }: { slug: string; c: Cat; v?: Svc; onDone?: () => void }) {
   const [f, setF] = useState({
-    name: v?.name ?? '', price: s(v?.price), priceMax: s(v?.priceMax), dur: s(v?.durationMin), label: v?.durationLabel ?? '',
+    name: v?.name ?? '', nameKy: v?.nameKy ?? '', price: s(v?.price), priceMax: s(v?.priceMax), dur: s(v?.durationMin), label: v?.durationLabel ?? '',
     pa: s(v?.pauseAfterMin), pm: s(v?.pauseMin), ageMin: s(v?.ageMin), ageMax: s(v?.ageMax), active: v?.active ?? true,
   });
   const [bl, setBl] = useState<Record<LKey, { price: string; max: string; dur: string; pa: string; pm: string }>>(() => Object.fromEntries(LENGTHS.map(([k]) => {
@@ -108,7 +111,7 @@ function ServiceRow({ slug, c, v, onDone }: { slug: string; c: Cat; v?: Svc; onD
       return [[k, { price: Number(x.price), max: num(x.max), dur: Number(x.dur), pa: num(x.pa), pm: num(x.pm) }]];
     })) : null;
     const ok = await save('service', {
-      id: v?.id, categoryId: c.id, name: f.name.trim(), price: num(f.price), priceMax: num(f.priceMax), durationMin: num(f.dur),
+      id: v?.id, categoryId: c.id, name: f.name.trim(), nameKy: f.nameKy.trim() || null, price: num(f.price), priceMax: num(f.priceMax), durationMin: num(f.dur),
       durationLabel: f.label.trim() || null, pauseAfterMin: num(f.pa), pauseMin: num(f.pm), byLength,
       ageMin: num(f.ageMin), ageMax: num(f.ageMax), active: f.active,
     });
@@ -129,7 +132,10 @@ function ServiceRow({ slug, c, v, onDone }: { slug: string; c: Cat; v?: Svc; onD
   }
   return (
     <div className="stack" style={{ gap: 10, border: '1px solid var(--line)', borderRadius: 12, padding: 12, background: '#fff' }}>
-      <label className="field">Название услуги<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inputSt} /></label>
+      <div className="grid2">
+        <label className="field">Название услуги<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inputSt} /></label>
+        <label className="field">Название по-кыргызски<input value={f.nameKy} onChange={(e) => setF({ ...f, nameKy: e.target.value })} style={inputSt} placeholder={KY[f.name.trim()] ?? 'необязательно'} /></label>
+      </div>
       {c.byLength ? (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 560, fontSize: 13 }}>

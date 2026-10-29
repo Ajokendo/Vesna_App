@@ -24,7 +24,7 @@ export const metadata = { title: 'Моя запись' };
 export default async function Visit({ params, searchParams }: { params: Promise<{ salon: string; id: string }>; searchParams: Promise<{ t?: string }> }) {
   const { salon: slug, id } = await params;
   const { t = '' } = await searchParams;
-  const { t: tr, lang } = await getT();
+  const { t: tr, lang } = await getT(slug);
   if (!(await checkId(id, t))) notFound();
   const a = await db.query.appointments.findFirst({
     where: eq(s.appointments.id, id),

@@ -14,7 +14,7 @@ export default async function Gift({ params }: { params: Promise<{ salon: string
   if (!salon) notFound();
   if (!salon.certificatesEnabled) redirect(`/${slug}/more`);
   const wa = salon.whatsapp?.replace(/\D/g, '');
-  const { t } = await getT();
+  const { t } = await getT(slug);
   const text = t('Здравствуйте! Хочу купить подарочный сертификат салона «{salon}».', { salon: salon.name });
   return (
     <main className="app home">

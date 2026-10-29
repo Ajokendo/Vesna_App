@@ -5,14 +5,15 @@ import { createContext, useContext, useEffect } from 'react';
 import { makeT, type Lang } from '@/lib/i18n';
 
 const Ctx = createContext<Lang>('ru');
+const Extra = createContext<Record<string, string> | undefined>(undefined);
 
-export function LangProvider({ lang, children }: { lang: Lang; children: React.ReactNode }) {
+export function LangProvider({ lang, extra, children }: { lang: Lang; extra?: Record<string, string>; children: React.ReactNode }) {
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
-  return <Ctx.Provider value={lang}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={lang}><Extra.Provider value={extra}>{children}</Extra.Provider></Ctx.Provider>;
 }
 
 export const useLang = () => useContext(Ctx);
-export const useT = () => makeT(useContext(Ctx));
+export const useT = () => makeT(useContext(Ctx), useContext(Extra));
 
 /** Переключатель «Кыргызча | Русский»: запоминается на телефоне на год */
 export function LangSwitch({ compact }: { compact?: boolean }) {

@@ -65,6 +65,7 @@ export const ServiceInput = z.object({
   id: z.string().optional(),
   categoryId: z.string().min(1),
   name: z.string().trim().min(2).max(80),
+  nameKy: z.string().trim().max(80).nullable().optional(),
   price: z.number().int().min(0).nullable(),
   priceMax: z.number().int().min(0).nullable(),
   durationMin: z.number().int().min(5).max(600).nullable(),
@@ -89,7 +90,7 @@ export async function saveService(slug: string, input: z.infer<typeof ServiceInp
     throw new Error('Выдержка должна заканчиваться раньше, чем вся услуга');
   }
   const values = {
-    categoryId: cat.id, name: input.name, price: cat.byLength ? null : input.price, priceMax: cat.byLength ? null : input.priceMax,
+    categoryId: cat.id, name: input.name, nameKy: input.nameKy || null, price: cat.byLength ? null : input.price, priceMax: cat.byLength ? null : input.priceMax,
     durationMin: cat.byLength ? null : input.durationMin, durationLabel: input.durationLabel || null,
     pauseAfterMin: input.pauseAfterMin || null, pauseMin: input.pauseMin || null,
     byLength: cat.byLength ? input.byLength : null, ageMin: input.ageMin, ageMax: input.ageMax, active: input.active,
@@ -108,6 +109,7 @@ export async function saveService(slug: string, input: z.infer<typeof ServiceInp
 export const CategoryInput = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(2).max(60),
+  nameKy: z.string().trim().max(60).nullable().optional(),
   hall: z.enum(['MEN', 'WOMEN']),
   note: z.string().trim().max(80).nullable(),
   byLength: z.boolean(),
@@ -122,13 +124,13 @@ export async function saveCategory(slug: string, input: z.infer<typeof CategoryI
     const cat = await db.query.serviceCategories.findFirst({ where: and(eq(s.serviceCategories.id, input.id), eq(s.serviceCategories.salonId, salon.id)) });
     if (!cat) throw new Error('Раздел не найден');
     // «по длине волос» меняется только у нового раздела — иначе сломаются цены существующих услуг
-    await db.update(s.serviceCategories).set({ name: input.name, hall: input.hall, note: input.note || null, forKids: input.forKids, active: input.active, journalGroup: input.journalGroup ?? null })
+    await db.update(s.serviceCategories).set({ name: input.name, nameKy: input.nameKy || null, hall: input.hall, note: input.note || null, forKids: input.forKids, active: input.active, journalGroup: input.journalGroup ?? null })
       .where(eq(s.serviceCategories.id, cat.id));
     return { id: cat.id };
   }
   const all = await db.query.serviceCategories.findMany({ where: eq(s.serviceCategories.salonId, salon.id) });
   const [row] = await db.insert(s.serviceCategories).values({
-    salonId: salon.id, name: input.name, hall: input.hall, note: input.note || null, byLength: input.byLength, forKids: input.forKids, journalGroup: input.journalGroup ?? null,
+    salonId: salon.id, name: input.name, nameKy: input.nameKy || null, hall: input.hall, note: input.note || null, byLength: input.byLength, forKids: input.forKids, journalGroup: input.journalGroup ?? null,
     active: input.active, sortOrder: Math.max(-1, ...all.map((c) => c.sortOrder)) + 1,
   }).returning();
   return { id: row.id };
@@ -139,6 +141,7 @@ export const StaffInput = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(2).max(60),
   title: z.string().trim().max(80).nullable(),
+  titleKy: z.string().trim().max(80).nullable().optional(),
   phone: z.string().trim().max(30).nullable(),
   isMaster: z.boolean(),
   commission: z.number().int().min(0).max(100).nullable(),
@@ -183,7 +186,7 @@ export async function saveStaff(slug: string, input: z.infer<typeof StaffInput>)
   if (input.isMaster) roles.add('MASTER'); else roles.delete('MASTER');
   const isOwner = roles.has('OWNER');
   const base = {
-    name: input.name, title: input.title || null, phone: input.phone || null, active: isOwner ? true : input.active,
+    name: input.name, title: input.title || null, ...(input.titleKy === undefined ? {} : { titleKy: input.titleKy || null }), phone: input.phone || null, active: isOwner ? true : input.active,
     roles: [...roles], commission: isOwner ? null : input.commission,
     ...(input.showRating === undefined ? {} : { showRating: input.showRating }),
     ...(input.tempo === undefined ? {} : { tempo: input.tempo }),
@@ -242,14 +245,14 @@ export async function getManageData(slug: string) {
     // логотип (большая картинка) в браузер не передаём — он доступен по ссылке logoUrl
     salon: { ...salon, logoData: null, adminPinHash: null },
     categories: categories.map((c) => ({
-      id: c.id, name: c.name, hall: c.hall, note: c.note, byLength: c.byLength, forKids: c.forKids, active: c.active, journalGroup: c.journalGroup,
+      id: c.id, name: c.name, nameKy: c.nameKy, hall: c.hall, note: c.note, byLength: c.byLength, forKids: c.forKids, active: c.active, journalGroup: c.journalGroup,
       services: c.services.map((v) => ({
-        id: v.id, name: v.name, price: v.price, priceMax: v.priceMax, durationMin: v.durationMin, durationLabel: v.durationLabel,
+        id: v.id, name: v.name, nameKy: v.nameKy, price: v.price, priceMax: v.priceMax, durationMin: v.durationMin, durationLabel: v.durationLabel,
         pauseAfterMin: v.pauseAfterMin, pauseMin: v.pauseMin, byLength: v.byLength, ageMin: v.ageMin, ageMax: v.ageMax, active: v.active,
       })),
     })),
     staff: staff.map((m) => ({
-      id: m.id, name: m.name, title: m.title, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, showRating: m.showRating, rating: ratings.get(m.id) ?? null, commission: m.commission, active: m.active, tempo: m.tempo, bufferMin: m.bufferMin,
+      id: m.id, name: m.name, title: m.title, titleKy: m.titleKy, phone: m.phone, photoUrl: m.photoUrl, roles: m.roles, showRating: m.showRating, rating: ratings.get(m.id) ?? null, commission: m.commission, active: m.active, tempo: m.tempo, bufferMin: m.bufferMin,
       categoryIds: m.categories.map((c) => c.categoryId),
       schedule: m.schedule ? {
         kind: m.schedule.kind, weekdays: m.schedule.weekdays, cycleWork: m.schedule.cycleWork, cycleOff: m.schedule.cycleOff,

@@ -103,6 +103,8 @@ export const staff = pgTable('staff', {
   /** Фото, загруженное в настройках (data:image/jpeg;base64,…) — отдаётся по /api/<салон>/staff/<id>/photo */
   photoData: text('photo_data'),
   title: text('title'),
+  /** Специализация по-кыргызски (необязательно) */
+  titleKy: text('title_ky'),
   /** Одному человеку можно выдать несколько ролей (например, владелец и мастер) */
   roles: roleEnum('roles').array().notNull().default([]),
   /** null — комиссия салона по умолчанию; у владельца-мастера комиссия не начисляется */
@@ -153,6 +155,8 @@ export const serviceCategories = pgTable('service_categories', {
   salonId: text('salon_id').notNull().references(() => salons.id, { onDelete: 'cascade' }),
   hall: hallEnum('hall').notNull(),
   name: text('name').notNull(),
+  /** Название по-кыргызски (необязательно) */
+  nameKy: text('name_ky'),
   note: text('note'),
   /** Цена и длительность зависят от длины волос */
   byLength: boolean('by_length').notNull().default(false),
@@ -177,6 +181,8 @@ export const services = pgTable('services', {
   id: id(),
   categoryId: text('category_id').notNull().references(() => serviceCategories.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  /** Название по-кыргызски (необязательно): для клиентов, выбравших кыргызский язык */
+  nameKy: text('name_ky'),
   /** Цена в сомах; для «от–до» — нижняя граница */
   price: integer('price'),
   priceMax: integer('price_max'),

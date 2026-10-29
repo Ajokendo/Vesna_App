@@ -16,7 +16,7 @@ export default async function Certificate({ params }: { params: Promise<{ salon:
   const { salon, cert } = await findCertificate(slug, decodeURIComponent(code)).catch(() => ({ salon: null, cert: null }));
   if (!salon || !cert) notFound();
   const exp = utcToZoned(cert.expiresAt, salon.timezone).date;
-  const { t, lang } = await getT();
+  const { t, lang } = await getT(slug);
   const qr = await qrSvg(`${await siteOrigin()}/${slug}/c/${cert.code}`);
   const used = cert.balance !== cert.amount;
   return (

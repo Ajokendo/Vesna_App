@@ -16,7 +16,7 @@ export default async function SalonHome({ params }: { params: Promise<{ salon: s
   const { salon: slug } = await params;
   const salon = await getSalon(slug);
   if (!salon) notFound();
-  const { t } = await getT();
+  const { t } = await getT(slug);
   const { staff, categories } = await getCatalog(salon.id);
   const halls = (['MEN', 'WOMEN'] as const).filter((h) => categories.some((c) => c.hall === h));
   // для карточки мастера: его услуги по разделам с ценой «от»

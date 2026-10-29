@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { ManageData } from '@/server/manage';
 import { Msg, inputSt, num, useSave } from './ui';
 import Hints from '@/app/Hints';
+import { KY } from '@/lib/ky';
 
 type Staff = ManageData['staff'][number];
 type Cat = ManageData['categories'][number];
@@ -81,7 +82,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
   const isOwner = !!m?.roles.includes('OWNER');
   const sc = m?.schedule;
   const [f, setF] = useState({
-    name: m?.name ?? '', title: m?.title ?? '', phone: m?.phone ?? '', isMaster: m ? m.roles.includes('MASTER') : true,
+    name: m?.name ?? '', title: m?.title ?? '', titleKy: m?.titleKy ?? '', phone: m?.phone ?? '', isMaster: m ? m.roles.includes('MASTER') : true,
     commission: m?.commission == null ? '' : String(m.commission), active: m?.active ?? true, cats: new Set(m?.categoryIds ?? []), showRating: m?.showRating ?? false,
     tempo: String(m?.tempo ?? 100), bufferMin: String(m?.bufferMin ?? 0),
   });
@@ -96,7 +97,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
 
   async function submit() {
     const d = await save('staff', {
-      id: m?.id, name: f.name.trim(), title: f.title.trim() || null, phone: f.phone.trim() || null, isMaster: f.isMaster,
+      id: m?.id, name: f.name.trim(), title: f.title.trim() || null, titleKy: f.titleKy.trim() || null, phone: f.phone.trim() || null, isMaster: f.isMaster,
       commission: num(f.commission), active: f.active, categoryIds: [...f.cats], photo, showRating: f.showRating,
       tempo: Math.min(200, Math.max(50, Number(f.tempo) || 100)), bufferMin: Math.min(60, Number(f.bufferMin) || 0),
       schedule: f.isMaster ? {
@@ -124,6 +125,7 @@ function StaffForm({ slug, m, categories, defaultCommission, onDone }: { slug: s
       <div className="grid2">
         <label className="field">Имя<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inputSt} /></label>
         <label className="field">Специализация (видят клиенты)<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={inputSt} placeholder="например: Колорист, стилист" /></label>
+        <label className="field">Специализация по-кыргызски<input value={f.titleKy} onChange={(e) => setF({ ...f, titleKy: e.target.value })} style={inputSt} placeholder={KY[f.title.trim()] ?? 'необязательно'} /></label>
         <label className="field">Телефон (необязательно)<input value={f.phone} inputMode="tel" onChange={(e) => setF({ ...f, phone: e.target.value })} style={inputSt} /></label>
         {!isOwner && (
           <label className="field">Доля мастера, %

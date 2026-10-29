@@ -20,7 +20,7 @@ export default async function MyVisits({ params }: { params: Promise<{ salon: st
   const { salon: slug } = await params;
   const salon = await getSalon(slug);
   if (!salon) notFound();
-  const { t, lang } = await getT();
+  const { t, lang } = await getT(slug);
   const [data, waiting] = await Promise.all([myVisits(slug), myWaitlist(slug)]);
   const today = utcToZoned(new Date(), salon.timezone).date;
   return (
