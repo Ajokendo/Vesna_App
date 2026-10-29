@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { addDays, dayMonth, dayMonthShort, hhmm, weekdayShort } from '@/lib/time';
+import { useLang } from '@/app/Lang';
+import { makeT } from '@/lib/i18n';
 
 type Options = {
   date: string; durationMin?: number;
@@ -29,6 +31,9 @@ export function RescheduleButton({ slug, id, title, date, today, style, onMoved,
 function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved, client }: {
   slug: string; id: string; title: string; startDate: string; today: string; onClose: () => void; onMoved: () => void; client?: { token: string; days: number };
 }) {
+  const userLang = useLang();
+  const lang = client ? userLang : 'ru'; // переводим только экран клиента
+  const t = makeT(lang);
   // администратор — свой адрес; клиент — адрес записи с ключом из ссылки
   const api = client ? `/api/${slug}/visits/${id}/reschedule` : `/api/${slug}/admin/appointments/${id}/reschedule`;
   const q = client ? `t=${encodeURIComponent(client.token)}&` : '';
@@ -48,7 +53,7 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
     fetch(`${api}?${q}date=${date}`).then(async (r) => {
       const d = await r.json().catch(() => ({}));
       if (!alive) return;
-      if (!r.ok) setError(d.error ?? 'Не получилось загрузить время'); else setOpts(d);
+      if (!r.ok) setError(d.error ?? t('Не получилось загрузить время')); else setOpts(d);
       setLoading(false);
     });
     return () => { alive = false; };
@@ -62,7 +67,7 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
     });
     const d = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setError(d.error ?? 'Не получилось'); return; }
+    if (!r.ok) { setError(d.error ?? t('Не получилось')); return; }
     router.refresh();
     onMoved();
   }
@@ -76,8 +81,8 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
   });
 
   const Times = ({ m }: { m: Options['masters'][number] }) => (
-    !m.hours ? <span className="small muted">Не работает в этот день</span>
-      : !m.starts.length ? <span className="small muted">Свободного времени нет</span>
+    !m.hours ? <span className="small muted">{t('Не работает в этот день')}</span>
+      : !m.starts.length ? <span className="small muted">{t('Свободного времени нет')}</span>
         : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: 6 }}>
             {m.starts.map((t) => {
@@ -94,7 +99,7 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
   );
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Перенос записи" onClick={onClose} style={{
+    <div role="dialog" aria-modal="true" aria-label={t('Перенос записи')} onClick={onClose} style={{
       position: 'fixed', inset: 0, background: 'rgba(23,35,28,.35)', zIndex: 70, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     }}>
       <div className="card stack" onClick={(e) => e.stopPropagation()} style={{
@@ -102,26 +107,26 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
         paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
       }}>
         <div>
-          <strong style={{ fontSize: 18 }}>{client ? 'Перенести на другое время' : 'Перенести запись'}</strong>
+          <strong style={{ fontSize: 18 }}>{client ? t('Перенести на другое время') : 'Перенести запись'}</strong>
           <div className="small muted">{title}</div>
-          {opts && <div className="small muted">Сейчас: {weekdayShort(opts.current.date)}, {dayMonth(opts.current.date)}, {hhmm(opts.current.minute)}{opts.durationMin ? ` · ${opts.durationMin} мин` : ''}</div>}
+          {opts && <div className="small muted">{t('Сейчас')}: {weekdayShort(opts.current.date, lang)}, {dayMonth(opts.current.date, lang)}, {hhmm(opts.current.minute)}{opts.durationMin ? ` · ${opts.durationMin} ${t('мин')}` : ''}</div>}
         </div>
 
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }} aria-label="День">
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }} aria-label={t('День')}>
           {days.map((d) => (
             <button key={d} type="button" style={chip(d === date)} onClick={() => setDate(d)} aria-pressed={d === date}>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>{d === today ? 'сег.' : weekdayShort(d)}</span>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>{d === today ? t('сег.') : weekdayShort(d, lang)}</span>
               <strong>{Number(d.slice(8))}</strong>
-              <span style={{ fontSize: 10 }}>{dayMonthShort(d).split(' ')[1]}</span>
+              <span style={{ fontSize: 10 }}>{dayMonthShort(d, lang).split(' ')[1]}</span>
             </button>
           ))}
         </div>
 
-        {loading ? <p className="muted" style={{ margin: 0 }}>Смотрим свободное время…</p> : opts && (
+        {loading ? <p className="muted" style={{ margin: 0 }}>{t('Смотрим свободное время…')}</p> : opts && (
           <>
             {same && (
               <section className="stack" style={{ gap: 8 }}>
-                <strong className="small">К тому же мастеру — {same.name}{same.hours ? ` (${hhmm(same.hours.start)}–${hhmm(same.hours.end)})` : ''}</strong>
+                <strong className="small">{t('К тому же мастеру')} — {same.name}{same.hours ? ` (${hhmm(same.hours.start)}–${hhmm(same.hours.end)})` : ''}</strong>
                 <Times m={same} />
               </section>
             )}
@@ -134,7 +139,7 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
               ))
             ) : (
               <button type="button" className="small" onClick={() => setOthers(true)} style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--accent-dark)', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer' }}>
-                Показать время у других мастеров ({rest.filter((m) => m.starts.length).length} свободны)
+                {t('Показать время у других мастеров ({n} свободны)', { n: rest.filter((m) => m.starts.length).length })}
               </button>
             ))}
           </>
@@ -142,12 +147,12 @@ function RescheduleDialog({ slug, id, title, startDate, today, onClose, onMoved,
 
         {error && <div className="error" role="alert">{error}</div>}
         <div className="row" style={{ position: 'sticky', bottom: 0, background: 'var(--card)', paddingTop: 8 }}>
-          <button type="button" className="btn" onClick={onClose}>Закрыть</button>
+          <button type="button" className="btn" onClick={onClose}>{t('Закрыть')}</button>
           <button type="button" className="btn primary grow" disabled={!pick || busy} onClick={save}>
-            {busy ? 'Переносим…' : pick ? `Перенести на ${weekdayShort(date)} ${Number(date.slice(8))}, ${hhmm(pick.minute)}${same && pick.staffId !== same.id ? ` · ${pick.name}` : ''}` : 'Выберите время'}
+            {busy ? t('Переносим…') : pick ? `${t('Перенести на')} ${weekdayShort(date, lang)} ${Number(date.slice(8))}, ${hhmm(pick.minute)}${same && pick.staffId !== same.id ? ` · ${pick.name}` : ''}` : t('Выберите время')}
           </button>
         </div>
-        <span className="small muted">{client ? 'Салон сразу увидит новое время в журнале. Напоминание о визите придёт к новому времени.' : 'Клиенту с включёнными уведомлениями сразу придёт сообщение о новом времени, напоминания придут заново.'}</span>
+        <span className="small muted">{client ? t('Салон сразу увидит новое время в журнале. Напоминание о визите придёт к новому времени.') : 'Клиенту с включёнными уведомлениями сразу придёт сообщение о новом времени, напоминания придут заново.'}</span>
       </div>
     </div>
   );

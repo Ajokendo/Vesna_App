@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import { themeVars } from '@/lib/color';
 import ClientLock from '@/app/ClientLock';
+import { getLang } from '@/server/lang';
+import { LangProvider } from '@/app/Lang';
 
 // Общее для всех страниц салона: название во вкладке, цвет темы, манифест (значок, быстрые пункты),
 // и демо-доступ — после даты окончания приложение салона закрывается.
@@ -30,6 +32,7 @@ export async function generateViewport({ params }: { params: Promise<{ salon: st
 export default async function SalonLayout({ children, params }: { children: React.ReactNode; params: Promise<{ salon: string }> }) {
   const { salon: slug } = await params;
   const salon = await load(slug);
+  const lang = await getLang();
   const vars = themeVars(salon?.accentColor ?? '#4E6B45');
   const css = `:root{${Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';')}}`;
   if (salon?.demoUntil && salon.demoUntil.getTime() < Date.now()) {
@@ -51,7 +54,7 @@ export default async function SalonLayout({ children, params }: { children: Reac
       <link rel="manifest" href={`/api/manifest?s=${slug}`} crossOrigin="use-credentials" />
       {salon && <Lock slug={slug} logo={salon.logoData ? `/api/${salon.slug}/logo?v=${salon.logoUrl?.split('v=')[1] ?? '1'}` : (salon.logoUrl ?? '/icon-512.png?v=2')} name={salon.name} />}
       {salon && <Splash logo={salon.logoData ? `/api/${salon.slug}/logo?v=${salon.logoUrl?.split('v=')[1] ?? '1'}` : (salon.logoUrl ?? '/icon-512.png?v=2')} name={salon.name} />}
-      {children}
+      <LangProvider lang={lang}>{children}</LangProvider>
     </>
   );
 }

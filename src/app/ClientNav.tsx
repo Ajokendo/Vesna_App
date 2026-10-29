@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Suspense } from 'react';
 import AppBonus from './AppBonus';
+import { useT } from './Lang';
 
 const ITEMS = [
   { path: '', label: 'Главная', icon: 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10' },
@@ -19,9 +20,10 @@ const ITEMS = [
  */
 export default function ClientNav({ slug, inline }: { slug: string; inline?: boolean }) {
   const pathname = usePathname();
+  const t = useT();
   const base = `/${slug}`;
   const nav = (
-    <nav aria-label="Меню" style={{
+    <nav aria-label={t('Меню')} style={{
       ...(inline ? { flex: '0 0 auto' } : { position: 'fixed' as const, left: 0, right: 0, bottom: 0, zIndex: 50 }),
       background: 'rgba(255,255,255,.97)', borderTop: '1px solid var(--line)', boxShadow: '0 -4px 16px rgba(30,40,30,.06)',
       paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)',
@@ -38,7 +40,7 @@ export default function ClientNav({ slug, inline }: { slug: string; inline?: boo
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d={it.icon} />
               </svg>
-              {it.label}
+              {t(it.label)}
             </Link>
           );
         })}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useT } from './Lang';
 
 type Card = { icon: string; title: string; text: string };
 
@@ -11,6 +12,7 @@ type Card = { icon: string; title: string; text: string };
 export default function Intro({ slug, salonName, percent, minRedeem, welcomeBonus, referralBonus }: {
   slug: string; salonName: string; percent: number; minRedeem: number; welcomeBonus: number; referralBonus: number;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
   const key = `intro_${slug}`;
@@ -21,11 +23,11 @@ export default function Intro({ slug, salonName, percent, minRedeem, welcomeBonu
     if (force || !seen) setOpen(true);
   }, [key]);
   const cards: Card[] = [
-    { icon: '🗓️', title: 'Запись в пару касаний', text: 'Выберите услугу, мастера и свободное время — без звонков. Видно только то время, когда мастер действительно свободен.' },
-    { icon: '🔔', title: 'Напомним о визите', text: 'Утром в день визита и за час до него придёт напоминание. Если планы изменились — нажмите «Опоздаю» или «Не смогу прийти».' },
-    { icon: '⭐', title: `Копите баллы — ${percent}% с визита`, text: `1 балл = 1 сом. ${minRedeem > 0 ? `Когда накопится ${minRedeem} баллов, ими` : 'Ими'} можно оплатить услугу целиком или частично. Баланс — в разделе «Баллы».` },
-    ...(welcomeBonus > 0 ? [{ icon: '🎁', title: `${welcomeBonus} баллов за установку`, text: 'Добавьте приложение на экран телефона и откройте его со значка — баллы начислятся сразу.' }] : []),
-    ...(referralBonus > 0 ? [{ icon: '🤝', title: `Приглашайте друзей — ${referralBonus} баллов`, text: 'Отправьте другу свою ссылку из раздела «Баллы». Когда он впервые придёт и оплатит визит, вам начислятся баллы.' }] : []),
+    { icon: '🗓️', title: t('Запись в пару касаний'), text: t('Выберите услугу, мастера и свободное время — без звонков. Видно только то время, когда мастер действительно свободен.') },
+    { icon: '🔔', title: t('Напомним о визите'), text: t('Утром в день визита и за час до него придёт напоминание. Если планы изменились — нажмите «Опоздаю» или «Не смогу прийти».') },
+    { icon: '⭐', title: t('Копите баллы — {p}% с визита', { p: percent }), text: minRedeem > 0 ? t('1 балл = 1 сом. Когда накопится {n} баллов, ими можно оплатить услугу целиком или частично. Баланс — в разделе «Баллы».', { n: minRedeem }) : t('1 балл = 1 сом. Ими можно оплатить услугу целиком или частично. Баланс — в разделе «Баллы».') },
+    ...(welcomeBonus > 0 ? [{ icon: '🎁', title: t('{n} баллов за установку', { n: welcomeBonus }), text: t('Добавьте приложение на экран телефона и откройте его со значка — баллы начислятся сразу.') }] : []),
+    ...(referralBonus > 0 ? [{ icon: '🤝', title: t('Приглашайте друзей — {n} баллов', { n: referralBonus }), text: t('Отправьте другу свою ссылку из раздела «Баллы». Когда он впервые придёт и оплатит визит, вам начислятся баллы.') }] : []),
   ];
   function close() {
     try { localStorage.setItem(key, '1'); } catch { /* ничего */ }
@@ -37,7 +39,7 @@ export default function Intro({ slug, salonName, percent, minRedeem, welcomeBonu
   const last = i === cards.length - 1;
   let startX = 0;
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Знакомство с приложением «${salonName}»`} style={{
+    <div role="dialog" aria-modal="true" aria-label={`${t('Знакомство с приложением')} «${salonName}»`} style={{
       position: 'fixed', inset: 0, zIndex: 85, background: 'rgba(23,35,28,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
     }}>
       <div className="card stack" onTouchStart={(e) => { startX = e.touches[0].clientX; }}
@@ -50,8 +52,8 @@ export default function Intro({ slug, salonName, percent, minRedeem, welcomeBonu
           {cards.map((_, k) => <span key={k} style={{ width: k === i ? 22 : 8, height: 8, borderRadius: 99, background: k === i ? 'var(--accent)' : 'var(--line)', transition: 'width .2s' }} />)}
         </div>
         <div className="row" style={{ gap: 8 }}>
-          {!last && <button type="button" className="btn" style={{ flex: 1 }} onClick={close}>Пропустить</button>}
-          <button type="button" className="btn primary" style={{ flex: 2 }} onClick={() => (last ? close() : setI(i + 1))}>{last ? 'Понятно, начнём!' : 'Далее'}</button>
+          {!last && <button type="button" className="btn" style={{ flex: 1 }} onClick={close}>{t('Пропустить')}</button>}
+          <button type="button" className="btn primary" style={{ flex: 2 }} onClick={() => (last ? close() : setI(i + 1))}>{last ? t('Понятно, начнём!') : t('Далее')}</button>
         </div>
       </div>
     </div>

@@ -64,13 +64,20 @@ const WD_FULL = ['понедельник', 'вторник', 'среда', 'че
 const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
-export function weekdayShort(date: DateStr) { return WD[weekdayMon0(date)]; }
-export function weekdayFull(date: DateStr) { return WD_FULL[weekdayMon0(date)]; }
-export function dayMonth(date: DateStr) {
+// Кыргызча: «29-октябрь», «29-окт», дүйшөмбү…
+const KY_WD = ['дш', 'шш', 'шр', 'бш', 'жм', 'иш', 'жк'];
+const KY_WD_FULL = ['дүйшөмбү', 'шейшемби', 'шаршемби', 'бейшемби', 'жума', 'ишемби', 'жекшемби'];
+const KY_MONTHS = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+const KY_MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+type DateLang = 'ru' | 'ky';
+
+export function weekdayShort(date: DateStr, lang: DateLang = 'ru') { return (lang === 'ky' ? KY_WD : WD)[weekdayMon0(date)]; }
+export function weekdayFull(date: DateStr, lang: DateLang = 'ru') { return (lang === 'ky' ? KY_WD_FULL : WD_FULL)[weekdayMon0(date)]; }
+export function dayMonth(date: DateStr, lang: DateLang = 'ru') {
   const [, m, d] = date.split('-').map(Number);
-  return `${d} ${MONTHS_GEN[m - 1]}`;
+  return lang === 'ky' ? `${d}-${KY_MONTHS[m - 1]}` : `${d} ${MONTHS_GEN[m - 1]}`;
 }
-export function dayMonthShort(date: DateStr) {
+export function dayMonthShort(date: DateStr, lang: DateLang = 'ru') {
   const [, m, d] = date.split('-').map(Number);
-  return `${d} ${MONTHS_SHORT[m - 1]}`;
+  return lang === 'ky' ? `${d}-${KY_MONTHS_SHORT[m - 1]}` : `${d} ${MONTHS_SHORT[m - 1]}`;
 }

@@ -5,6 +5,7 @@ import { qrSvg, siteOrigin } from '@/server/qr';
 import { formatSom } from '@/lib/pricing';
 import { dayMonth, utcToZoned } from '@/lib/time';
 import PrintButton from '../../admin/qr/PrintButton';
+import { getT } from '@/server/lang';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Подарочный сертификат' };
@@ -15,6 +16,7 @@ export default async function Certificate({ params }: { params: Promise<{ salon:
   const { salon, cert } = await findCertificate(slug, decodeURIComponent(code)).catch(() => ({ salon: null, cert: null }));
   if (!salon || !cert) notFound();
   const exp = utcToZoned(cert.expiresAt, salon.timezone).date;
+  const { t, lang } = await getT();
   const qr = await qrSvg(`${await siteOrigin()}/${slug}/c/${cert.code}`);
   const used = cert.balance !== cert.amount;
   return (
@@ -26,31 +28,31 @@ export default async function Certificate({ params }: { params: Promise<{ salon:
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {salon.logoUrl && <img src={salon.logoUrl} alt="" width={96} height={96} style={{ borderRadius: '50%' }} />}
-        <div style={{ fontFamily: 'var(--serif)', fontSize: 15, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--accent-dark)' }}>Подарочный сертификат</div>
+        <div style={{ fontFamily: 'var(--serif)', fontSize: 15, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--accent-dark)' }}>{t('Подарочный сертификат')}</div>
         <div style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 700, lineHeight: 1, color: 'var(--accent-dark)' }}>{formatSom(cert.amount)}</div>
-        <div className="muted">на любые услуги салона «{salon.name}»</div>
+        <div className="muted">{t('на любые услуги салона «{salon}»', { salon: salon.name })}</div>
         {(cert.toName || cert.fromName) && (
           <div style={{ fontSize: 17, lineHeight: 1.5 }}>
-            {cert.toName && <div>Для: <b>{cert.toName}</b></div>}
-            {cert.fromName && <div>От: <b>{cert.fromName}</b></div>}
+            {cert.toName && <div>{t('Для')}: <b>{cert.toName}</b></div>}
+            {cert.fromName && <div>{t('От')}: <b>{cert.fromName}</b></div>}
           </div>
         )}
         <div style={{ width: 60, height: 1, background: 'var(--gold)', margin: '4px 0' }} />
-        <div className="small muted">Код сертификата</div>
+        <div className="small muted">{t('Код сертификата')}</div>
         <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 26, fontWeight: 800, letterSpacing: 4 }}>{cert.code}</div>
         <div style={{ width: 120, height: 120 }} dangerouslySetInnerHTML={{ __html: qr }} />
         <div className="small" style={{ lineHeight: 1.5 }}>
-          Действует до <b>{dayMonth(exp)} {exp.slice(0, 4)}</b>
-          {used && cert.status === 'ACTIVE' && <><br />Осталось: <b>{formatSom(cert.balance)}</b> — можно потратить за несколько визитов</>}
-          {cert.status !== 'ACTIVE' && <><br /><b style={{ color: 'var(--danger)' }}>{CERT_STATUS[cert.status]}</b></>}
+          {t('Действует до')} <b>{dayMonth(exp, lang)} {exp.slice(0, 4)}</b>
+          {used && cert.status === 'ACTIVE' && <><br />{t('Осталось')}: <b>{formatSom(cert.balance)}</b> — {t('можно потратить за несколько визитов')}</>}
+          {cert.status !== 'ACTIVE' && <><br /><b style={{ color: 'var(--danger)' }}>{t(CERT_STATUS[cert.status])}</b></>}
         </div>
         <div className="small muted" style={{ lineHeight: 1.45 }}>
           {[salon.city, salon.address].filter(Boolean).join(', ')}{salon.phone ? ` · ${salon.phone}` : ''}<br />
-          Назовите код администратору при оплате.
+          {t('Назовите код администратору при оплате.')}
         </div>
       </article>
       <div className="no-print row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-        {cert.status === 'ACTIVE' && <Link href={`/${slug}/book`} className="btn primary">Записаться</Link>}
+        {cert.status === 'ACTIVE' && <Link href={`/${slug}/book`} className="btn primary">{t('Записаться')}</Link>}
         <PrintButton />
       </div>
       <style>{`.cert svg{width:100%;height:100%;display:block}

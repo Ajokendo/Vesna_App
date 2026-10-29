@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useT } from './Lang';
 
 export const isStandalone = () =>
   typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || !!(navigator as unknown as { standalone?: boolean }).standalone);
@@ -19,6 +20,7 @@ export function refreshManifest() {
  */
 export default function AppBonus({ slug }: { slug: string }) {
   const router = useRouter();
+  const t = useT();
   const pathname = usePathname();
   const sp = useSearchParams();
   const [gift, setGift] = useState<number | null>(null);
@@ -47,13 +49,13 @@ export default function AppBonus({ slug }: { slug: string }) {
 
   if (!gift) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-label="Подарок" onClick={() => setGift(null)} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(23,35,28,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div role="dialog" aria-modal="true" aria-label={t('Подарок')} onClick={() => setGift(null)} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(23,35,28,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div className="card stack" style={{ maxWidth: 360, textAlign: 'center', gap: 10, borderColor: 'var(--gold)', padding: 24 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 48, lineHeight: 1 }} aria-hidden>🎁</div>
-        <strong style={{ fontFamily: 'var(--serif)', fontSize: 24 }}>Спасибо, что с нами!</strong>
-        <span>Дарим вам <b style={{ color: 'var(--accent-dark)' }}>{gift} баллов</b> за установку приложения.</span>
-        <span className="small muted">1 балл = 1 сом. Копите дальше — с каждого визита начисляются новые баллы, а оплатить ими можно всю услугу или её часть.</span>
-        <button type="button" className="btn primary" onClick={() => { setGift(null); router.push(`/${slug}/points`); }}>Мои баллы</button>
+        <strong style={{ fontFamily: 'var(--serif)', fontSize: 24 }}>{t('Спасибо, что с нами!')}</strong>
+        <span>{t('Дарим вам {n} баллов за установку приложения.', { n: gift ?? 0 })}</span>
+        <span className="small muted">{t('1 балл = 1 сом. Копите дальше — с каждого визита начисляются новые баллы, а оплатить ими можно всю услугу или её часть.')}</span>
+        <button type="button" className="btn primary" onClick={() => { setGift(null); router.push(`/${slug}/points`); }}>{t('Мои баллы')}</button>
       </div>
     </div>
   );

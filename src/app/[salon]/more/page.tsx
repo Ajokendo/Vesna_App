@@ -8,6 +8,8 @@ import Forget from './Forget';
 import InstallCard from '@/app/InstallCard';
 import Feedback from '@/app/Feedback';
 import LockToggle from './LockToggle';
+import { getT } from '@/server/lang';
+import { LangSwitch } from '@/app/Lang';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Ещё' };
@@ -18,35 +20,36 @@ export default async function More({ params }: { params: Promise<{ salon: string
   const salon = await getSalon(slug);
   if (!salon) notFound();
   const me = await getMe(slug);
+  const { t } = await getT();
   const wa = salon.whatsapp?.replace(/\D/g, '');
   const tel = salon.phone?.replace(/\D/g, '');
   return (
     <main className="app home">
       <div className="page" style={{ gap: 'clamp(8px, 1.4dvh, 16px)', flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', paddingBottom: 12 }}>
         <div className="stack" style={{ gap: 2 }}>
-          <h1 style={{ fontSize: 24 }}>Ещё</h1>
-          {me && <span className="small muted">Вы вошли как <strong style={{ color: 'var(--ink)' }}>{me.client.name}</strong>{me.client.phone ? `, ${me.client.phone}` : ''}</span>}
+          <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}><h1 style={{ fontSize: 24 }}>{t('Ещё')}</h1><LangSwitch /></div>
+          {me && <span className="small muted">{t('Вы вошли как')} <strong style={{ color: 'var(--ink)' }}>{me.client.name}</strong>{me.client.phone ? `, ${me.client.phone}` : ''}</span>}
         </div>
 
         {/* связаться — плитками в один ряд, чтобы страница помещалась на экран без прокрутки */}
-        <section className="card" style={{ padding: '12px 10px 10px' }} aria-label="Связаться с салоном">
+        <section className="card" style={{ padding: '12px 10px 10px' }} aria-label={t('Связаться с салоном')}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))', gap: 4 }}>
             {wa && <Tile href={`https://wa.me/${wa}`} icon="chat" color="#25D366" title="WhatsApp" external />}
-            {tel && <Tile href={`tel:+${tel}`} icon="phone" color="var(--accent)" title="Позвонить" />}
+            {tel && <Tile href={`tel:+${tel}`} icon="phone" color="var(--accent)" title={t('Позвонить')} />}
             {salon.instagram && <Tile href={`https://instagram.com/${salon.instagram.replace(/^@/, '')}`} icon="camera" color="linear-gradient(45deg,#f9a03f,#e1306c 55%,#8a3ab9)" title="Instagram" external />}
-            <Tile href={mapLink(salon)} icon="pin" color="#2FAD4A" title="Маршрут" external />
+            <Tile href={mapLink(salon)} icon="pin" color="#2FAD4A" title={t('Маршрут')} external />
           </div>
           <a href={mapLink(salon)} target="_blank" rel="noreferrer" className="small muted" style={{ display: 'block', textAlign: 'center', marginTop: 8, textDecoration: 'none', lineHeight: 1.3 }}>
-            📍 {[salon.city, salon.address].filter(Boolean).join(', ')} · <span style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>открыть в 2ГИС</span>
+            📍 {[salon.city, salon.address].filter(Boolean).join(', ')} · <span style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>{t('открыть в 2ГИС')}</span>
           </a>
         </section>
 
-        <section className="card stack" style={{ gap: 0, padding: 0, overflow: 'hidden' }} aria-label="О приложении">
-          <ContactRow href={`/${slug}?intro=1`} icon="info" color="var(--gold)" title="Как пользоваться приложением" sub="Запись, напоминания, баллы, подарки" />
-          {salon.certificatesEnabled && <ContactRow href={`/${slug}/gift`} icon="gift" color="#C9A24A" title="Подарочный сертификат" sub="Подарить или проверить свой" line />}
-          <ContactRow href={`/${slug}/points`} icon="gift" color="var(--accent)" title="Пригласить друга" sub={salon.referralBonus > 0 ? `${salon.referralBonus} баллов за каждого друга` : 'Поделитесь приложением'} line />
+        <section className="card stack" style={{ gap: 0, padding: 0, overflow: 'hidden' }} aria-label={t('О приложении')}>
+          <ContactRow href={`/${slug}?intro=1`} icon="info" color="var(--gold)" title={t('Как пользоваться приложением')} sub={t('Запись, напоминания, баллы, подарки')} />
+          {salon.certificatesEnabled && <ContactRow href={`/${slug}/gift`} icon="gift" color="#C9A24A" title={t('Подарочный сертификат')} sub={t('Подарить или проверить свой')} line />}
+          <ContactRow href={`/${slug}/points`} icon="gift" color="var(--accent)" title={t('Пригласить друга')} sub={salon.referralBonus > 0 ? t('{n} баллов за каждого друга', { n: salon.referralBonus }) : t('Поделитесь приложением')} line />
           <Feedback salon={slug} role="CLIENT">
-            <ContactRow icon="mail" color="#6B7A8F" title="Написать разработчикам" sub="Ошибка в приложении или идея" line />
+            <ContactRow icon="mail" color="#6B7A8F" title={t('Написать разработчикам')} sub={t('Ошибка в приложении или идея')} line />
           </Feedback>
         </section>
 
@@ -56,7 +59,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
         <div className="stack small muted" style={{ gap: 6, marginTop: 'auto', alignItems: 'center', textAlign: 'center' }}>
           {me && <Forget slug={slug} name={me.client.name} />}
           <span className="row" style={{ justifyContent: 'center', gap: 6, flexWrap: 'wrap', fontSize: 12 }}>
-            Для сотрудников:
+            {t('Для сотрудников')}:
             <Link href={`/${slug}/master`} className="muted">Мастера</Link>·
             <Link href={`/${slug}/admin`} className="muted">Администратор</Link>·
             <Link href={`/${slug}/owner`} className="muted">Директор</Link>

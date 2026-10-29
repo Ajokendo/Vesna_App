@@ -11,6 +11,7 @@ import type { HairLength } from '@/db/schema';
 import { ageOn, formatPrice, formatSom, quote, resolveService, plural } from '@/lib/pricing';
 import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekdayShort } from '@/lib/time';
 import Hints from '@/app/Hints';
+import { useLang, useT } from '@/app/Lang';
 
 type Props = {
   welcomeBonus?: number;
@@ -34,6 +35,8 @@ const LENGTHS: { id: HairLength; name: string; cm: string }[] = [
 const TITLES = ['', 'Выберите услугу', 'Выберите мастера', 'Дата и время', 'Подтверждение'];
 
 export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0, presetStaffId = null, preset = null, me = null }: Props) {
+  const t = useT();
+  const lang = useLang();
   const [fixed, setFixed] = useState<string | null>(presetStaffId);
   const fixedMaster = fixed ? catalog.staff.find((m) => m.id === fixed) ?? null : null;
   const [step, setStep] = useState(preset && (presetStaffId || preset.any) ? 3 : 1);
@@ -138,7 +141,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
     });
     const data = await res.json();
     setSending(false);
-    if (!res.ok) { setError(data.error ?? 'Не получилось записаться'); return; }
+    if (!res.ok) { setError(data.error ? t(data.error) : t('Не получилось записаться')); return; }
     refreshManifest();
     setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId), id: data.id, token: data.visitToken });
   }
@@ -150,18 +153,18 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 0 4px #fff, 0 0 0 5.5px var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
-          <h1 style={{ fontSize: 26 }}>Вы записаны!</h1>
+          <h1 style={{ fontSize: 26 }}>{t('Вы записаны!')}</h1>
           <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
             {category?.name}: {service?.name.toLowerCase()}<br />
-            {done.staffName} · {weekdayFull(date)}, {dayMonth(date)}, {hhmm(slot.minute)}
+            {done.staffName} · {weekdayFull(date, lang)}, {dayMonth(date, lang)}, {hhmm(slot.minute)}
           </p>
           <div className="card stack" style={{ width: '100%', textAlign: 'left' }}>
-            <div className="row"><span className="grow muted">К оплате в салоне</span><strong>{formatPrice(done.total, done.totalMax)}</strong></div>
-            <div className="row"><span className="grow muted">Адрес</span><strong>{address}</strong></div>
+            <div className="row"><span className="grow muted">{t('К оплате в салоне')}</span><strong>{formatPrice(done.total, done.totalMax)}</strong></div>
+            <div className="row"><span className="grow muted">{t('Адрес')}</span><strong>{address}</strong></div>
           </div>
           <InstallCard bonus={welcomeBonus} />
           <PushOptIn slug={slug} appointmentId={done.id} token={done.token} />
-          <Link href={`/${slug}/my`} className="btn block">Мои записи</Link>
+          <Link href={`/${slug}/my`} className="btn block">{t('Мои записи')}</Link>
         </div>
         <ClientNav slug={slug} inline />
       </main>
@@ -174,13 +177,13 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
       <div className="page" style={{ paddingBottom: 12, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', gap: 14 }}>
         <header className="row">
           {step === 1 ? (
-            <Link href={`/${slug}`} className="btn" aria-label="Назад" style={{ width: 44, padding: 0 }}>‹</Link>
+            <Link href={`/${slug}`} className="btn" aria-label={t('Назад')} style={{ width: 44, padding: 0 }}>‹</Link>
           ) : (
-            <button type="button" className="btn" aria-label="Назад" style={{ width: 44, padding: 0 }} onClick={back}>‹</button>
+            <button type="button" className="btn" aria-label={t('Назад')} style={{ width: 44, padding: 0 }} onClick={back}>‹</button>
           )}
           <div className="grow">
-            <div className="small muted" style={{ fontWeight: 600 }}>{salonName} · шаг {shown} из {total}</div>
-            <h1 style={{ fontSize: 21 }}>{TITLES[step]}</h1>
+            <div className="small muted" style={{ fontWeight: 600 }}>{salonName} · {t('шаг {a} из {b}', { a: shown, b: total })}</div>
+            <h1 style={{ fontSize: 21 }}>{t(TITLES[step])}</h1>
           </div>
         </header>
         <div className="progress">{Array.from({ length: total }, (_, i) => i + 1).map((n) => <span key={n} className={n <= shown ? 'on' : ''} />)}</div>
@@ -191,10 +194,10 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
               {fixedMaster.photoUrl ? <img src={fixedMaster.photoUrl} alt="" /> : fixedMaster.name[0]}
             </span>
             <span className="grow stack" style={{ gap: 0, minWidth: 0 }}>
-              <span className="small muted">Мастер</span>
+              <span className="small muted">{t('Мастер')}</span>
               <strong>{fixedMaster.name}</strong>
             </span>
-            <button type="button" className="small" onClick={dropMaster} style={{ border: 0, background: 'none', color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>другой мастер</button>
+            <button type="button" className="small" onClick={dropMaster} style={{ border: 0, background: 'none', color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>{t('другой мастер')}</button>
           </div>
         )}
 
@@ -202,47 +205,47 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           <>
             {(!fixed || hasKids) && (
             <div className="stack">
-              <strong>Для кого</strong>
+              <strong>{t('Для кого')}</strong>
               <div className="grid2">
                 <button type="button" className="choice center" aria-pressed={!forChild} onClick={() => { setForChild(false); resetFrom('service'); }}>
-                  <strong>Для себя</strong>
+                  <strong>{t('Для себя')}</strong>
                 </button>
                 <button type="button" className="choice center" aria-pressed={forChild} onClick={() => { setForChild(true); resetFrom('service'); }}>
-                  <strong>Для ребёнка</strong><span className="small muted">цена по возрасту</span>
+                  <strong>{t('Для ребёнка')}</strong><span className="small muted">{t('цена по возрасту')}</span>
                 </button>
               </div>
               {forChild && (
                 <div className="grid2">
-                  <label className="field">Имя ребёнка<input value={child.name} onChange={(e) => setChild({ ...child, name: e.target.value })} autoComplete="off" /></label>
-                  <label className="field">Дата рождения<input type="date" value={child.birthDate} max={today} onChange={(e) => { setChild({ ...child, birthDate: e.target.value }); resetFrom('service'); }} /></label>
+                  <label className="field">{t('Имя ребёнка')}<input value={child.name} onChange={(e) => setChild({ ...child, name: e.target.value })} autoComplete="off" /></label>
+                  <label className="field">{t('Дата рождения')}<input type="date" value={child.birthDate} max={today} onChange={(e) => { setChild({ ...child, birthDate: e.target.value }); resetFrom('service'); }} /></label>
                 </div>
               )}
             </div>
             )}
 
             {bothHalls && (
-              <div className="tabs" role="group" aria-label="Зал">
-                <button type="button" aria-pressed={hall === 'MEN'} onClick={() => { setHall('MEN'); resetFrom('service'); }}>Мужской зал</button>
-                <button type="button" aria-pressed={hall === 'WOMEN'} onClick={() => { setHall('WOMEN'); resetFrom('service'); }}>Женский зал</button>
+              <div className="tabs" role="group" aria-label={t('Зал')}>
+                <button type="button" aria-pressed={hall === 'MEN'} onClick={() => { setHall('MEN'); resetFrom('service'); }}>{t('Мужской зал')}</button>
+                <button type="button" aria-pressed={hall === 'WOMEN'} onClick={() => { setHall('WOMEN'); resetFrom('service'); }}>{t('Женский зал')}</button>
               </div>
             )}
 
             {!forChild && catalog.categories.some((c) => c.hall === hall && c.byLength) && (
               <div className="stack">
-                <strong>Длина волос</strong>
+                <strong>{t('Длина волос')}</strong>
                 <div className="grid4">
                   {LENGTHS.map((l) => (
                     <button key={l.id} type="button" className="choice center" style={{ padding: '6px 2px', minHeight: 56 }} aria-pressed={length === l.id}
                       onClick={() => { setLength(l.id); resetFrom('service'); }}>
-                      <strong style={{ fontSize: 13, lineHeight: 1.15 }}>{l.name}</strong><span className="small muted" style={{ fontSize: 11 }}>{l.cm}</span>
+                      <strong style={{ fontSize: 13, lineHeight: 1.15 }}>{t(l.name)}</strong><span className="small muted" style={{ fontSize: 11 }}>{t(l.cm)}</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {forChild && childAge == null && <div className="note">Укажите дату рождения — цена детской стрижки зависит от возраста.</div>}
-            {forChild && childAge != null && items.length === 0 && <div className="note">Для этого возраста детских услуг нет — выберите «Для себя».</div>}
+            {forChild && childAge == null && <div className="note">{t('Укажите дату рождения — цена детской стрижки зависит от возраста.')}</div>}
+            {forChild && childAge != null && items.length === 0 && <div className="note">{t('Для этого возраста детских услуг нет — выберите «Для себя».')}</div>}
 
             {items.map((c) => {
               const expanded = openCat === c.id || items.length === 1;
@@ -253,7 +256,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                   style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 0, padding: expanded ? 0 : '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span className="grow stack" style={{ gap: 2 }}>
                     <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 17 }}>{c.name}</span>
-                    <span className="small muted">{c.note ? `${c.note} · ` : ''}{c.services.length} {c.services.length === 1 ? 'услуга' : c.services.length < 5 ? 'услуги' : 'услуг'} · от {formatSom(from)}</span>
+                    <span className="small muted">{c.note ? `${c.note} · ` : ''}{c.services.length} {t(c.services.length === 1 ? 'услуга' : c.services.length < 5 ? 'услуги' : 'услуг')} · {t('от')} {formatSom(from)}</span>
                   </span>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -262,14 +265,14 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                     onClick={() => { if (serviceId !== v.id) { setServiceId(v.id); setAddonIds([]); resetFrom('staff'); } }}>
                     <span className="grow stack" style={{ gap: 2 }}>
                       <strong style={{ fontSize: 15 }}>{v.name}</strong>
-                      <span className="small muted">{v.resolved!.durationLabel ?? `≈ ${v.resolved!.durationMin} мин`}</span>
+                      <span className="small muted">{v.resolved!.durationLabel ?? `≈ ${v.resolved!.durationMin} ${t('мин')}`}</span>
                     </span>
                     <strong style={{ whiteSpace: 'nowrap' }}>{formatPrice(v.resolved!.price, v.resolved!.priceMax)}</strong>
                   </button>
                 ))}
                 {expanded && c.id === category?.id && c.addons.length > 0 && (
                   <div className="stack" style={{ gap: 6 }}>
-                    <span className="small muted" style={{ fontWeight: 800 }}>Добавить к услуге</span>
+                    <span className="small muted" style={{ fontWeight: 800 }}>{t('Добавить к услуге')}</span>
                     {c.addons.map((a) => {
                       const on = addonIds.includes(a.id);
                       return (
@@ -277,7 +280,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                           <input type="checkbox" checked={on} onChange={() => setAddonIds(on ? addonIds.filter((x) => x !== a.id) : [...addonIds, a.id])} style={{ width: 20, height: 20, accentColor: 'var(--accent)' }} />
                           <span className="grow stack" style={{ gap: 0 }}>
                             <strong style={{ fontSize: 14 }}>{a.name}</strong>
-                            {a.rule === 'FREE_IF_REPEAT' && <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>Бесплатно, если прошлый раз делали у нас</span>}
+                            {a.rule === 'FREE_IF_REPEAT' && <span className="small" style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>{t('Бесплатно, если прошлый раз делали у нас')}</span>}
                           </span>
                           <strong>+{formatSom(a.price)}</strong>
                         </label>
@@ -288,7 +291,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
               </section>
               );
             })}
-            {category && /краск/i.test(category.note ?? '') && <div className="note">Цена за работу. Краска оплачивается отдельно, по расходу.</div>}
+            {category && /краск/i.test(category.note ?? '') && <div className="note">{t('Цена за работу. Краска оплачивается отдельно, по расходу.')}</div>}
           </>
         )}
 
@@ -304,9 +307,9 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                     {m?.photoUrl ? <img src={m.photoUrl} alt={m.name} /> : m ? m.name[0] : '?'}
                   </span>
                   <span className="grow stack" style={{ gap: 2 }}>
-                    <strong style={{ fontSize: 16 }}>{m ? m.name : 'Любой свободный мастер'}</strong>
-                    <span className="small muted">{m ? m.title : 'Подберём мастера на ваше время'}</span>
-                    {m?.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} · {m.rating.count} {plural(m.rating.count, 'оценка', 'оценки', 'оценок')}</span>}
+                    <strong style={{ fontSize: 16 }}>{m ? m.name : t('Любой свободный мастер')}</strong>
+                    <span className="small muted">{m ? m.title : t('Подберём мастера на ваше время')}</span>
+                    {m?.rating && <span className="small" style={{ color: '#B7860F', fontWeight: 800 }}>★ {m.rating.avg.toFixed(1).replace('.', ',')} · {m.rating.count} {t(plural(m.rating.count, 'оценка', 'оценки', 'оценок'))}</span>}
                     {m && <span className="small muted">{m.scheduleLabel}</span>}
                   </span>
                 </button>
@@ -318,10 +321,10 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
         {step === 3 && (
           <>
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <button type="button" className="btn" style={{ width: 44, padding: 0 }} aria-label="Предыдущая неделя" disabled={weekStart <= today}
+              <button type="button" className="btn" style={{ width: 44, padding: 0 }} aria-label={t('Предыдущая неделя')} disabled={weekStart <= today}
                 onClick={() => setWeekStart(addDays(weekStart, -7))}>‹</button>
-              <strong>{dayMonthShort(weekStart)} — {dayMonthShort(addDays(weekStart, 6))}</strong>
-              <button type="button" className="btn" style={{ width: 44, padding: 0 }} aria-label="Следующая неделя" disabled={weekStart >= lastWeekStart}
+              <strong>{dayMonthShort(weekStart, lang)} — {dayMonthShort(addDays(weekStart, 6), lang)}</strong>
+              <button type="button" className="btn" style={{ width: 44, padding: 0 }} aria-label={t('Следующая неделя')} disabled={weekStart >= lastWeekStart}
                 onClick={() => setWeekStart(addDays(weekStart, 7))}>›</button>
             </div>
             <div className="grid7">
@@ -329,27 +332,27 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                 <button key={d.date} type="button" className="choice center" style={{ minHeight: 64, padding: 0 }}
                   disabled={!week || d.date < today || daysBetween(today, d.date) >= horizonDays} aria-pressed={date === d.date}
                   data-busy={week && !d.available ? '1' : undefined}
-                  aria-label={`${weekdayFull(d.date)}, ${dayMonth(d.date)}${d.available ? '' : ', нет свободного времени'}`}
+                  aria-label={`${weekdayFull(d.date, lang)}, ${dayMonth(d.date, lang)}${d.available ? '' : ', ' + t('нет свободного времени')}`}
                   onClick={() => { setDate(d.date); setSlot(null); }}>
-                  <span className="small" style={{ fontWeight: 600 }}>{weekdayShort(d.date)}</span>
+                  <span className="small" style={{ fontWeight: 600 }}>{weekdayShort(d.date, lang)}</span>
                   <strong style={{ fontSize: 17 }}>{Number(d.date.slice(8))}</strong>
                 </button>
               ))}
             </div>
-            <span className="small muted">Запись открыта на {horizonDays} дней вперёд. Бледные дни — выходной мастера или всё занято: нажмите на день, чтобы встать в лист ожидания.</span>
+            <span className="small muted">{t('Запись открыта на {n} дней вперёд. Бледные дни — выходной мастера или всё занято: нажмите на день, чтобы встать в лист ожидания.', { n: horizonDays })}</span>
             {!date ? (
-              <div className="card muted" style={{ textAlign: 'center', borderStyle: 'dashed' }}>{week ? 'Выберите день' : 'Загружаем график…'}</div>
+              <div className="card muted" style={{ textAlign: 'center', borderStyle: 'dashed' }}>{week ? t('Выберите день') : t('Загружаем график…')}</div>
             ) : (
               <div className="stack">
-                <div className="row"><strong className="grow">{weekdayFull(date)}, {dayMonth(date)}</strong><span className="small muted">≈ {q?.durationMin} мин</span></div>
-                {slots == null ? <span className="muted">Загружаем свободное время…</span> : slots.length === 0 ? (
+                <div className="row"><strong className="grow">{weekdayFull(date, lang)}, {dayMonth(date, lang)}</strong><span className="small muted">≈ {q?.durationMin} {t('мин')}</span></div>
+                {slots == null ? <span className="muted">{t('Загружаем свободное время…')}</span> : slots.length === 0 ? (
                   <>
-                    <span className="muted">В этот день свободного времени нет.</span>
+                    <span className="muted">{t('В этот день свободного времени нет.')}</span>
                     <WaitOffer slug={slug} key={date} payload={{ serviceId: serviceId!, staffId: staffId!, date, length: category?.byLength ? length : null, addonIds }} client={client} setClient={setClient} prominent
-                      who={staffId === 'any' ? 'у любого мастера' : `у мастера ${staffName(staffId ?? '')}`} />
+                      who={staffId === 'any' ? t('у любого мастера') : t('у мастера {name}', { name: staffName(staffId ?? '') })} />
                   </>
                 ) : (
-                  [['Утро', 0, 12 * 60], ['День', 12 * 60, 17 * 60], ['Вечер', 17 * 60, 24 * 60]].map(([label, from, to]) => {
+                  [[t('Утро'), 0, 12 * 60], [t('День'), 12 * 60, 17 * 60], [t('Вечер'), 17 * 60, 24 * 60]].map(([label, from, to]) => {
                     const part = slots.filter((t) => t.minute >= (from as number) && t.minute < (to as number));
                     if (!part.length) return null;
                     return (
@@ -369,7 +372,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                 )}
                 {slots && slots.length > 0 && (
                   <WaitOffer slug={slug} key={`w${date}`} payload={{ serviceId: serviceId!, staffId: staffId!, date, length: category?.byLength ? length : null, addonIds }} client={client} setClient={setClient}
-                    who={staffId === 'any' ? 'у любого мастера' : `у мастера ${staffName(staffId ?? '')}`} />
+                    who={staffId === 'any' ? t('у любого мастера') : t('у мастера {name}', { name: staffName(staffId ?? '') })} />
                 )}
               </div>
             )}
@@ -380,23 +383,23 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           <>
             <section className="card stack">
               <strong style={{ fontSize: 16 }}>{category?.name}: {service?.name.toLowerCase()}</strong>
-              <span className="muted">{staffName(slot.staffId)} · {weekdayShort(date)}, {dayMonth(date)}, {hhmm(slot.minute)}</span>
-              {forChild && <span className="muted">Для: {child.name}, {childAge} лет</span>}
+              <span className="muted">{staffName(slot.staffId)} · {weekdayShort(date, lang)}, {dayMonth(date, lang)}, {hhmm(slot.minute)}</span>
+              {forChild && <span className="muted">{t('Для: {name}, {age} лет', { name: child.name, age: childAge ?? '' })}</span>}
               <div style={{ height: 1, background: 'var(--line)' }} />
               <div className="row"><span className="grow muted">{service?.name}</span><strong>{formatPrice(q.base, q.baseMax)}</strong></div>
               {q.addons.map((a) => (
                 <div key={a.id} className="row"><span className="grow muted">{a.name}</span><strong>+{formatSom(a.price)}</strong></div>
               ))}
-              <div className="row" style={{ fontSize: 18 }}><strong className="grow">Итого</strong><strong style={{ fontFamily: 'var(--serif)' }}>{q.isRange ? 'от ' : ''}{formatSom(q.total)}</strong></div>
-              {q.isRange && <div className="note">Точную цену мастер назовёт после консультации.</div>}
-              {addons.some((a) => a.rule === 'FREE_IF_REPEAT') && <div className="note">Если прошлый раз вы делали это у нас, снятие будет бесплатным — пересчитаем автоматически.</div>}
+              <div className="row" style={{ fontSize: 18 }}><strong className="grow">{t('Итого')}</strong><strong style={{ fontFamily: 'var(--serif)' }}>{q.isRange ? t('от') + ' ' : ''}{formatSom(q.total)}</strong></div>
+              {q.isRange && <div className="note">{t('Точную цену мастер назовёт после консультации.')}</div>}
+              {addons.some((a) => a.rule === 'FREE_IF_REPEAT') && <div className="note">{t('Если прошлый раз вы делали это у нас, снятие будет бесплатным — пересчитаем автоматически.')}</div>}
             </section>
 
             <section className="stack">
-              <strong>Ваши контакты</strong>
-              <label className="field">Имя<input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} autoComplete="name" /></label>
-              <label className="field">Телефон (WhatsApp)<input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} autoComplete="tel" /></label>
-              <span className="small muted">Пришлём подтверждение и напоминания. Оплата — в салоне: наличными, картой или по QR.</span>
+              <strong>{t('Ваши контакты')}</strong>
+              <label className="field">{t('Имя')}<input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} autoComplete="name" /></label>
+              <label className="field">{t('Телефон (WhatsApp)')}<input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} autoComplete="tel" /></label>
+              <span className="small muted">{t('Пришлём подтверждение и напоминания. Оплата — в салоне: наличными, картой или по QR.')}</span>
             </section>
             {error && <div className="error" role="alert">{error}</div>}
           </>
@@ -408,19 +411,19 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
           <>
             <div className="grow stack" style={{ gap: 0, minWidth: 0 }}>
               <span className="small muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {step === 1 ? (service ? category?.name : 'Ничего не выбрано') : step === 2 ? service?.name : staffId === 'any' ? 'Любой мастер' : staffName(staffId ?? '')}
+                {step === 1 ? (service ? category?.name : t('Ничего не выбрано')) : step === 2 ? service?.name : staffId === 'any' ? t('Любой мастер') : staffName(staffId ?? '')}
               </span>
               <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {step === 1 ? (q ? `${service?.name} · ${q.isRange ? 'от ' : ''}${formatSom(q.total)}` : 'Выберите услугу')
-                  : step === 2 ? (staffId ? (staffId === 'any' ? 'Любой свободный' : staffName(staffId)) : 'Выберите мастера')
-                    : (slot && date ? `${weekdayShort(date)}, ${dayMonth(date)}, ${hhmm(slot.minute)}` : 'Выберите время')}
+                {step === 1 ? (q ? `${service?.name} · ${q.isRange ? t('от') + ' ' : ''}${formatSom(q.total)}` : t('Выберите услугу'))
+                  : step === 2 ? (staffId ? (staffId === 'any' ? t('Любой свободный') : staffName(staffId)) : t('Выберите мастера'))
+                    : (slot && date ? `${weekdayShort(date, lang)}, ${dayMonth(date, lang)}, ${hhmm(slot.minute)}` : t('Выберите время'))}
               </strong>
             </div>
-            <button type="button" className="btn primary" disabled={!canNext} onClick={next}>Далее</button>
+            <button type="button" className="btn primary" disabled={!canNext} onClick={next}>{t('Далее')}</button>
           </>
         ) : (
           <button type="button" className="btn primary block" disabled={sending || client.name.trim().length < 2 || client.phone.replace(/\D/g, '').length < 9} onClick={submit}>
-            {sending ? 'Записываем…' : 'Записаться'}
+            {sending ? t('Записываем…') : t('Записаться')}
           </button>
         )}
       </div>
@@ -437,6 +440,8 @@ function WaitOffer({ slug, payload, client, setClient, who, prominent }: {
   slug: string; payload: WaitPayload; client: { name: string; phone: string };
   setClient: (c: { name: string; phone: string }) => void; who: string; prominent?: boolean;
 }) {
+  const t = useT();
+  const lang = useLang();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -445,37 +450,37 @@ function WaitOffer({ slug, payload, client, setClient, who, prominent }: {
     setBusy(true); setErr(null);
     const res = await fetch(`/api/${slug}/waitlist`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, client }) });
     setBusy(false);
-    if (!res.ok) { setErr((await res.json().catch(() => ({}))).error ?? 'Не получилось'); return; }
+    if (!res.ok) { setErr(((e: string | undefined) => (e ? t(e) : t('Не получилось')))((await res.json().catch(() => ({}))).error)); return; }
     refreshManifest();
     setDone(true);
   }
   if (done) {
     return (
       <div className="note" style={{ lineHeight: 1.45 }}>
-        ✓ Вы в листе ожидания на {weekdayShort(payload.date)}, {dayMonth(payload.date)}. Если время {who} освободится, пришлём уведомление — и администратор тоже увидит вашу заявку. Заявка — в «Моих записях».
+        ✓ {t('Вы в листе ожидания на {date}. Если время {who} освободится, пришлём уведомление — и администратор тоже увидит вашу заявку. Заявка — в «Моих записях».', { date: `${weekdayShort(payload.date, lang)}, ${dayMonth(payload.date, lang)}`, who })}
         <div style={{ marginTop: 8 }}><PushOptIn slug={slug} compact /></div>
       </div>
     );
   }
   if (!open) {
     return prominent ? (
-      <button type="button" className="btn primary" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start' }}>🔔 Сообщите, если освободится</button>
+      <button type="button" className="btn primary" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start' }}>🔔 {t('Сообщите, если освободится')}</button>
     ) : (
       <button type="button" className="small" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--accent-dark)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>
-        Нет подходящего времени? Сообщить, если освободится другое
+        {t('Нет подходящего времени? Сообщить, если освободится другое')}
       </button>
     );
   }
   return (
     <div className="card stack" style={{ gap: 8, borderColor: 'var(--gold)' }}>
-      <strong>🔔 Лист ожидания — {weekdayShort(payload.date)}, {dayMonth(payload.date)}</strong>
-      <Hints items={[['🔔', `Освободится время ${who} — сразу пришлём уведомление`], ['👀', 'Администратор тоже увидит заявку']]} />
-      <label className="field">Имя<input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} autoComplete="name" /></label>
-      <label className="field">Телефон (WhatsApp)<input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} autoComplete="tel" /></label>
+      <strong>🔔 {t('Лист ожидания')} — {weekdayShort(payload.date, lang)}, {dayMonth(payload.date, lang)}</strong>
+      <Hints items={[['🔔', t('Освободится время {who} — сразу пришлём уведомление', { who })], ['👀', t('Администратор тоже увидит заявку')]]} />
+      <label className="field">{t('Имя')}<input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} autoComplete="name" /></label>
+      <label className="field">{t('Телефон (WhatsApp)')}<input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} autoComplete="tel" /></label>
       {err && <div className="error" role="alert">{err}</div>}
       <div className="row">
-        <button type="button" className="btn" onClick={() => setOpen(false)}>Отмена</button>
-        <button type="button" className="btn primary grow" disabled={busy || client.name.trim().length < 2 || client.phone.replace(/\D/g, '').length < 9} onClick={join}>{busy ? '…' : 'Встать в лист ожидания'}</button>
+        <button type="button" className="btn" onClick={() => setOpen(false)}>{t('Отмена')}</button>
+        <button type="button" className="btn primary grow" disabled={busy || client.name.trim().length < 2 || client.phone.replace(/\D/g, '').length < 9} onClick={join}>{busy ? '…' : t('Встать в лист ожидания')}</button>
       </div>
     </div>
   );

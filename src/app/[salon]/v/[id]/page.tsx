@@ -15,6 +15,7 @@ import ClientNav from '@/app/ClientNav';
 import { mapLink } from '@/lib/map';
 import { RescheduleButton } from '../../admin/Reschedule';
 import { CLIENT_MOVE_HOURS } from '@/server/clients';
+import { getT } from '@/server/lang';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Моя запись' };
@@ -23,6 +24,7 @@ export const metadata = { title: 'Моя запись' };
 export default async function Visit({ params, searchParams }: { params: Promise<{ salon: string; id: string }>; searchParams: Promise<{ t?: string }> }) {
   const { salon: slug, id } = await params;
   const { t = '' } = await searchParams;
+  const { t: tr, lang } = await getT();
   if (!(await checkId(id, t))) notFound();
   const a = await db.query.appointments.findFirst({
     where: eq(s.appointments.id, id),
@@ -44,14 +46,14 @@ export default async function Visit({ params, searchParams }: { params: Promise<
         <header className="row">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {a.salon.logoUrl && <img src={a.salon.logoUrl} alt="" width={44} height={44} style={{ borderRadius: 12 }} />}
-          <div><h1 style={{ fontSize: 22 }}>Ваша запись</h1><span className="small muted">Салон «{a.salon.name}»</span></div>
+          <div><h1 style={{ fontSize: 22 }}>{tr('Ваша запись')}</h1><span className="small muted">{tr('Салон')} «{a.salon.name}»</span></div>
         </header>
-        {cancelled && <div className="error">Эта запись отменена.</div>}
-        {a.status === 'NO_SHOW' && <div className="error">Эта запись закрыта: вас не дождались. Запишитесь на другое время — будем рады вас видеть.</div>}
+        {cancelled && <div className="error">{tr('Эта запись отменена.')}</div>}
+        {a.status === 'NO_SHOW' && <div className="error">{tr('Эта запись закрыта: вас не дождались. Запишитесь на другое время — будем рады вас видеть.')}</div>}
         <section className="card stack" style={{ gap: 12 }}>
           <div>
             <div style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 700 }}>{hhmm(minute)}–{hhmm(end)}</div>
-            <div className="muted">{weekdayFull(date)}, {dayMonth(date)}</div>
+            <div className="muted">{weekdayFull(date, lang)}, {dayMonth(date, lang)}</div>
           </div>
           <div className="row">
             <span className="avatar">
@@ -61,26 +63,26 @@ export default async function Visit({ params, searchParams }: { params: Promise<
             <div>
               <strong>{a.staff.name}</strong>
               <div className="small muted">{a.service.category.name}: {a.service.name}{a.addons.length ? ` + ${a.addons.map((x) => x.addon.name.toLowerCase()).join(', ')}` : ''}</div>
-              {a.client.guardianId && <div className="small muted">Для: {a.client.name}</div>}
+              {a.client.guardianId && <div className="small muted">{tr('Для')}: {a.client.name}</div>}
             </div>
           </div>
-          <div className="row"><span className="grow muted">{a.paid ? 'Оплачено' : 'К оплате в салоне'}</span><strong>{a.paid ? formatSom(a.finalPrice ?? a.price) : formatPrice(a.price, a.priceMax)}</strong></div>
-          <div className="row"><span className="grow muted">Адрес</span><strong>{[a.salon.city, a.salon.address].filter(Boolean).join(', ')}</strong></div>
-          <a className="btn" href={mapLink(a.salon)} target="_blank" rel="noreferrer" style={{ minHeight: 42 }}>📍 Как добраться (2ГИС)</a>
+          <div className="row"><span className="grow muted">{a.paid ? tr('Оплачено') : tr('К оплате в салоне')}</span><strong>{a.paid ? formatSom(a.finalPrice ?? a.price) : formatPrice(a.price, a.priceMax)}</strong></div>
+          <div className="row"><span className="grow muted">{tr('Адрес')}</span><strong>{[a.salon.city, a.salon.address].filter(Boolean).join(', ')}</strong></div>
+          <a className="btn" href={mapLink(a.salon)} target="_blank" rel="noreferrer" style={{ minHeight: 42 }}>📍 {tr('Как добраться (2ГИС)')}</a>
         </section>
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <ConfirmButton slug={slug} id={a.id} token={t} confirmed={!!a.confirmedAt} />}
         {canMove && (
           <RescheduleButton slug={slug} id={a.id} title={`${a.service.name} · ${a.staff.name}`} date={date} today={today}
-            client={{ token: t, days: a.salon.bookingHorizonDays }} label="↔ Перенести на другое время" style={{ minHeight: 46, fontSize: 15 }} />
+            client={{ token: t, days: a.salon.bookingHorizonDays }} label={'↔ ' + tr('Перенести на другое время')} style={{ minHeight: 46, fontSize: 15 }} />
         )}
         {open && !canMove && a.startsAt.getTime() > Date.now() && (
-          <span className="small muted">Перенести запись за {CLIENT_MOVE_HOURS} часа до начала можно только через салон — напишите или позвоните.</span>
+          <span className="small muted">{tr('Перенести запись за {n} часа до начала можно только через салон — напишите или позвоните.', { n: CLIENT_MOVE_HOURS })}</span>
         )}
         {!cancelled && !a.paid && a.status !== 'NO_SHOW' && <LateButtons slug={slug} id={a.id} token={t} lateMinutes={a.lateMinutes} />}
         {a.paid && <RateVisit slug={slug} id={a.id} token={t} master={a.staff.name} done={review?.stars ?? null} mapUrl={a.salon.mapUrl} bonus={a.salon.reviewBonus} />}
         <InstallCard bonus={a.client.welcomeBonusAt ? 0 : a.salon.welcomeBonus} />
         {!cancelled && !a.paid && <PushOptIn slug={slug} appointmentId={a.id} token={t} compact />}
-        {wa && <a className="btn block" href={`https://wa.me/${wa}`}>Написать в салон в WhatsApp</a>}
+        {wa && <a className="btn block" href={`https://wa.me/${wa}`}>{tr('Написать в салон в WhatsApp')}</a>}
       </div>
       <ClaimMe slug={slug} id={a.id} token={t} />
       <ClientNav slug={slug} inline />
