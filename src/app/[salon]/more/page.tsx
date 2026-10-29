@@ -57,7 +57,7 @@ export default async function More({ params }: { params: Promise<{ salon: string
           {me && <Forget slug={slug} name={me.client.name} />}
           <span className="row" style={{ justifyContent: 'center', gap: 6, flexWrap: 'wrap', fontSize: 12 }}>
             Для сотрудников:
-            <Link href={`/${slug}/master`} className="muted">Кабинет мастера</Link>·
+            <Link href={`/${slug}/master`} className="muted">Мастера</Link>·
             <Link href={`/${slug}/admin`} className="muted">Администратор</Link>·
             <Link href={`/${slug}/owner`} className="muted">Директор</Link>
           </span>

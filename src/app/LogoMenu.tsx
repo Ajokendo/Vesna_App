@@ -23,9 +23,9 @@ export default function LogoMenu({ slug, children }: { slug: string; children: R
           <span aria-hidden onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div role="menu" aria-label="Для сотрудников" className="card stack" style={{ position: 'absolute', left: 0, top: 60, zIndex: 61, gap: 8, padding: 10, minWidth: 250, boxShadow: '0 10px 30px rgba(30,40,30,.18)' }}>
             <span className="small muted" style={{ padding: '0 4px' }}>Для сотрудников</span>
-            <Link role="menuitem" href={`/${slug}/master`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>✂ Кабинет мастера</Link>
+            <Link role="menuitem" href={`/${slug}/master`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>✂ Мастера</Link>
             <Link role="menuitem" href={`/${slug}/admin`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>☰ Администратор</Link>
-            <Link role="menuitem" href={`/${slug}/owner`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>📊 Кабинет директора</Link>
+            <Link role="menuitem" href={`/${slug}/owner`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>📊 Директор</Link>
           </div>
         </>
       )}

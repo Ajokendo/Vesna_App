@@ -27,9 +27,9 @@ export async function GET(req: NextRequest) {
       { src: '/icon-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],
     shortcuts: [
-      { name: 'Кабинет мастера', short_name: 'Мастер', url: `/${slug}/master`, icons: [{ src: '/shortcut-master.png', sizes: '192x192', type: 'image/png' }] },
-      { name: 'Администратор', short_name: 'Админ', url: `/${slug}/admin`, icons: [{ src: '/shortcut-admin.png', sizes: '192x192', type: 'image/png' }] },
-      { name: 'Кабинет директора', short_name: 'Директор', url: `/${slug}/owner`, icons: [{ src: '/shortcut-owner.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Мастера', short_name: 'Мастера', url: `/${slug}/master`, icons: [{ src: '/shortcut-master.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Администратор', short_name: 'Администратор', url: `/${slug}/admin`, icons: [{ src: '/shortcut-admin.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Директор', short_name: 'Директор', url: `/${slug}/owner`, icons: [{ src: '/shortcut-owner.png', sizes: '192x192', type: 'image/png' }] },
     ],
   };
   return new NextResponse(JSON.stringify(manifest), {
