@@ -35,7 +35,7 @@ export default function InstallCard({ bonus, compact }: { bonus: number; compact
       {evt ? (
         <button type="button" className="btn primary" onClick={async () => { await evt.prompt(); const c = await evt.userChoice; if (c.outcome === 'accepted') setDone(true); }}>{t('Установить')}</button>
       ) : ios ? (
-        <span className="small" style={{ lineHeight: 1.5 }}>{t('В Safari нажмите «Поделиться» (квадрат со стрелкой) → «На экран Домой». Затем откройте приложение со значка.')}{bonus ? ' ' + t('Баллы начислятся сразу.') : ''}</span>
+        <span className="small" style={{ lineHeight: 1.5 }}>{t('В Safari нажмите «Поделиться» (квадрат со стрелкой) → «На экран Домой». Затем откройте приложение со значка.')}{bonus ? ' ' + t('Баллы начислятся сразу.') : ''}<br /><span className="muted">{t('Safari есть на каждом iPhone — найдите его через поиск. В Chrome (iOS 16.4 и новее) так же: «Поделиться» → «На экран Домой».')}</span></span>
       ) : (
         <span className="small" style={{ lineHeight: 1.5 }}>{t('В Chrome откройте меню ⋮ → «Добавить на главный экран» (или «Установить приложение»). Затем откройте приложение со значка.')}{bonus ? ' ' + t('Баллы начислятся сразу.') : ''}</span>
       )}
