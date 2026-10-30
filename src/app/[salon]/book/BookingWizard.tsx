@@ -5,15 +5,16 @@ import PushOptIn from '@/app/PushOptIn';
 import ClientNav from '@/app/ClientNav';
 import InstallCard from '@/app/InstallCard';
 import { refreshManifest } from '@/app/AppBonus';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
-import { ageOn, formatPrice, formatSom, quote, resolveService, plural } from '@/lib/pricing';
+import { formatPrice, formatSom, quote, resolveService, plural } from '@/lib/pricing';
 import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekdayShort } from '@/lib/time';
 import Hints from '@/app/Hints';
 import { useLang, useT } from '@/app/Lang';
 import { durationIn, scheduleIn } from '@/lib/i18n';
 import PrepayNotice from '@/app/PrepayNotice';
+import { useRouter } from 'next/navigation';
 
 type Props = {
   welcomeBonus?: number;
@@ -39,12 +40,13 @@ const TITLES = ['', 'Выберите услугу', 'Выберите маст�
 export default function BookingWizard({ slug, salonName, address, today, horizonDays, initialHall, catalog, welcomeBonus = 0, presetStaffId = null, preset = null, me = null }: Props) {
   const t = useT();
   const lang = useLang();
+  const router = useRouter();
   const [fixed, setFixed] = useState<string | null>(presetStaffId);
   const fixedMaster = fixed ? catalog.staff.find((m) => m.id === fixed) ?? null : null;
   const [step, setStep] = useState(preset && (presetStaffId || preset.any) ? 3 : 1);
   const [hall, setHall] = useState<'MEN' | 'WOMEN'>(initialHall);
   const [forChild, setForChild] = useState(false);
-  const [child, setChild] = useState({ name: '', birthDate: '' });
+  const [child, setChild] = useState<{ name: string; age: number | null }>({ name: '', age: null });
   const [length, setLength] = useState<HairLength>(preset?.length ?? 'MEDIUM');
   const [serviceId, setServiceId] = useState<string | null>(preset?.serviceId ?? null);
   const [openCat, setOpenCat] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<null | { total: number; totalMax: number | null; staffName: string; id: string; token: string; prepay: { amount: number; due: string; details: string | null } | null }>(null);
 
-  const childAge = forChild && child.birthDate ? ageOn(child.birthDate, today) : null;
+  const childAge = forChild ? child.age : null;
 
   // разделы, где работает выбранный мастер (или все)
   const ofMaster = (c: Catalog['categories'][number]) => !fixed || c.staffIds.includes(fixed);
@@ -90,18 +92,41 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
   }, [catalog, category, service]);
   const staffName = (id: string) => catalog.staff.find((m) => m.id === id)?.name ?? '';
 
-  const query = (extra: Record<string, string>) => {
-    const p = new URLSearchParams({ serviceId: serviceId!, staffId: staffId!, ...extra });
+  const query = (extra: Record<string, string>, staff = staffId) => {
+    const p = new URLSearchParams({ serviceId: serviceId!, staffId: staff!, ...extra });
     if (category?.byLength) p.set('length', length);
     if (addonIds.length) p.set('addons', addonIds.join(','));
     return `/api/${slug}/slots?${p}`;
   };
+  // Загрузка с запасом: график недели и свободное время запрашиваются заранее (как только выбраны услуга и мастер),
+  // а при переходе на шаг «Дата и время» берутся из памяти — без ожидания. Память живёт 1 минуту
+  const cache = useRef(new Map<string, { at: number; p: Promise<{ days?: { date: string; available: boolean }[]; slots?: { minute: number; staffId: string }[] }> }>());
+  const load = (url: string) => {
+    const hit = cache.current.get(url);
+    if (hit && Date.now() - hit.at < 60_000) return hit.p;
+    const p = fetch(url).then((r) => r.json()).catch(() => ({}));
+    cache.current.set(url, { at: Date.now(), p });
+    return p;
+  };
+
+  // заранее: выбрана услуга — график «любого мастера»; выбран мастер — его график (ещё до «Далее»)
+  useEffect(() => {
+    if (!serviceId) return;
+    load(query({ week: weekStart }, 'any'));
+    if (staffId) load(query({ week: weekStart }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceId, staffId, length, addonIds.join(',')]);
 
   useEffect(() => {
     if (step !== 3 || !serviceId || !staffId) return;
     let cancelled = false;
     setWeek(null);
-    fetch(query({ week: weekStart })).then((r) => r.json()).then((d) => { if (!cancelled) setWeek(d.days ?? []); });
+    load(query({ week: weekStart })).then((d) => {
+      if (cancelled) return;
+      setWeek(d.days ?? []);
+      // и свободное время на доступные дни — чтобы день открывался сразу
+      for (const x of d.days ?? []) if (x.available) load(query({ date: x.date }));
+    });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, weekStart, serviceId, staffId, length, addonIds.join(',')]);
@@ -110,7 +135,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
     if (step !== 3 || !date) return;
     let cancelled = false;
     setSlots(null);
-    fetch(query({ date })).then((r) => r.json()).then((d) => { if (!cancelled) setSlots(d.slots ?? []); });
+    load(query({ date })).then((d) => { if (!cancelled) setSlots(d.slots ?? []); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, date]);
@@ -138,13 +163,14 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         serviceId, staffId: slot.staffId, length: category?.byLength ? length : null, addonIds, date, minute: slot.minute,
-        client, forChild: forChild ? child : null, payment: 'salon',
+        client, forChild: forChild && child.age ? { name: child.name.trim(), age: child.age } : null, payment: 'salon',
       }),
     });
     const data = await res.json();
     setSending(false);
     if (!res.ok) { setError(data.error ? t(data.error) : t('Не получилось записаться')); return; }
     refreshManifest();
+    cache.current.clear(); router.refresh(); // новые данные в «Мои записи» и в свободном времени
     setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId), id: data.id, token: data.visitToken, prepay: data.prepay ?? null });
   }
 
@@ -218,9 +244,16 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
                 </button>
               </div>
               {forChild && (
-                <div className="grid2">
+                <div className="stack" style={{ gap: 8 }}>
                   <label className="field">{t('Имя ребёнка')}<input value={child.name} onChange={(e) => setChild({ ...child, name: e.target.value })} autoComplete="off" /></label>
-                  <label className="field">{t('Дата рождения')}<input type="date" value={child.birthDate} max={today} onChange={(e) => { setChild({ ...child, birthDate: e.target.value }); resetFrom('service'); }} /></label>
+                  <span className="small" style={{ fontWeight: 700 }}>{t('Сколько лет')}</span>
+                  {/* возраст — прокруткой, без даты рождения */}
+                  <div role="radiogroup" aria-label={t('Сколько лет')} style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollSnapType: 'x mandatory' }}>
+                    {Array.from({ length: 17 }, (_, i) => i + 1).map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={child.age === n} onClick={() => { setChild({ ...child, age: n }); resetFrom('service'); }}
+                        style={{ flex: '0 0 auto', minWidth: 46, minHeight: 46, borderRadius: 12, border: `1.5px solid ${child.age === n ? 'var(--accent)' : 'var(--line)'}`, background: child.age === n ? 'var(--accent)' : '#fff', color: child.age === n ? '#fff' : 'var(--ink)', fontWeight: 800, fontSize: 16, cursor: 'pointer', scrollSnapAlign: 'start' }}>{n}</button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -247,7 +280,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
               </div>
             )}
 
-            {forChild && childAge == null && <div className="note">{t('Укажите дату рождения — цена детской стрижки зависит от возраста.')}</div>}
+            {forChild && childAge == null && <div className="note">{t('Укажите возраст — цена детской стрижки зависит от него.')}</div>}
             {forChild && childAge != null && items.length === 0 && <div className="note">{t('Для этого возраста детских услуг нет — выберите «Для себя».')}</div>}
 
             {items.map((c) => {

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { and, asc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { db, schema as s } from '@/db';
 import type { HairLength } from '@/db/schema';
@@ -18,11 +19,12 @@ import { expirePrepayments, needsPrepay } from './prepay';
 import { certificateSales, certStatus, CERT_STATUS, normalizeCode } from './certificates';
 
 /** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
-export async function getSalon(slug: string) {
+/** Салон по адресу; в пределах одного запроса — один раз (layout и страница не ходят в базу дважды) */
+export const getSalon = cache(async (slug: string) => {
   const salon = await db.query.salons.findFirst({ where: eq(s.salons.slug, slug) });
   if (salon?.demoUntil && salon.demoUntil.getTime() < Date.now()) return undefined;
   return salon;
-}
+});
 
 /** Каталог для клиента: категории с услугами и доп. опциями, мастера с графиками */
 export async function getCatalog(salonId: string) {
@@ -136,19 +138,19 @@ export async function getSlots(salonSlug: string, b: Booking & { staffId: string
 
 /** Какие дни недели доступны для записи (есть хоть одно окно) */
 export async function getWeek(salonSlug: string, b: Booking & { staffId: string; from: DateStr }) {
-  const days: { date: DateStr; available: boolean }[] = [];
-  for (let i = 0; i < 7; i++) {
+  // все 7 дней — параллельно
+  return Promise.all(Array.from({ length: 7 }, async (_, i) => {
     const date = addDays(b.from, i);
     const { slots } = await getSlots(salonSlug, { ...b, date });
-    days.push({ date, available: slots.length > 0 });
-  }
-  return days;
+    return { date, available: slots.length > 0 };
+  }));
 }
 
 export type CreateInput = Booking & {
   staffId: string; date: DateStr; minute: number;
   client: { name: string; phone: string };
-  forChild?: { name: string; birthDate: string } | null;
+  /** Запись ребёнка: имя и возраст (дату рождения не спрашиваем) */
+  forChild?: { name: string; age: number } | null;
   usePoints?: boolean; payment?: string | null; source?: 'ONLINE' | 'ADMIN' | 'WALK_IN';
 };
 
@@ -188,7 +190,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
     let visitor = client;
     if (input.forChild) {
       const child = await tx.query.clients.findFirst({ where: and(eq(s.clients.guardianId, client.id), eq(s.clients.name, input.forChild.name)) });
-      visitor = child ?? (await tx.insert(s.clients).values({ salonId: salon.id, name: input.forChild.name, birthDate: input.forChild.birthDate, guardianId: client.id }).returning())[0];
+      visitor = child ?? (await tx.insert(s.clients).values({ salonId: salon.id, name: input.forChild.name, guardianId: client.id }).returning())[0];
     }
     // Пол для поздравлений: по залу, если ещё не известен (детские услуги не в счёт)
     if (!visitor.gender && !svc.category.forKids && !input.forChild) {

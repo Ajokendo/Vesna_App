@@ -15,7 +15,7 @@ const Body = z.object({
     name: z.string().trim().min(2, 'Укажите имя'),
     phone: z.string().trim().regex(/^\+?\d[\d\s()-]{8,}$/, 'Проверьте номер телефона'),
   }),
-  forChild: z.object({ name: z.string().trim().min(2), birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).nullable().optional(),
+  forChild: z.object({ name: z.string().trim().min(2), age: z.number().int().min(0).max(17) }).nullable().optional(),
   payment: z.string().nullable().optional(),
 });
 

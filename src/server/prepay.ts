@@ -47,8 +47,11 @@ export async function setClientPrepay(slug: string, clientId: string, mode: 'ALW
   await db.update(s.clients).set({ prepay: mode }).where(and(eq(s.clients.id, clientId), eq(s.clients.salonId, salon.id)));
 }
 
-/** Отменить записи, по которым предоплату не получили вовремя. Безопасно вызывать часто */
+/** Отменить записи, по которым предоплату не получили вовремя. Безопасно вызывать часто: проверка не чаще раза в 30 секунд */
+let lastCheck = 0;
 export async function expirePrepayments() {
+  if (Date.now() - lastCheck < 30_000) return 0;
+  lastCheck = Date.now();
   const rows = await db.select().from(s.appointments).where(and(
     lt(s.appointments.prepayDue, new Date()), isNull(s.appointments.prepaidAt), eq(s.appointments.paid, false),
     inArray(s.appointments.status, ['BOOKED', 'CONFIRMED']),
