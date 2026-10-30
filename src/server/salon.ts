@@ -206,8 +206,12 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
     const startsAt = zonedToUtc(input.date, input.minute, salon.timezone);
     // клиент, который уже не приходил: онлайн-запись ждёт предоплату, иначе отменится сама
     const prepay = !isAdmin && !isNewClient && (await needsPrepay(salon, client.id))
-      ? { prepayAmount: q.total, prepayDue: new Date(Math.min(Date.now() + salon.prepayMinutes * 60000, startsAt.getTime())) }
+      ? { prepayAmount: q.total, prepayDue: new Date(Date.now() + salon.prepayMinutes * 60000) }
       : null;
+    // предоплату нужно успеть получить и проверить до визита: таким клиентам — не позже чем за «минут на оплату» + 15 минут
+    if (prepay && startsAt.getTime() - prepay.prepayDue.getTime() < 15 * 60000) {
+      throw new Error('Для этой записи нужна предоплата — выберите время позже или позвоните в салон');
+    }
     const [appt] = await tx.insert(s.appointments).values({
       salonId: salon.id, staffId, clientId: visitor.id, serviceId: svc.id, hairLength: input.length ?? null,
       startsAt, endsAt: new Date(startsAt.getTime() + masterDuration(q.durationMin, tempo) * 60000),
