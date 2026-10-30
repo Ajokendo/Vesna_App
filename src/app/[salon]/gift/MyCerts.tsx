@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { formatSom } from '@/lib/pricing';
 import { useT } from '@/app/Lang';
 
@@ -8,7 +9,9 @@ type Cert = { id: string; code: string; amount: number; balance: number; toName:
 /** Мои сертификаты: купленные мной и подаренные мне. Отправить — ссылкой в WhatsApp */
 export default function MyCerts({ slug, salonName, certs }: { slug: string; salonName: string; certs: Cert[] }) {
   const t = useT();
+  const [copied, setCopied] = useState<string | null>(null);
   if (!certs.length) return null;
+  const copy = async (code: string) => { try { await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(null), 2000); } catch { /* нет доступа */ } };
   const share = (c: Cert) => {
     const url = `${location.origin}/${slug}/c/${c.code}`;
     const text = t('🎁 Подарочный сертификат салона «{salon}» на {sum}: {url}', { salon: salonName, sum: formatSom(c.amount), url });
@@ -22,6 +25,12 @@ export default function MyCerts({ slug, salonName, certs }: { slug: string; salo
           <span className="grow stack" style={{ gap: 1, minWidth: 170 }}>
             <b>{formatSom(c.amount)}{c.balance !== c.amount && c.status === 'ACTIVE' ? ` · ${t('осталось')} ${formatSom(c.balance)}` : ''}</b>
             <span className="small muted">{[c.mine ? (c.toName ? `${t('кому')}: ${c.toName}` : t('куплен вами')) : `${t('от')}: ${c.fromName ?? ''}`, c.status === 'ACTIVE' ? `${t('до')} ${c.expires}` : null].filter(Boolean).join(' · ')}</span>
+            {c.status === 'ACTIVE' && (
+              <span className="row" style={{ gap: 8, marginTop: 4 }}>
+                <b style={{ fontFamily: 'ui-monospace, monospace', fontSize: 17, letterSpacing: 2 }}>{c.code}</b>
+                <button type="button" className="small" onClick={() => copy(c.code)} style={{ border: '1px solid var(--line)', borderRadius: 8, background: '#fff', padding: '3px 8px', cursor: 'pointer' }}>{copied === c.code ? '✓ ' + t('Скопирован') : '📋 ' + t('Копировать')}</button>
+              </span>
+            )}
             {c.status === 'PENDING' ? <span className="small" style={{ color: '#a06a00', fontWeight: 700 }}>⏳ {t('Ждёт подтверждения оплаты салоном')}</span> : null}
           </span>
           {c.status === 'ACTIVE' && (

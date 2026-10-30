@@ -40,7 +40,7 @@ export default async function Gift({ params }: { params: Promise<{ salon: string
         </section>
         <MyCerts slug={slug} salonName={salon.name} certs={certs} />
         {salon.prepayDetails && <GiftBuy slug={slug} details={salon.prepayDetails} me={me ? { name: me.client.name } : null} />}
-        <CheckCode slug={slug} />
+        <CheckCode slug={slug} hasOwn={certs.some((c) => c.status === 'ACTIVE')} />
       </div>
       <ClientNav slug={slug} inline />
     </main>
