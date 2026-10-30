@@ -211,6 +211,13 @@
       "when": 1793278859805,
       "tag": "0029_kyrgyz_names",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793328432741,
+      "tag": "0030_materials",
+      "breakpoints": true
     }
   ]
 }

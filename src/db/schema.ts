@@ -272,6 +272,8 @@ export const appointments = pgTable('appointments', {
   certificateId: text('certificate_id'),
   masterPercent: integer('master_percent'),
   masterShare: integer('master_share'),
+  /** Из цены — краска и материалы (целиком салону, доля мастера с них не считается) */
+  materials: integer('materials').notNull().default(0),
   paidAt: timestamp('paid_at', { withTimezone: true }),
   status: appointmentStatusEnum('status').notNull().default('BOOKED'),
   source: appointmentSourceEnum('source').notNull().default('ONLINE'),

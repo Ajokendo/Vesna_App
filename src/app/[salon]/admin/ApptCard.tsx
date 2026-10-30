@@ -111,6 +111,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
   const [method, setMethod] = useState<'CASH' | 'CARD' | 'QR'>('CASH');
   const [cert, setCert] = useState<CertInfo | null>(null);
   const [certSum, setCertSum] = useState('');
+  const [materials, setMaterials] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -122,7 +123,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
     try {
       calc = calcPayment({
         price: priceN, points: pointsN, balance: a.balance, earnPercent, masterPercent, minRedeem: rules.minRedeem,
-        cert: cert ? Number(certSum || 0) : 0, certBalance: cert?.balance ?? 0,
+        cert: cert ? Number(certSum || 0) : 0, certBalance: cert?.balance ?? 0, materials: Number(materials || 0),
       });
     }
     catch (e) { calcError = (e as Error).message; }
@@ -135,7 +136,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             appointmentId: a.id, price: priceN, points: pointsN, method: calc?.cash === 0 ? (calc.cert ? 'CERT' : 'POINTS') : method,
-            certCode: cert?.code ?? null, cert: cert ? Number(certSum || 0) : 0,
+            certCode: cert?.code ?? null, cert: cert ? Number(certSum || 0) : 0, materials: Number(materials || 0),
           }),
         })
       : await fetch(`/api/${slug}/admin/payments?appointmentId=${encodeURIComponent(a.id)}`, { method: 'DELETE' });
@@ -185,6 +186,10 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
             <label className="field">{isRange ? `Итоговая цена (${formatPrice(a.price, a.priceMax)})` : 'Цена, сом'}
               <input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value.replace(/\D/g, ''))} placeholder="после консультации" />
             </label>
+            <label className="field">Из них краска и материалы, сом
+              <input inputMode="numeric" value={materials} onChange={(e) => setMaterials(e.target.value.replace(/\D/g, ''))} placeholder="0 — если материалов нет" />
+              <span className="small muted" style={{ fontWeight: 400 }}>Материалы покупает салон: эта сумма целиком салону, доля мастера — с остального</span>
+            </label>
 
             <div className="stack" style={{ gap: 6 }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -222,7 +227,8 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
                 <Line label="К оплате деньгами" value={formatSom(calc.cash)} strong />
                 <Line label={`Начислим баллов (${earnPercent}% от ${calc.cash + calc.cert})`} value={`+${calc.pointsEarned}`} />
                 <Line label="Останется на счёте" value={String(calc.balanceAfter)} />
-                <Line label={masterPercent ? `Мастеру (${masterPercent}%)` : 'Мастеру — директор, вся сумма салону'} value={formatSom(calc.masterShare)} />
+                {calc.materials > 0 && <Line label="Материалы — салону" value={formatSom(calc.materials)} />}
+                <Line label={masterPercent ? `Мастеру (${masterPercent}%${calc.materials > 0 ? ' без материалов' : ''})` : 'Мастеру — директор, вся сумма салону'} value={formatSom(calc.masterShare)} />
               </div>
             )}
             {(calcError || error) && <div className="error" role="alert">{calcError || error}</div>}

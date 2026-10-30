@@ -10,6 +10,7 @@ const Pay = z.object({
   method: z.enum(['CASH', 'CARD', 'QR', 'POINTS', 'CERT']),
   certCode: z.string().trim().max(20).nullable().optional(),
   cert: z.number().int().min(0).default(0),
+  materials: z.number().int().min(0).default(0),
 });
 
 async function guard(ctx: { params: Promise<{ salon: string }> }) {

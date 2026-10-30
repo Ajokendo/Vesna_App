@@ -330,7 +330,7 @@ export const PAYMENT_METHODS = { CASH: 'Наличные', CARD: 'Карта', Q
 export type PaymentMethod = keyof typeof PAYMENT_METHODS;
 
 /** Оплата на кассе: списание баллов, начисление % от денежной части, доля мастера */
-export async function payAppointment(salonSlug: string, input: { appointmentId: string; price: number; points: number; method: PaymentMethod; certCode?: string | null; cert?: number }) {
+export async function payAppointment(salonSlug: string, input: { appointmentId: string; price: number; points: number; method: PaymentMethod; certCode?: string | null; cert?: number; materials?: number }) {
   const salon = await getSalon(salonSlug);
   if (!salon) throw new Error('Салон не найден');
   return db.transaction(async (tx) => {
@@ -356,7 +356,7 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
     }
     const p = calcPayment({
       price: input.price, points: input.points, balance: payer.points, earnPercent: salon.pointsPercent, masterPercent, minRedeem: salon.minRedeem,
-      cert: cert ? input.cert : 0, certBalance: cert?.balance ?? 0,
+      cert: cert ? input.cert : 0, certBalance: cert?.balance ?? 0, materials: input.materials ?? 0,
     });
     if (p.cash === 0) input.method = p.cert > 0 ? 'CERT' : 'POINTS';
     if (p.cash > 0 && (input.method === 'POINTS' || input.method === 'CERT')) throw new Error('Выберите, как оплачен остаток');
@@ -366,7 +366,7 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
       paid: true, status: 'DONE', paidAt: new Date(), paymentMethod: input.method,
       finalPrice: p.price, pointsUsed: p.pointsUsed, cashPaid: p.cash, pointsEarned: p.pointsEarned,
       certPaid: p.cert, certificateId: p.cert > 0 ? cert!.id : null,
-      masterPercent: p.masterPercent, masterShare: p.masterShare,
+      masterPercent: p.masterPercent, masterShare: p.masterShare, materials: p.materials,
     }).where(eq(s.appointments.id, appt.id));
     await tx.update(s.clients).set({ points: p.balanceAfter }).where(eq(s.clients.id, payer.id));
     let bal = payer.points;
