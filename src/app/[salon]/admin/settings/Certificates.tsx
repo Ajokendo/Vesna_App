@@ -8,10 +8,10 @@ import Hints from '@/app/Hints';
 
 type Row = {
   id: string; code: string; amount: number; balance: number; toName: string | null; fromName: string | null; buyerPhone: string | null;
-  sold: string; expires: string; status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED'; statusName: string;
+  sold: string; expires: string; status: 'PENDING' | 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED'; statusName: string;
 };
 
-const AMOUNTS = [1000, 2000, 3000, 5000];
+const AMOUNTS = [500, 1000, 3000, 5000];
 const METHODS = [{ id: 'CASH', name: 'Наличные' }, { id: 'CARD', name: 'Карта' }, { id: 'QR', name: 'QR / банк' }] as const;
 
 /** Вкладка «Сертификаты»: включить/выключить, выпустить сертификат после оплаты, список выпущенных */
@@ -50,7 +50,7 @@ export default function Certificates({ slug, salonName, enabled, months, rows, o
     const d = phone?.replace(/\D/g, '');
     return `https://wa.me/${d ?? ''}?text=${encodeURIComponent(text)}`;
   };
-  const shown = rows.filter((r) => !q || [r.code, r.toName, r.fromName, r.buyerPhone].some((x) => x?.toLowerCase().includes(q.toLowerCase())));
+  const shown = rows.filter((r) => r.status !== 'PENDING').filter((r) => !q || [r.code, r.toName, r.fromName, r.buyerPhone].some((x) => x?.toLowerCase().includes(q.toLowerCase())));
 
   return (
     <div className="stack" style={{ gap: 14 }}>
@@ -99,6 +99,24 @@ export default function Certificates({ slug, salonName, enabled, months, rows, o
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {rows.some((r) => r.status === 'PENDING') && (
+        <section className="card stack" style={{ gap: 8, borderColor: 'var(--gold)', background: '#fffaf0' }}>
+          <strong>🎁 Куплены в приложении — проверьте оплату ({rows.filter((r) => r.status === 'PENDING').length})</strong>
+          <span className="small muted">Сверьте чек с переводом в банке. «Оплата получена» — сертификат начнёт действовать, покупателю придёт уведомление.</span>
+          {rows.filter((r) => r.status === 'PENDING').map((r) => (
+            <div key={r.id} className="row" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 8, flexWrap: 'wrap' }}>
+              <span className="grow stack" style={{ gap: 1, minWidth: 180 }}>
+                <b>{formatSom(r.amount)}</b>
+                <span className="small muted">{[r.fromName && `от: ${r.fromName}`, r.toName && `кому: ${r.toName}`, r.buyerPhone, `заявка ${r.sold}`].filter(Boolean).join(' · ')}</span>
+              </span>
+              <a className="btn" href={`/api/${slug}/admin/certificates/receipt?id=${r.id}`} target="_blank" rel="noreferrer" style={{ minHeight: 36, fontSize: 13, padding: '0 10px' }}>📎 Чек</a>
+              <button type="button" className="btn primary" disabled={busy} onClick={() => post({ action: 'confirm', id: r.id })} style={{ minHeight: 36, fontSize: 13, padding: '0 10px' }}>✓ Оплата получена</button>
+              <button type="button" className="btn" disabled={busy} onClick={() => { if (confirm('Отклонить заявку? Сертификат не будет выпущен.')) post({ action: 'reject', id: r.id }); }} style={{ minHeight: 36, fontSize: 13, padding: '0 10px', color: 'var(--danger)' }}>Отклонить</button>
+            </div>
+          ))}
         </section>
       )}
 

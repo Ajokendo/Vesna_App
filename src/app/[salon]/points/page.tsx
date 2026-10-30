@@ -60,6 +60,7 @@ export default async function Points({ params }: { params: Promise<{ salon: stri
               {data.referralBonus > 0 && <span>• {t('За каждого приглашённого друга — {n} баллов, когда он оплатит первый визит.', { n: data.referralBonus })}</span>}
             </section>
             <section className="stack" style={{ gap: 4 }}>
+              {salon.certificatesEnabled && <Link href={`/${slug}/gift`} className="card" style={{ display: 'block', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>🎁 {t('Подарочные сертификаты — купить и мои')} ›</Link>}
               <h2 style={{ fontSize: 18 }}>{t('История')}</h2>
               {!data.history.length && <p className="muted small" style={{ margin: 0 }}>{t('Пока пусто — баллы появятся после первого оплаченного визита.')}</p>}
               {data.history.map((h) => (

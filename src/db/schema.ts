@@ -546,4 +546,12 @@ export const certificates = pgTable('certificates', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   /** Аннулирован (ошибка при выпуске, деньги вернули) */
   cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  /** Куплен клиентом в приложении: оплата переводом, чек; действует только после «Оплата получена» (paidAt) */
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  buyerClientId: text('buyer_client_id'),
+  /** Телефон получателя (необязательно) — сертификат появится в его приложении */
+  recipientPhone: text('recipient_phone'),
+  recipientClientId: text('recipient_client_id'),
+  /** Чек перевода (data:image/jpeg… или data:application/pdf…) */
+  receipt: text('receipt'),
 }, (t) => [index('cert_salon_sold').on(t.salonId, t.soldAt)]);

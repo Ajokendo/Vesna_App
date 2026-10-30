@@ -138,11 +138,11 @@ export default function SalonForm({ slug, salon, waReady }: { slug: string; salo
             <label className="field">После скольких неявок<input inputMode="numeric" value={pp.after} onChange={(e) => setPp({ ...pp, after: e.target.value.replace(/\D/g, '') })} style={inputSt} /></label>
             <label className="field">Минут на оплату<input inputMode="numeric" value={pp.min} onChange={(e) => setPp({ ...pp, min: e.target.value.replace(/\D/g, '') })} style={inputSt} /></label>
           </div>
-          <label className="field">Реквизиты для перевода (видит клиент)
-            <textarea rows={2} value={pp.details} onChange={(e) => setPp({ ...pp, details: e.target.value })} placeholder="Например: MBank +996 704 81-45-55, получатель Сурмакан Н." style={{ ...inputSt, minHeight: 64, paddingTop: 10, resize: 'vertical', fontFamily: 'inherit' }} />
-          </label>
         </div>
       )}
+      <label className="field">Реквизиты для перевода — для предоплаты и покупки сертификата в приложении (видит клиент)
+        <textarea rows={2} value={pp.details} onChange={(e) => setPp({ ...pp, details: e.target.value })} placeholder="Например: MBank +996 704 81-45-55, получатель Сурмакан Н." style={{ ...inputSt, minHeight: 64, paddingTop: 10, resize: 'vertical', fontFamily: 'inherit' }} />
+      </label>
       <div className="row"><button type="button" className="btn primary" disabled={busy} onClick={submit}>{busy ? 'Сохраняем…' : 'Сохранить'}</button><Msg msg={msg} /></div>
     </section>
   );

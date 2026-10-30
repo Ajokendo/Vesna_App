@@ -2,6 +2,11 @@ import { notFound, redirect } from 'next/navigation';
 import { getSalon } from '@/server/salon';
 import ClientNav from '@/app/ClientNav';
 import CheckCode from './CheckCode';
+import GiftBuy from './GiftBuy';
+import MyCerts from './MyCerts';
+import { getMe } from '@/server/me';
+import { myCertificates } from '@/server/certificates';
+import { dayMonthShort, utcToZoned } from '@/lib/time';
 import { getT } from '@/server/lang';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +19,12 @@ export default async function Gift({ params }: { params: Promise<{ salon: string
   if (!salon) notFound();
   if (!salon.certificatesEnabled) redirect(`/${slug}/more`);
   const wa = salon.whatsapp?.replace(/\D/g, '');
-  const { t } = await getT(slug);
+  const { t, lang } = await getT(slug);
+  const me = await getMe(slug);
+  const certs = (await myCertificates(slug)).map((c) => {
+    const z = utcToZoned(c.expiresAt, salon.timezone).date;
+    return { id: c.id, code: c.code, amount: c.amount, balance: c.balance, toName: c.toName, fromName: c.fromName, status: c.status, mine: c.mine, expires: `${dayMonthShort(z, lang)} ${z.slice(0, 4)}` };
+  });
   const text = t('Здравствуйте! Хочу купить подарочный сертификат салона «{salon}».', { salon: salon.name });
   return (
     <main className="app home">
@@ -25,9 +35,11 @@ export default async function Gift({ params }: { params: Promise<{ salon: string
           <span className="muted" style={{ lineHeight: 1.5 }}>
             {t('Сертификат на любую сумму — на любые услуги салона «{salon}». Его можно потратить за один или несколько визитов, остаток сохраняется. Действует {n} мес.', { salon: salon.name, n: salon.certificateMonths })}
           </span>
-          <span className="small" style={{ lineHeight: 1.5 }}>{t('Купить можно в салоне или написать нам — пришлём красивый сертификат ссылкой, его удобно переслать или распечатать.')}</span>
-          {wa && <a className="btn primary" href={`https://wa.me/${wa}?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">{t('Написать в WhatsApp')}</a>}
+          <span className="small" style={{ lineHeight: 1.5 }}>{salon.prepayDetails ? t('Купите прямо здесь — переводом с чеком, или в салоне. Сертификат придёт ссылкой: её удобно переслать или распечатать.') : t('Купить можно в салоне или написать нам — пришлём красивый сертификат ссылкой, его удобно переслать или распечатать.')}</span>
+          {wa && <a className={salon.prepayDetails ? 'btn' : 'btn primary'} href={`https://wa.me/${wa}?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">{t('Написать в WhatsApp')}</a>}
         </section>
+        <MyCerts slug={slug} salonName={salon.name} certs={certs} />
+        {salon.prepayDetails && <GiftBuy slug={slug} details={salon.prepayDetails} me={me ? { name: me.client.name } : null} />}
         <CheckCode slug={slug} />
       </div>
       <ClientNav slug={slug} inline />

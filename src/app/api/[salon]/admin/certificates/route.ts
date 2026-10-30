@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { isAdmin } from '@/server/admin-auth';
-import { cancelCertificate, CERT_STATUS, CertSettings, findCertificate, IssueInput, issueCertificate, setCertificateSettings } from '@/server/certificates';
+import { confirmCertificate, rejectCertificate, cancelCertificate, CERT_STATUS, CertSettings, findCertificate, IssueInput, issueCertificate, setCertificateSettings } from '@/server/certificates';
 import { dayMonth, utcToZoned } from '@/lib/time';
 
 type Ctx = { params: Promise<{ salon: string }> };
@@ -21,6 +21,8 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('settings'), data: CertSettings }),
   z.object({ action: z.literal('issue'), data: IssueInput }),
   z.object({ action: z.literal('cancel'), id: z.string().min(1) }),
+  z.object({ action: z.literal('confirm'), id: z.string().min(1) }),
+  z.object({ action: z.literal('reject'), id: z.string().min(1) }),
 ]);
 
 export async function POST(req: NextRequest, ctx: Ctx) {
@@ -32,6 +34,8 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     const b = parsed.data;
     if (b.action === 'settings') { await setCertificateSettings(salon, b.data); return NextResponse.json({ ok: true }); }
     if (b.action === 'issue') { const c = await issueCertificate(salon, b.data); return NextResponse.json({ ok: true, id: c.id, code: c.code }); }
+    if (b.action === 'confirm') { await confirmCertificate(salon, b.id); return NextResponse.json({ ok: true }); }
+    if (b.action === 'reject') { await rejectCertificate(salon, b.id); return NextResponse.json({ ok: true }); }
     await cancelCertificate(salon, b.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
