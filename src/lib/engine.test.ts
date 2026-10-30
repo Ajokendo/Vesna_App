@@ -162,7 +162,7 @@ describe('оплата баллами и доля мастера', () => {
   });
   it('часть баллами: из 140 списали 100, услуга 600 → баллы с 500, делят 500', () => {
     expect(calcPayment({ ...base, price: 600, points: 100, balance: 140 }))
-      .toEqual({ price: 600, pointsUsed: 100, cash: 500, cert: 0, pointsEarned: 25, balanceAfter: 65, masterPercent: 50, masterShare: 250, salonShare: 250, materials: 0 });
+      .toEqual({ price: 600, pointsUsed: 100, cash: 500, cert: 0, pointsEarned: 25, balanceAfter: 65, masterPercent: 50, masterShare: 250, salonShare: 250, materials: 0, prepaid: 0 });
   });
   it('целиком баллами: ни мастеру, ни салону, баллы не начисляются', () => {
     expect(calcPayment({ ...base, price: 500, points: 500, balance: 520 })).toMatchObject({ cash: 0, pointsEarned: 0, masterShare: 0, salonShare: 0, balanceAfter: 20 });
@@ -182,6 +182,8 @@ describe('оплата баллами и доля мастера', () => {
     // краска 300 из 1300 — целиком салону, мастеру 50% от 1000
     expect(calcPayment({ ...base, price: 1300, points: 0, balance: 0, materials: 300 })).toMatchObject({ masterShare: 500, salonShare: 800, materials: 300 });
     expect(() => calcPayment({ ...base, price: 300, points: 0, balance: 0, materials: 400 })).toThrow();
+    // предоплата 800 из 1000: деньгами 200, баллы и доля — со всей тысячи
+    expect(calcPayment({ ...base, price: 1000, points: 0, balance: 0, prepaid: 800 })).toMatchObject({ cash: 200, prepaid: 800, masterShare: 500, pointsEarned: 50 });
   });
   it('нельзя списать больше, чем есть или чем стоит услуга', () => {
     expect(() => calcPayment({ ...base, price: 600, points: 150, balance: 140 })).toThrow('140');

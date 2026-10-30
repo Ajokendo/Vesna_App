@@ -193,7 +193,7 @@ function Legend() {
         chip('#fdf1e2', '2px solid #d98a2b', 'опаздывает — позвонить'), chip('#fbebeb', '2px solid var(--danger)', 'не пришёл?'), chip('#fff', '2px solid var(--gold)', 'время изменил мастер'),
       ])}
       {group('Значки', [
-        icon('🔔', 'у клиента включены напоминания'), icon('✓', '«подтвердил» — подтвердил визит'), icon('⏱', 'время окончания изменено'),
+        icon('🔔', 'у клиента включены напоминания'), icon('✓', '«подтвердил» — подтвердил визит'), icon('💳', 'ждёт предоплату'), icon('⏱', 'время окончания изменено'),
         icon(<span style={{ display: 'inline-block', width: 22, borderTop: '2px dashed #9aa79c', verticalAlign: 'middle' }} />, 'выдержка краски — мастер свободен'),
         icon(<span style={{ display: 'inline-block', width: 22, borderTop: '2px dashed #b23a5a', verticalAlign: 'middle' }} />, 'сейчас'),
       ])}

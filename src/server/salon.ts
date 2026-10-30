@@ -9,11 +9,12 @@ import { notifySoon } from './notify';
 import { occupiesTime } from './status';
 import { signId } from './push';
 import { resolveService, quote } from '@/lib/pricing';
-import { addDays, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
+import { addDays, hhmm, utcToZoned, zonedToUtc, type DateStr } from '@/lib/time';
 import { categoryGroup } from '@/lib/groups';
 import { rewardReferral } from './referral';
 import { MIN_RATINGS, staffRatings } from './reviews';
 import { closeWaitlistOnBooking } from './waitlist';
+import { expirePrepayments, needsPrepay } from './prepay';
 import { certificateSales, certStatus, CERT_STATUS, normalizeCode } from './certificates';
 
 /** Салон по адресу. После окончания демо-доступа — null: страницы и API салона закрыты */
@@ -115,6 +116,7 @@ export async function getSlots(salonSlug: string, b: Booking & { staffId: string
   const salon = await getSalon(salonSlug);
   if (!salon) throw new Error('Салон не найден');
   const { svc, resolved, durationMin } = await bookingDuration(b);
+  await expirePrepayments().catch(() => 0);
   const eligible = eligibleStaffIds(svc);
   const ids = b.staffId === 'any' ? eligible : eligible.filter((id) => id === b.staffId);
   const now = utcToZoned(new Date(), salon.timezone);
@@ -202,14 +204,20 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
     const q = quote({ service: resolved, addons, repeatEligible: past.length > 0 });
 
     const startsAt = zonedToUtc(input.date, input.minute, salon.timezone);
+    // клиент, который уже не приходил: онлайн-запись ждёт предоплату, иначе отменится сама
+    const prepay = !isAdmin && !isNewClient && (await needsPrepay(salon, client.id))
+      ? { prepayAmount: q.total, prepayDue: new Date(Math.min(Date.now() + salon.prepayMinutes * 60000, startsAt.getTime())) }
+      : null;
     const [appt] = await tx.insert(s.appointments).values({
       salonId: salon.id, staffId, clientId: visitor.id, serviceId: svc.id, hairLength: input.length ?? null,
       startsAt, endsAt: new Date(startsAt.getTime() + masterDuration(q.durationMin, tempo) * 60000),
       pauseStart: resolved.pause?.after ?? null, pauseMin: resolved.pause?.min ?? null,
       price: q.total, priceMax: q.totalMax, pointsUsed: q.pointsUsed, source: input.source ?? 'ONLINE',
+      ...(prepay ?? {}),
     }).returning();
     for (const a of q.addons) await tx.insert(s.appointmentAddons).values({ appointmentId: appt.id, addonId: a.id, price: a.price });
-    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id, isNewClient, adultId: client.id };
+    return { id: appt.id, staffId, startsAt, quote: q, clientId: visitor.id, isNewClient, adultId: client.id,
+      prepay: prepay ? { amount: prepay.prepayAmount, due: hhmm(utcToZoned(prepay.prepayDue, salon.timezone).minute), details: salon.prepayDetails } : null };
   });
   // записался на этот день — заявки в листе ожидания на этот день закрываются
   await closeWaitlistOnBooking(salon.id, [created.clientId, created.adultId], input.date).catch(() => {});
@@ -294,6 +302,8 @@ export async function getJournal(salonSlug: string, date: DateStr) {
           client: a.client.name, service: a.service.name, category: a.service.category.name,
           addons: a.addons.map((x) => x.addon.name), price: a.price, priceMax: a.priceMax,
           status: a.status, source: a.source, paid: a.paid,
+          /** Ждёт предоплату (сумма и до какого времени) или предоплата получена */
+          prepay: a.prepayAmount != null ? { amount: a.prepayAmount, due: a.prepayDue ? utcToZoned(a.prepayDue, salon.timezone).minute : null, paid: !!a.prepaidAt, prepaid: a.prepaid } : null,
           pause: a.pauseStart != null && a.pauseMin ? { after: a.pauseStart, min: a.pauseMin } : null,
           phone: (a.client.guardian ?? a.client).phone,
           /** Баллы копятся на счёте взрослого: у ребёнка — на счёте родителя */
@@ -356,15 +366,15 @@ export async function payAppointment(salonSlug: string, input: { appointmentId: 
     }
     const p = calcPayment({
       price: input.price, points: input.points, balance: payer.points, earnPercent: salon.pointsPercent, masterPercent, minRedeem: salon.minRedeem,
-      cert: cert ? input.cert : 0, certBalance: cert?.balance ?? 0, materials: input.materials ?? 0,
+      cert: cert ? input.cert : 0, certBalance: cert?.balance ?? 0, materials: input.materials ?? 0, prepaid: appt.prepaidAt ? appt.prepaid : 0,
     });
-    if (p.cash === 0) input.method = p.cert > 0 ? 'CERT' : 'POINTS';
+    if (p.cash === 0) input.method = p.prepaid > 0 ? 'QR' : p.cert > 0 ? 'CERT' : 'POINTS';
     if (p.cash > 0 && (input.method === 'POINTS' || input.method === 'CERT')) throw new Error('Выберите, как оплачен остаток');
     if (cert && p.cert > 0) await tx.update(s.certificates).set({ balance: cert.balance - p.cert }).where(eq(s.certificates.id, cert.id));
 
     await tx.update(s.appointments).set({
       paid: true, status: 'DONE', paidAt: new Date(), paymentMethod: input.method,
-      finalPrice: p.price, pointsUsed: p.pointsUsed, cashPaid: p.cash, pointsEarned: p.pointsEarned,
+      finalPrice: p.price, pointsUsed: p.pointsUsed, cashPaid: p.cash + p.prepaid, pointsEarned: p.pointsEarned,
       certPaid: p.cert, certificateId: p.cert > 0 ? cert!.id : null,
       masterPercent: p.masterPercent, masterShare: p.masterShare, materials: p.materials,
     }).where(eq(s.appointments.id, appt.id));

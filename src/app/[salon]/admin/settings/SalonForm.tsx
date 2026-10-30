@@ -8,6 +8,7 @@ type Salon = {
   accentColor: string; logoUrl: string | null; hoursText: string | null; mapUrl: string | null; menHallNote: string | null; womenHallNote: string | null;
   name: string; tagline: string | null; city: string | null; address: string | null; phone: string | null; whatsapp: string | null; instagram: string | null;
   bookingHorizonDays: number; minLeadMinutes: number; pointsPercent: number; welcomeBonus: number; minRedeem: number; reviewBonus: number; referralBonus: number; referralMonthlyLimit: number; birthdayBonus: number; birthdayGreet: boolean; waNotify: boolean; defaultCommission: number; lateCallMinutes: number; noShowMinutes: number;
+  prepayEnabled: boolean; prepayAfterNoShows: number; prepayMinutes: number; prepayDetails: string | null;
 };
 
 const TEXT: { key: keyof Salon; label: string }[] = [
@@ -52,10 +53,14 @@ export default function SalonForm({ slug, salon, waReady }: { slug: string; salo
   const [color, setColor] = useState(salon.accentColor.toUpperCase());
   const [greet, setGreet] = useState(salon.birthdayGreet);
   const [wa, setWa] = useState(salon.waNotify);
+  const [pp, setPp] = useState({ on: salon.prepayEnabled, after: String(salon.prepayAfterNoShows), min: String(salon.prepayMinutes), details: salon.prepayDetails ?? '' });
   const [logo, setLogo] = useState<string | null | undefined>(undefined);
   const shownLogo = logo === undefined ? salon.logoUrl : logo;
   function submit() {
-    const data: Record<string, unknown> = { accentColor: color, logo, birthdayGreet: greet, waNotify: wa };
+    const data: Record<string, unknown> = {
+      accentColor: color, logo, birthdayGreet: greet, waNotify: wa,
+      prepayEnabled: pp.on, prepayAfterNoShows: Math.max(1, Number(pp.after) || 2), prepayMinutes: Math.max(10, Number(pp.min) || 30), prepayDetails: pp.details.trim() || null,
+    };
     for (const { key } of TEXT) data[key] = key === 'name' ? v[key].trim() : (v[key].trim() || null);
     for (const { key } of NUM) data[key] = Number(v[key]);
     save('salon', data);
@@ -118,6 +123,26 @@ export default function SalonForm({ slug, salon, waReady }: { slug: string; salo
           ]} /></span>
       </label>
       {waReady && <WaTest slug={slug} />}
+      <label className="row" style={{ gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={pp.on} onChange={(e) => setPp({ ...pp, on: e.target.checked })} style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} />
+        <span><b>Предоплата для тех, кто не приходил</b>
+          <Hints style={{ marginTop: 4 }} items={[
+            ['💳', 'Клиент с неявками при онлайн-записи видит сумму и реквизиты для перевода'],
+            ['✓', 'Пришёл перевод — администратор нажимает в записи «Предоплата получена»'],
+            ['⏳', 'Не отметили вовремя — запись отменяется сама, время освобождается'],
+          ]} /></span>
+      </label>
+      {pp.on && (
+        <div className="stack" style={{ gap: 8, marginLeft: 32 }}>
+          <div className="grid2">
+            <label className="field">После скольких неявок<input inputMode="numeric" value={pp.after} onChange={(e) => setPp({ ...pp, after: e.target.value.replace(/\D/g, '') })} style={inputSt} /></label>
+            <label className="field">Минут на оплату<input inputMode="numeric" value={pp.min} onChange={(e) => setPp({ ...pp, min: e.target.value.replace(/\D/g, '') })} style={inputSt} /></label>
+          </div>
+          <label className="field">Реквизиты для перевода (видит клиент)
+            <textarea rows={2} value={pp.details} onChange={(e) => setPp({ ...pp, details: e.target.value })} placeholder="Например: MBank +996 704 81-45-55, получатель Сурмакан Н." style={{ ...inputSt, minHeight: 64, paddingTop: 10, resize: 'vertical', fontFamily: 'inherit' }} />
+          </label>
+        </div>
+      )}
       <div className="row"><button type="button" className="btn primary" disabled={busy} onClick={submit}>{busy ? 'Сохраняем…' : 'Сохранить'}</button><Msg msg={msg} /></div>
     </section>
   );

@@ -16,6 +16,7 @@ import { mapLink } from '@/lib/map';
 import { RescheduleButton } from '../../admin/Reschedule';
 import { CLIENT_MOVE_HOURS } from '@/server/clients';
 import { getT } from '@/server/lang';
+import PrepayNotice from '@/app/PrepayNotice';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Моя запись' };
@@ -48,7 +49,9 @@ export default async function Visit({ params, searchParams }: { params: Promise<
           {a.salon.logoUrl && <img src={a.salon.logoUrl} alt="" width={44} height={44} style={{ borderRadius: 12 }} />}
           <div><h1 style={{ fontSize: 22 }}>{tr('Ваша запись')}</h1><span className="small muted">{tr('Салон')} «{a.salon.name}»</span></div>
         </header>
-        {cancelled && <div className="error">{tr('Эта запись отменена.')}</div>}
+        {a.prepayAmount != null && !a.prepaidAt && open && <PrepayNotice amount={a.prepayAmount} due={a.prepayDue ? hhmm(utcToZoned(a.prepayDue, a.salon.timezone).minute) : null} details={a.salon.prepayDetails} />}
+        {a.prepaidAt && a.prepaid > 0 && !a.paid && <div className="note">✓ {tr('Предоплата получена: {sum}', { sum: formatSom(a.prepaid) })}</div>}
+        {cancelled && <div className="error">{a.cancelledBy === 'PREPAY' ? tr('Запись отменена: предоплата не поступила вовремя. Запишитесь снова — будем рады вас видеть.') : tr('Эта запись отменена.')}</div>}
         {a.status === 'NO_SHOW' && <div className="error">{tr('Эта запись закрыта: вас не дождались. Запишитесь на другое время — будем рады вас видеть.')}</div>}
         <section className="card stack" style={{ gap: 12 }}>
           <div>

@@ -25,6 +25,8 @@ export type ApptItem = {
   arrived?: boolean;
   lateMinutes?: number | null;
   noShows?: number;
+  /** Предоплата: сколько, до какого времени (минута дня), получена ли */
+  prepay?: { amount: number; due: number | null; paid: boolean; prepaid: number } | null;
 };
 
 const METHODS = [
@@ -60,7 +62,7 @@ export default function ApptCard({ a, top, px, slug, earnPercent, masterPercent,
   const title = (
     <>
       <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>
-        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{hhmm(a.start)} {a.client}{!a.paid && a.confirmed ? ' · подтвердил' : ''}{a.push ? ' 🔔' : ''}{a.endChange ? ` ⏱${a.endChange.byMaster ? ' мастер' : ''}` : ''}{a.arrived && !a.paid ? ' · в салоне' : ''}{lateTag}
+        {a.conflict ? '⚠ ' : a.paid ? '✓ ' : ''}{a.prepay && !a.prepay.paid && !a.paid ? '💳 ' : ''}{hhmm(a.start)} {a.client}{!a.paid && a.confirmed ? ' · подтвердил' : ''}{a.push ? ' 🔔' : ''}{a.endChange ? ` ⏱${a.endChange.byMaster ? ' мастер' : ''}` : ''}{a.arrived && !a.paid ? ' · в салоне' : ''}{lateTag}
       </div>
       {a.endChange && (a.end - a.start) * px >= 48 && (
         <div style={{ fontSize: 11, fontWeight: 800, color: '#7a5a1c' }}>
@@ -124,6 +126,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
       calc = calcPayment({
         price: priceN, points: pointsN, balance: a.balance, earnPercent, masterPercent, minRedeem: rules.minRedeem,
         cert: cert ? Number(certSum || 0) : 0, certBalance: cert?.balance ?? 0, materials: Number(materials || 0),
+        prepaid: a.prepay?.paid ? a.prepay.prepaid : 0,
       });
     }
     catch (e) { calcError = (e as Error).message; }
@@ -183,6 +186,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
           </>
         ) : (
           <>
+            {a.prepay && <PrepayBox a={a} slug={slug} />}
             <label className="field">{isRange ? `Итоговая цена (${formatPrice(a.price, a.priceMax)})` : 'Цена, сом'}
               <input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value.replace(/\D/g, ''))} placeholder="после консультации" />
             </label>
@@ -222,6 +226,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
 
             {calc && (
               <div className="stack" style={{ gap: 6, background: 'var(--ground)', borderRadius: 14, padding: 12 }}>
+                {calc.prepaid > 0 && <Line label="Предоплатой (перевод)" value={`−${formatSom(calc.prepaid)}`} />}
                 {calc.pointsUsed > 0 && <Line label="Баллами" value={`−${calc.pointsUsed}`} />}
                 {calc.cert > 0 && <Line label="Сертификатом" value={`−${formatSom(calc.cert)}`} />}
                 <Line label="К оплате деньгами" value={formatSom(calc.cash)} strong />
@@ -379,6 +384,31 @@ function VisitStatus({ a, slug, rules, late, onDone }: { a: ApptItem; slug: stri
         </div>
       )}
       {error && <div className="error" role="alert">{error}</div>}
+    </div>
+  );
+}
+
+/** Предоплата по записи: ждём (до какого времени) или получена */
+function PrepayBox({ a, slug }: { a: ApptItem; slug: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const p = a.prepay!;
+  if (p.paid) return <div className="note" style={{ fontWeight: 700 }}>✓ Предоплата получена: {formatSom(p.prepaid)}</div>;
+  async function paid() {
+    setBusy(true); setErr(null);
+    const r = await fetch(`/api/${slug}/admin/prepay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'paid', id: a.id }) });
+    const d = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setErr(d.error ?? 'Не получилось'); return; }
+    router.refresh();
+  }
+  return (
+    <div className="stack" style={{ gap: 8, background: '#fff6e5', border: '1px solid #f0d9a8', borderRadius: 14, padding: 12 }}>
+      <strong>💳 Ждём предоплату {formatSom(p.amount)}{p.due != null ? ` до ${hhmm(p.due)}` : ''}</strong>
+      <span className="small muted">Клиент уже не приходил. Пришёл перевод — нажмите кнопку. Не отметите вовремя — запись отменится сама, время освободится.</span>
+      <button type="button" className="btn primary" disabled={busy} onClick={paid}>{busy ? '…' : '✓ Предоплата получена'}</button>
+      {err && <div className="error" role="alert">{err}</div>}
     </div>
   );
 }

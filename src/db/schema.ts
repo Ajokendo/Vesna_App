@@ -84,6 +84,11 @@ export const salons = pgTable('salons', {
   /** WhatsApp-уведомления клиентам (через WhatsApp Business API): включены ли и ID номера салона в Meta
    *  (пусто — номер из настроек сервера WHATSAPP_PHONE_ID) */
   waNotify: boolean('wa_notify').notNull().default(true),
+  /** Предоплата для тех, кто не приходил: включена, после скольких неявок, минут на оплату, реквизиты для перевода */
+  prepayEnabled: boolean('prepay_enabled').notNull().default(false),
+  prepayAfterNoShows: integer('prepay_after_no_shows').notNull().default(2),
+  prepayMinutes: integer('prepay_minutes').notNull().default(30),
+  prepayDetails: text('prepay_details'),
   waPhoneId: text('wa_phone_id'),
   /** Подарочные сертификаты: включены ли (выпуск, раздел у клиентов) и срок действия, месяцев.
    *  Выключение не гасит уже проданные — их по-прежнему можно принять в оплату */
@@ -238,6 +243,8 @@ export const clients = pgTable('clients', {
   referralRewardedAt: timestamp('referral_rewarded_at', { withTimezone: true }),
   /** Для детей и родственников: чей это член семьи */
   guardianId: text('guardian_id'),
+  /** Предоплата: ALWAYS — всегда просить, NEVER — не просить (администратор простил); пусто — по числу неявок */
+  prepay: text('prepay'),
   /** В каком году уже поздравили с днём рождения (чтобы не поздравить дважды) */
   birthdayGiftYear: integer('birthday_gift_year'),
   /** Заметка администратора о клиенте (аллергия, любимый мастер, особенности) — клиент её не видит */
@@ -274,6 +281,11 @@ export const appointments = pgTable('appointments', {
   masterShare: integer('master_share'),
   /** Из цены — краска и материалы (целиком салону, доля мастера с них не считается) */
   materials: integer('materials').notNull().default(0),
+  /** Предоплата: сколько нужно, до какого времени, когда получена и сколько */
+  prepayAmount: integer('prepay_amount'),
+  prepayDue: timestamp('prepay_due', { withTimezone: true }),
+  prepaidAt: timestamp('prepaid_at', { withTimezone: true }),
+  prepaid: integer('prepaid').notNull().default(0),
   paidAt: timestamp('paid_at', { withTimezone: true }),
   status: appointmentStatusEnum('status').notNull().default('BOOKED'),
   source: appointmentSourceEnum('source').notNull().default('ONLINE'),

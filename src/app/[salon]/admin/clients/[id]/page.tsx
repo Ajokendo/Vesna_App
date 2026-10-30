@@ -7,6 +7,9 @@ import { formatPrice, formatSom } from '@/lib/pricing';
 import { RescheduleButton } from '../../Reschedule';
 import ClientEditor from './ClientEditor';
 import Referral from './Referral';
+import PrepayMode from './PrepayMode';
+import { db, schema as s } from '@/db';
+import { eq } from 'drizzle-orm';
 import { referralInfo } from '@/server/referral';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +25,7 @@ export default async function ClientCard({ params }: { params: Promise<{ salon: 
   const salon = await getSalon(slug);
   if (!salon) notFound();
   const card = await getClientCard(slug, id);
+  const prepayMode = salon.prepayEnabled ? (await db.query.clients.findFirst({ where: eq(s.clients.id, id), columns: { prepay: true, guardianId: true } })) : null;
   if (!card) notFound();
   const ref = await referralInfo(card.guardian?.id ?? id);
   const today = utcToZoned(new Date(), salon.timezone).date;
@@ -56,6 +60,7 @@ export default async function ClientCard({ params }: { params: Promise<{ salon: 
         <Stat label="Оплачено деньгами" value={formatSom(card.stats.spent)} />
         <Stat label="Не пришёл" value={String(card.stats.noShows)} danger={card.stats.noShows > 0} />
       </div>
+      {prepayMode && !prepayMode.guardianId && <PrepayMode slug={slug} clientId={id} mode={(prepayMode.prepay as 'ALWAYS' | 'NEVER' | null) ?? null} noShows={card.stats.noShows} after={salon.prepayAfterNoShows} />}
       {card.stats.favorite && <span className="small muted">Чаще всего ходит к: <strong style={{ color: 'var(--ink)' }}>{card.stats.favorite}</strong></span>}
 
       {card.guardian && <Link href={`/${slug}/admin/clients/${card.guardian.id}`} className="small">Родитель: {card.guardian.name} ›</Link>}

@@ -13,6 +13,7 @@ import { addDays, dayMonth, dayMonthShort, daysBetween, hhmm, weekdayFull, weekd
 import Hints from '@/app/Hints';
 import { useLang, useT } from '@/app/Lang';
 import { durationIn, scheduleIn } from '@/lib/i18n';
+import PrepayNotice from '@/app/PrepayNotice';
 
 type Props = {
   welcomeBonus?: number;
@@ -57,7 +58,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
   const [client, setClient] = useState(me ? { name: me.name, phone: me.phone || '+996 ' } : { name: '', phone: '+996 ' });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<null | { total: number; totalMax: number | null; staffName: string; id: string; token: string }>(null);
+  const [done, setDone] = useState<null | { total: number; totalMax: number | null; staffName: string; id: string; token: string; prepay: { amount: number; due: string; details: string | null } | null }>(null);
 
   const childAge = forChild && child.birthDate ? ageOn(child.birthDate, today) : null;
 
@@ -144,7 +145,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
     setSending(false);
     if (!res.ok) { setError(data.error ? t(data.error) : t('Не получилось записаться')); return; }
     refreshManifest();
-    setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId), id: data.id, token: data.visitToken });
+    setDone({ total: data.quote.total, totalMax: data.quote.totalMax, staffName: staffName(data.staffId), id: data.id, token: data.visitToken, prepay: data.prepay ?? null });
   }
 
   if (done && date && slot) {
@@ -155,6 +156,7 @@ export default function BookingWizard({ slug, salonName, address, today, horizon
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
           <h1 style={{ fontSize: 26 }}>{t('Вы записаны!')}</h1>
+          {done.prepay && <PrepayNotice amount={done.prepay.amount} due={done.prepay.due} details={done.prepay.details} />}
           <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
             {t(category?.name ?? '')}: {t(service?.name ?? '').toLowerCase()}<br />
             {done.staffName} · {weekdayFull(date, lang)}, {dayMonth(date, lang)}, {hhmm(slot.minute)}

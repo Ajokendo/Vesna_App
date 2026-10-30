@@ -19,6 +19,8 @@ export type PaymentInput = {
   certBalance?: number;
   /** Из цены — краска и материалы: салон закупает их сам, эта сумма целиком салону, доля мастера — с остального */
   materials?: number;
+  /** Предоплата, полученная переводом заранее (деньги — как и сертификат) */
+  prepaid?: number;
 };
 
 export type Payment = {
@@ -34,6 +36,7 @@ export type Payment = {
   masterShare: number;
   salonShare: number;
   materials: number;
+  prepaid: number;
 };
 
 export function calcPayment(p: PaymentInput): Payment {
@@ -46,18 +49,19 @@ export function calcPayment(p: PaymentInput): Payment {
   if (!Number.isInteger(cert) || cert < 0) throw new Error('Сумма сертификата — целое число');
   if (cert > (p.certBalance ?? 0)) throw new Error(`На сертификате только ${p.certBalance ?? 0} сом`);
   if (cert > p.price - p.points) throw new Error('По сертификату больше, чем осталось оплатить');
+  const prepaid = Math.min(p.prepaid ?? 0, Math.max(0, p.price - p.points - cert));
   const materials = p.materials ?? 0;
   if (!Number.isInteger(materials) || materials < 0) throw new Error('Материалы — целое число');
   if (materials > p.price) throw new Error('Материалы дороже, чем вся услуга');
-  const cash = p.price - p.points - cert;
+  const cash = p.price - p.points - cert - prepaid;
   // баллы и доля мастера — с суммы, оплаченной деньгами, включая сертификат
-  const money = cash + cert;
+  const money = cash + cert + prepaid;
   const pointsEarned = Math.floor((money * p.earnPercent) / 100);
   // материалы оплачиваются из денежной части и целиком идут салону
   const masterShare = Math.round((Math.max(0, money - materials) * p.masterPercent) / 100);
   return {
     price: p.price, pointsUsed: p.points, cash, cert, pointsEarned,
     balanceAfter: p.balance - p.points + pointsEarned,
-    masterPercent: p.masterPercent, masterShare, salonShare: money - masterShare, materials,
+    masterPercent: p.masterPercent, masterShare, salonShare: money - masterShare, materials, prepaid,
   };
 }
