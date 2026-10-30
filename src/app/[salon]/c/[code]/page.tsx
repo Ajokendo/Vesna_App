@@ -8,7 +8,16 @@ import PrintButton from '../../admin/qr/PrintButton';
 import { getT } from '@/server/lang';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Подарочный сертификат' };
+/** Превью ссылки в WhatsApp: сумма и от кого — кому, вместо общего описания салона */
+export async function generateMetadata({ params }: { params: Promise<{ salon: string; code: string }> }) {
+  const { salon: slug, code } = await params;
+  const { salon, cert } = await findCertificate(slug, decodeURIComponent(code)).catch(() => ({ salon: null, cert: null }));
+  if (!salon || !cert) return { title: 'Подарочный сертификат' };
+  const title = `🎁 Подарочный сертификат на ${formatSom(cert.amount)}`;
+  const who = [cert.toName && `для ${cert.toName}`, cert.fromName && `от ${cert.fromName}`].filter(Boolean).join(' ');
+  const description = `${who ? `${who[0].toUpperCase()}${who.slice(1)}. ` : ''}На любые услуги салона «${salon.name}»${salon.city ? `, ${salon.city}` : ''}.`;
+  return { title, description, openGraph: { title, description, siteName: salon.name } };
+}
 
 /** Подарочный сертификат по ссылке: красиво на экране и для печати. Код — для оплаты в салоне */
 export default async function Certificate({ params }: { params: Promise<{ salon: string; code: string }> }) {
