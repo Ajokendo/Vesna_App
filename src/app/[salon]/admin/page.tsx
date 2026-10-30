@@ -12,6 +12,7 @@ import WaitList from './WaitList';
 import { dayWaitlist } from '@/server/waitlist';
 import { hasActiveCertificates, pendingCertificates } from '@/server/certificates';
 import { GROUPS } from '@/lib/groups';
+import StaffIntro from '@/app/StaffIntro';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,7 @@ export default async function Journal({ params, searchParams }: {
     <main className="safe" style={{ padding: '24px 28px 40px', display: 'flex', flexDirection: 'column', gap: 18, minHeight: '100dvh', overflowX: 'clip', maxWidth: '100vw' }}>
       <div className="row" style={{ justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
+        <StaffIntro slug={slug} role="admin" />
         <Link href={`/${slug}/help?r=admin`} className="btn" style={{ minHeight: 40, fontSize: 14 }}>❓ Инструкция</Link>
       </div>
 

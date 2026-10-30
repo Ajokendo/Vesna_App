@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { hhmm } from '@/lib/time';
+import Tip from './Tip';
 
 /** Время окончания записи: мастер закончит раньше или задержится (журнал администратора и кабинет мастера) */
 export default function EndTimeEditor({ start, end: initialEnd, url, compact }: { start: number; end: number; url: string; compact?: boolean }) {
@@ -34,7 +35,7 @@ export default function EndTimeEditor({ start, end: initialEnd, url, compact }: 
         </span>
       </div>
       <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-        {!compact && <span className="small muted" style={{ marginRight: 2 }}>Окончание:</span>}
+        {!compact && <span className="small muted row" style={{ marginRight: 2, gap: 4 }}>Окончание: <Tip text="Мастер задерживается или закончит раньше — поправьте время. Онлайн-запись сразу подстроится, следующий клиент не наложится." /></span>}
         <button type="button" className="btn" style={small} onClick={() => shift(-15)}>−15</button>
         <button type="button" className="btn" style={small} onClick={() => shift(-5)}>−5</button>
         <button type="button" className="btn" style={small} onClick={() => shift(5)}>+5</button>

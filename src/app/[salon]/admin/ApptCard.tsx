@@ -10,6 +10,7 @@ import { lateState, type LateState } from '@/lib/late';
 import Link from 'next/link';
 import { RescheduleButton } from './Reschedule';
 import ConnectClient from './ConnectClient';
+import Tip from '@/app/Tip';
 
 export type ApptItem = {
   id: string; start: number; end: number; date?: string; clientId?: string; visitToken?: string; client: string; service: string; addons: string[];
@@ -197,7 +198,7 @@ function PayDialog({ a, slug, earnPercent, masterPercent, rules, late, onClose }
 
             <div className="stack" style={{ gap: 6 }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="small" style={{ fontWeight: 700 }}>Баллы{a.payer !== a.client ? ` (счёт: ${a.payer})` : ''}</span>
+                <span className="small row" style={{ fontWeight: 700, gap: 6 }}>Баллы{a.payer !== a.client ? ` (счёт: ${a.payer})` : ''} <Tip slug={slug} help="pay" text={`1 балл = 1 сом. Тратить можно, когда на счёте от ${rules.minRedeem ?? 0}. Баллы — скидка: её поровну делят салон и мастер.`} /></span>
                 <span className="small muted">на счёте: <strong style={{ color: 'var(--ink)' }}>{a.balance}</strong></span>
               </div>
               {a.balance > 0 && rules.minRedeem && a.balance < rules.minRedeem ? (
@@ -376,6 +377,7 @@ function VisitStatus({ a, slug, rules, late, onDone }: { a: ApptItem; slug: stri
       ) : (
         <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           <button type="button" className="btn primary" style={small} disabled={busy} onClick={() => act('ARRIVED')}>Пришёл</button>
+          <span style={{ alignSelf: 'center' }}><Tip slug={slug} help="arrival" text="Отметьте, когда клиент пришёл. Не отмечен через 5 минут — запись станет оранжевой (позвоните), через 15 — красной: можно отметить «Не пришёл», и время освободится." /></span>
           {phone && started && <a className="btn" style={small} href={`tel:+${phone}`}>Позвонить</a>}
           {phone && started && <a className="btn" style={small} target="_blank" rel="noreferrer" href={`https://wa.me/${phone}?text=${encodeURIComponent(text)}`}>WhatsApp</a>}
           {started && (

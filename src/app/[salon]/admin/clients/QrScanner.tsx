@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import Tip from '@/app/Tip';
 
 /** Камера телефона администратора читает личный QR клиента и открывает его карточку */
 export default function QrScanner({ slug }: { slug: string }) {
@@ -12,6 +13,7 @@ export default function QrScanner({ slug }: { slug: string }) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
         Сканировать QR клиента
       </button>
+      <Tip slug={slug} help="clients" text="Клиент открывает в приложении «Баллы → Мой QR-код». Наведите камеру — откроется его карточка с баллами, даже если он пришёл без записи." />
       {open && <ScanDialog slug={slug} onClose={() => setOpen(false)} />}
     </>
   );

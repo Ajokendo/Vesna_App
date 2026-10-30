@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import type { Catalog } from '@/server/salon';
 import type { HairLength } from '@/db/schema';
 import { formatPrice, resolveService } from '@/lib/pricing';
+import Tip from '@/app/Tip';
 
 const LENGTHS: { id: HairLength; name: string }[] = [
   { id: 'SHORT', name: 'Короткие' }, { id: 'MEDIUM', name: 'Средние' }, { id: 'LONG', name: 'Длинные' }, { id: 'XLONG', name: 'Очень длинные' },
@@ -52,6 +53,7 @@ export default function NewAppointment({ slug, date, catalog, group }: { slug: s
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <button type="button" className="btn primary" onClick={() => setOpen('ADMIN')}>+ Запись</button>
         <button type="button" className="btn" style={{ background: 'var(--cream)', borderColor: 'var(--gold)' }} onClick={() => { setOpen('WALK_IN'); const d = new Date(); setTime(`${String(d.getHours()).padStart(2, '0')}:${String(Math.ceil(d.getMinutes() / 5) * 5 % 60).padStart(2, '0')}`); }}>+ Без записи</button>
+        <span style={{ alignSelf: 'center' }}><Tip slug={slug} help="new" text={<>«+ Запись» — клиент позвонил или написал: выберите время.<br />«+ Без записи» — клиент пришёл с улицы: запись сразу на сейчас.</>} /></span>
       </div>
     );
   }

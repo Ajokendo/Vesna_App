@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { PERIODS, change, type Period, type PeriodKind } from '@/lib/period';
 import { formatSom } from '@/lib/pricing';
 import { utcToZoned } from '@/lib/time';
+import Tip from '@/app/Tip';
 
 /** Период из адреса страницы: ?p=month&at=2026-10-27 (по умолчанию — текущий месяц) */
 export function readPeriod(sp: { p?: string; at?: string }, timezone: string): { kind: PeriodKind; at: string } {
@@ -37,14 +38,14 @@ export function PeriodBar({ title, base, period, today }: { title: string; base:
 }
 
 /** Плитка с цифрой и сравнением с прошлым периодом */
-export function Stat({ label, value, now, before, money = true, invert, hint }: {
-  label: string; value?: string; now: number; before?: number; money?: boolean; invert?: boolean; hint?: string;
+export function Stat({ label, value, now, before, money = true, invert, hint, tip }: {
+  label: string; value?: string; now: number; before?: number; money?: boolean; invert?: boolean; hint?: string; tip?: string;
 }) {
   const ch = before === undefined ? null : change(now, before);
   const good = ch === null ? null : invert ? ch < 0 : ch > 0;
   return (
     <div className="card stack" style={{ gap: 2, padding: '12px 14px' }}>
-      <span className="small muted">{label}</span>
+      <span className="small muted row" style={{ gap: 6 }}>{label}{tip && <Tip role="owner" text={tip} />}</span>
       <strong style={{ fontSize: 22, lineHeight: 1.2 }}>{value ?? (money ? formatSom(now) : String(now))}</strong>
       {ch !== null && ch !== 0 && (
         <span className="small" style={{ color: good ? 'var(--accent-dark)' : 'var(--danger)', fontWeight: 700 }}>

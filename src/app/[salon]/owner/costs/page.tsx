@@ -47,7 +47,7 @@ export default async function Costs({ params, searchParams }: { params: Promise<
         <Stat label="Выручка" now={r.revenue.cash} before={r.prev.cash} />
         <Stat label="Мастерам" now={r.revenue.master} before={r.prev.master} invert />
         <Stat label="Расходы" now={r.costs.total} before={r.costs.prevTotal} invert />
-        <Stat label="Прибыль" now={r.profit} before={r.prevProfit} />
+        <Stat label="Прибыль" now={r.profit} before={r.prevProfit} tip="Выручка − доли мастеров − расходы за период." />
       </div>
       <Hints items={[['🧮', 'Прибыль = выручка − доли мастеров − расходы'], ['🏠', 'Если директор сам работает мастером, доля мастера за его услуги не выделяется — вся сумма остаётся салону']]} />
 

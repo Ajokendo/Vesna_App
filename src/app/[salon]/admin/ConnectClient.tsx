@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Tip from '@/app/Tip';
 
 /**
  * «Подключить клиента к приложению»: QR со ссылкой на его запись. Клиент наводит камеру —
@@ -17,10 +18,13 @@ export default function ConnectClient({ slug, id, token, bonus }: { slug: string
   if (!token) return null;
   if (!open) {
     return (
+      <span className="row" style={{ gap: 6, alignSelf: 'flex-start' }}>
       <button type="button" className="small" onClick={() => setOpen(true)}
         style={{ alignSelf: 'flex-start', border: '1px solid var(--gold)', background: '#fbf6ea', borderRadius: 10, padding: '6px 10px', fontWeight: 800, cursor: 'pointer', color: 'var(--ink)' }}>
         📲 Подключить клиента к приложению
       </button>
+      <Tip slug={slug} help="clients" text="Клиент наводит камеру на QR — и его записи и баллы появляются в приложении на его телефоне. Дальше напоминания приходят ему сами и бесплатно (значок 🔔 в журнале)." />
+      </span>
     );
   }
   return (

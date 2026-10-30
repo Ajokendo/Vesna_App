@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { hhmm } from '@/lib/time';
 import Hints from '@/app/Hints';
+import Tip from '@/app/Tip';
 
 const toMin = (v: string) => { const [h, m] = v.split(':').map(Number); return h * 60 + m; };
 const toTime = (m: number) => hhmm(m);
@@ -49,6 +50,7 @@ export function AbsenceControl({ slug, staffId, name, date, absence, normal, usu
           style={{ alignSelf: 'flex-start', border: '1px solid #c9d6c0', background: 'var(--accent-soft)', borderRadius: 8, padding: '3px 8px', color: 'var(--accent-dark)', fontWeight: 700, cursor: 'pointer' }}>
           Выйдет в выходной…
         </button>
+        <Tip slug={slug} help="absence" text="Открыть онлайн-запись к мастеру в его выходной — например, подменяет коллегу или поменялись днями." />
         {open && <ExtraDayDialog slug={slug} staffId={staffId} name={name} date={date} usual={usual} onClose={() => setOpen(false)} />}
       </>
     );
@@ -59,6 +61,7 @@ export function AbsenceControl({ slug, staffId, name, date, absence, normal, usu
         style={{ alignSelf: 'flex-start', border: '1px solid #e5c9cf', background: '#fbf3f4', borderRadius: 8, padding: '3px 8px', color: 'var(--danger)', fontWeight: 700, cursor: 'pointer' }}>
         Не выйдет…
       </button>
+      <Tip slug={slug} help="absence" text="Заболел, отгул, уйдёт раньше. Онлайн-запись на это время закроется, а уже записанные клиенты появятся списком — передайте другому мастеру или предупредите." />
       {open && <AbsenceDialog slug={slug} staffId={staffId} name={name} date={date} normal={normal} onClose={() => setOpen(false)} />}
     </>
   );

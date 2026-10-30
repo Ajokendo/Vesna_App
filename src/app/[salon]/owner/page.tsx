@@ -6,6 +6,8 @@ import { formatSom } from '@/lib/pricing';
 import { utcToZoned } from '@/lib/time';
 import { PeriodBar, Stat, grid, readPeriod } from './ui';
 import OwnerAccount from './OwnerAccount';
+import Tip from '@/app/Tip';
+import StaffIntro from '@/app/StaffIntro';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,15 +25,16 @@ export default async function Revenue({ params, searchParams }: { params: Promis
 
   return (
     <main className="safe" style={{ padding: '24px 20px 32px', maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <StaffIntro slug={slug} role="owner" />
       <PeriodBar title="Выручка" base={`/${slug}/owner`} period={r.period} today={today} />
 
       <div style={grid}>
         <Stat label="Выручка (деньгами)" now={v.cash} before={r.prev.cash} />
-        <Stat label="Салону после мастеров" now={v.salon} before={r.prev.salon} />
+        <Stat label="Салону после мастеров" now={v.salon} before={r.prev.salon} tip="Выручка минус доли мастеров. Расходы (аренда, материалы) ещё не вычтены — это в «Расходы»." />
         <Stat label="Визитов" now={v.visits} before={r.prev.visits} money={false} />
-        <Stat label="Средний чек" now={v.avgCheck} before={r.prev.avgCheck} />
+        <Stat label="Средний чек" now={v.avgCheck} before={r.prev.avgCheck} tip="Сколько в среднем платит клиент за визит." />
       </div>
-      <p className="small muted" style={{ margin: 0 }}>Сравнение: {prevName} — выручка {formatSom(r.prev.cash)}, визитов {r.prev.visits}.</p>
+      <p className="small muted" style={{ margin: 0 }}><Tip role="owner" text="Каждая цифра сравнивается с таким же прошлым периодом: месяц — с прошлым месяцем, неделя — с прошлой неделей. ▲ — стало больше, ▼ — меньше." /> Сравнение: {prevName} — выручка {formatSom(r.prev.cash)}, визитов {r.prev.visits}.</p>
 
       {v.series.length > 0 && (
         <section className="card stack" style={{ gap: 10 }} aria-label="Выручка по дням">
@@ -62,7 +65,7 @@ export default async function Revenue({ params, searchParams }: { params: Promis
       <div style={grid}>
         <Stat label="Клиентов" now={v.clients} money={false} hint={`новых ${v.newClients} · постоянных ${v.returning}`} />
         <Stat label="Не пришли" now={v.noShows} money={false} hint={`отменили запись: ${v.cancelled}`} />
-        <Stat label="Прибыль" now={r.profit} before={r.prevProfit} hint="после мастеров и расходов — подробно в «Расходах»" />
+        <Stat label="Прибыль" now={r.profit} before={r.prevProfit} tip="Выручка − доли мастеров − расходы за период." hint="после мастеров и расходов — подробно в «Расходах»" />
       </div>
       <OwnerAccount slug={slug} />
     </main>

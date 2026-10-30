@@ -12,6 +12,8 @@ import EndToggle from './EndToggle';
 import VisitButtons from './VisitButtons';
 import { lateState } from '@/lib/late';
 import Hints from '@/app/Hints';
+import Tip from '@/app/Tip';
+import StaffIntro from '@/app/StaffIntro';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Кабинет мастера' };
@@ -191,7 +193,8 @@ export default async function MasterPage({ params, searchParams }: {
 
         {/* заработок за день */}
         <section className="card stack" style={{ gap: 10 }} aria-labelledby="earn">
-          <h2 id="earn" style={{ fontSize: 18 }}>Мой заработок за {date === now.date ? 'сегодня' : dayMonthShort(date)}</h2>
+          <StaffIntro slug={slug} role="master" />
+          <h2 id="earn" className="row" style={{ fontSize: 18, gap: 8 }}>Мой заработок за {date === now.date ? 'сегодня' : dayMonthShort(date)} <Tip slug={slug} role="master" help="master" text="Ваша доля — с суммы, которую клиент заплатил деньгами. Если часть оплачена баллами, эту скидку салон и мастер делят поровну. Краска и материалы — салону." /></h2>
           {isOwner ? <Hints items={[['🏠', 'Вы директор и работаете в своём салоне — доля мастера вам не выделяется'], ['💰', 'Вся сумма за ваши услуги идёт в выручку салона, то есть вам же — без деления 50/50']]} /> : null}
           {day.totals.visits === 0 ? (
             <p className="muted" style={{ margin: 0 }}>Оплаченных визитов пока нет{day.totals.waiting ? ` (ожидается: ${day.totals.waiting})` : ''}.</p>

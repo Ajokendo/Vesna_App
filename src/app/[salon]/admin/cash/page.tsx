@@ -3,6 +3,7 @@ import { getCashReport, getSalon } from '@/server/salon';
 import { dayMonth, utcToZoned } from '@/lib/time';
 import { formatSom } from '@/lib/pricing';
 import DayStrip from '../DayStrip';
+import Tip from '@/app/Tip';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export default async function Cash({ params, searchParams }: { params: Promise<{
                   <th style={{ padding: '6px 8px' }}>Стоимость услуг</th>
                   <th style={{ padding: '6px 8px' }}>Списано баллами</th>
                   <th style={{ padding: '6px 8px' }}>Получено деньгами</th>
-                  <th style={{ padding: '6px 8px' }}>Мастеру</th>
+                  <th style={{ padding: '6px 8px' }}>Мастеру <Tip slug={slug} help="cash" align="right" text="Доля мастера считается с суммы, оплаченной деньгами (и сертификатом). Баллы — скидка, её делят поровну. Краска и материалы целиком салону." /></th>
                   <th style={{ padding: '6px 8px' }}>Салону</th>
                 </tr>
               </thead>
