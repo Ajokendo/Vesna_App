@@ -63,7 +63,10 @@ export default async function Journal({ params, searchParams }: {
 
   return (
     <main className="safe" style={{ padding: '24px 28px 40px', display: 'flex', flexDirection: 'column', gap: 18, minHeight: '100dvh', overflowX: 'clip', maxWidth: '100vw' }}>
-      <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
+      <div className="row" style={{ justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <h1 style={{ fontSize: 26 }}>Журнал записей</h1>
+        <Link href={`/${slug}/help?r=admin`} className="btn" style={{ minHeight: 40, fontSize: 14 }}>❓ Инструкция</Link>
+      </div>
 
       <DayStrip salon={salon} date={date} today={now.date} href={(d) => link(d)} note={`записей: ${total} · под датой — число записей в этот день`} />
 

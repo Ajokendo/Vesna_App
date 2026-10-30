@@ -26,6 +26,7 @@ export default function LogoMenu({ slug, children }: { slug: string; children: R
             <Link role="menuitem" href={`/${slug}/master`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>✂ Мастера</Link>
             <Link role="menuitem" href={`/${slug}/admin`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>☰ Администратор</Link>
             <Link role="menuitem" href={`/${slug}/owner`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>📊 Директор</Link>
+            <Link role="menuitem" href={`/${slug}/help`} className="btn" style={{ minHeight: 44, justifyContent: 'flex-start', whiteSpace: 'nowrap', fontSize: 15 }}>❓ Инструкция</Link>
           </div>
         </>
       )}

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { setOwnerPin, signOutOwner } from '@/server/owner-auth';
 import PinChange from './PinChange';
 import { PasskeyToggle } from '@/app/Passkey';
+import Link from 'next/link';
 
 /** Внизу кабинета директора: сменить PIN директора и выйти (например, если открывали на чужом телефоне) */
 export default function OwnerAccount({ slug }: { slug: string }) {
@@ -23,6 +24,7 @@ export default function OwnerAccount({ slug }: { slug: string }) {
       <div className="stack" style={{ gap: 12, marginTop: 10 }}>
         <PasskeyToggle slug={slug} role="OWNER" />
         <PinChange action={change} />
+        <Link href={`/${slug}/help?r=owner`} className="btn" style={{ minHeight: 42 }}>❓ Инструкция</Link>
         <form action={out}><button type="submit" className="btn" style={{ minHeight: 42 }}>Выйти из кабинета директора</button></form>
       </div>
     </details>

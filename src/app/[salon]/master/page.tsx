@@ -240,6 +240,7 @@ export default async function MasterPage({ params, searchParams }: {
           ['🤝', 'Скидку баллами салон и мастер делят поровну'],
         ]} />
         <div className="card"><PasskeyToggle slug={slug} role="MASTER" sub={me.id} /></div>
+        <Link href={`/${slug}/help?r=master`} className="btn" style={{ minHeight: 42 }}>❓ Инструкция</Link>
         <Feedback salon={slug} role="MASTER"><button type="button" className="small" style={{ border: 0, background: 'none', padding: 0, color: 'var(--muted)', textDecoration: 'underline', cursor: 'pointer' }}>✉ Написать разработчикам приложения</button></Feedback>
       </div>
       <BottomBar items={[
