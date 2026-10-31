@@ -39,6 +39,7 @@ export default async function Settings({ params, searchParams }: { params: Promi
         <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <Link href={`/${slug}/owner`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>📊 Кабинет директора</Link>
           <Link href={`/${slug}/help?r=admin`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>❓ Инструкция</Link>
+          <Link href={`/${slug}/admin/import`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>📥 Перенос записей</Link>
           <Link href={`/${slug}/admin/qr`} className="btn" style={{ minHeight: 42, fontSize: 14 }}>▣ QR-табличка для ресепшена</Link>
           <Feedback salon={slug} role="ADMIN"><button type="button" className="btn" style={{ minHeight: 42, fontSize: 14 }}>✉ Написать разработчикам</button></Feedback>
         </div>

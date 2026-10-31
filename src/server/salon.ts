@@ -73,7 +73,7 @@ async function loadService(serviceId: string) {
 }
 
 /** Мастера, которые делают эту услугу */
-function eligibleStaffIds(svc: NonNullable<Awaited<ReturnType<typeof loadService>>>) {
+export function eligibleStaffIds(svc: NonNullable<Awaited<ReturnType<typeof loadService>>>) {
   const byCategory = svc.category.staff.map((x) => x.staffId);
   const only = svc.restrictions.map((r) => r.staffId);
   return only.length ? byCategory.filter((id) => only.includes(id)) : byCategory;
@@ -81,7 +81,7 @@ function eligibleStaffIds(svc: NonNullable<Awaited<ReturnType<typeof loadService
 
 type Booking = { serviceId: string; length?: HairLength | null; addonIds: string[] };
 
-async function bookingDuration(b: Booking) {
+export async function bookingDuration(b: Booking) {
   const svc = await loadService(b.serviceId);
   if (!svc) throw new Error('Услуга не найдена');
   const resolved = resolveService(svc, b.length ?? null);
@@ -90,7 +90,7 @@ async function bookingDuration(b: Booking) {
   return { svc, resolved, addons, durationMin: resolved.durationMin + addons.reduce((x, a) => x + a.durationMin, 0) };
 }
 
-async function staffDay(staffIds: string[], date: DateStr, tz: string) {
+export async function staffDay(staffIds: string[], date: DateStr, tz: string) {
   const from = zonedToUtc(date, 0, tz);
   const to = zonedToUtc(addDays(date, 1), 0, tz);
   const [members, appts] = await Promise.all([
@@ -152,6 +152,8 @@ export type CreateInput = Booking & {
   /** Запись ребёнка: имя и возраст (дату рождения не спрашиваем) */
   forChild?: { name: string; age: number } | null;
   usePoints?: boolean; payment?: string | null; source?: 'ONLINE' | 'ADMIN' | 'WALK_IN';
+  /** Перенос из бумажного журнала: без уведомлений клиенту */
+  silent?: boolean;
 };
 
 /** Создать запись: заново проверяет, что время свободно, и считает цену на сервере */
@@ -228,7 +230,7 @@ export async function createAppointment(salonSlug: string, input: CreateInput) {
   // записался на этот день — заявки в листе ожидания на этот день закрываются
   await closeWaitlistOnBooking(salon.id, [created.clientId, created.adultId], input.date).catch(() => {});
   // если у клиента уже включены уведомления — сразу подтверждение записи
-  await notifySoon(created.id, 'BOOKED');
+  if (!input.silent) await notifySoon(created.id, 'BOOKED');
   return { ...created, visitToken: await signId(created.id) };
 }
 
